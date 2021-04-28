@@ -145,7 +145,7 @@ public:
   arma::vec phis;
   
   // Weight combination indices
-  arma::umat comb_inds, phi_indicator;
+  arma::umat comb_inds, phi_indicator, phi_ind_map;
   
   // The labels, weights in each dataset and the dataset correlation
   arma::mat labels, w, ones_mat, ones_lower_tri, phis_plus_1;
@@ -233,6 +233,11 @@ public:
     phi_indicator.set_size(n_combinations, LC2);
     phi_indicator.zeros();
     
+    // Map between a dataset pair and the column index. This will be a lower 
+    // triangular matrix of unsigned ints
+    phi_ind_map.set_size(L, L);
+    phi_ind_map.zeros();
+    
     // Column index is, for some pair of datasets l and m,
     // \sum_{i = 0}^{l} (L - i - 1) + (m - l - 1). As this is awkward, let's 
     // just use col_ind++.
@@ -243,8 +248,13 @@ public:
       for(uword m = l + 1; m < L; m++) {
         phi_indicator.col(col_ind) = comb_inds.col(l) == comb_inds.col(m));
         
+        // Record which column index maps to which phi
+        phi_ind_map(m, l) = col_ind;
+        
         // The column index is awkward, this is the  easiest solution
         col_ind++;
+        
+        
       }
     }
 
@@ -356,15 +366,21 @@ public:
     
     // A chunk of these objects are used as our combinations matrix includes the
     // information for l = lstar and l = mstar, so we can shed some data.
-    // 
     uword n_used;
     uvec relevant_inds;
-    vec weight_products, phi_products;
-    mat relevant_combinations, relevant_phis, phi_prod_mat;
+    vec weight_products, phi_products, relevant_phis;
+    mat relevant_combinations, relevant_phi_inidicators, phi_prod_mat;
     
-    relevant_inds = find(comb_inds.col(lstart) == kstar);
+    relevant_inds = find(comb_inds.col(lstar) == comb_inds.col(mstar));
     relevant_combinations = comb_inds.rows(relevant_inds);
-    relevant_phis = phi_indicator.rows(relevant_inds);
+    
+    // We only need the relevant phi indicators
+    relevant_phi_inidicators = phi_indicator.rows(relevant_inds);
+    
+    // Drop phi_{lstar, mstar} from both the indicator matrix and the phis vector
+    relevant_phi_inidicators.shed_col(phi_ind_map(mstar, l_star));
+    relevant_phis = phis.shed_row(phi_ind_map(mstar, l_star));
+    
     n_used = relevant_combinations.n_rows;
     
     weight_products.set_size(n_used);
@@ -374,7 +390,7 @@ public:
     phi_products.ones;
     
     // The phi products (should be a matrix of 0's and phis)
-    phi_prod_mat = relevant_phis.each_row() * phis;
+    phi_prod_mat = relevant_phi_inidicators.each_row() * relevant_phis;
     
     // Add 1 to each entry to have the object ready to be multiplied
     phi_prod_mat++;
@@ -412,59 +428,77 @@ public:
   
   // Updates the normalising constant for the posterior
   void updateNormalisingConst() {
-    for(arma::uword k = 0; k < K1; k++){
-      
-      Z += armma::accu(arma::prod(w))
-      
-      Z += arma::accu(w1(k) * w2);
-      if(k < K2){
-        Z += w1(k) * w2(k) * phi;
+    
+    // A chunk of these objects are used as our combinations matrix includes the
+    // information for l = lstar and l = mstar, so we can shed some data.
+    vec weight_products, phi_products;
+    mat phi_prod_mat;
+    
+    weight_products.ones(n_combinations);
+    phi_products.ones(n_combinations);
+
+    // The phi products (should be a matrix of 0's and phis)
+    phi_prod_mat = phi_indicator.each_row() * phis;
+    
+    // Add 1 to each entry to have the object ready to be multiplied
+    phi_prod_mat++;
+    
+    // Vector of the products, this should have the \prod (1 + \phi_{lm} ind(k_l = k_m))
+    // ready to multiply by the weight products
+    phi_products = prod(phi_prod_mat, 1);
+    
+    for(uword l = 0; l < L; l++) {
+      if(l != lstar){
+        weight_products *= w.col(l).rows(comb_inds.col(l));
       }
     }
-  }
+    
+    // The rate for the gammas
+    Z = accu(weight_products % phi_products);
+  };
   
   void sampleStrategicLatentVariabel() {
     v = arma::randg(arma::distr_param(N, Z));
   }
   
-  double updateWeightHyperParameter(arma::uword k) {
-    
-    // Initialise b, the rate
-    double b = 0.0;
-    
-    if(k < n_clust){
-      b = v * (arma::sum(cluster_weights) + phi * cluster_weights(cluster_index));
-    } else {
-      b = v * (arma::sum(cluster_weights));
-    }
-    return b;
-  }
-  
-  // Calculate the rate for the gamma distribution for the class weights for MDI
-  // This is defined as the sume of the cluster weights (upweighted by the 
-  // correlation parameter, phi, if the labels match) multiplied by the variable v
-  // Old name: mdi_phi_rate
-  double calcPhiRate(double v,
-                     arma::uword n_clust,
-                     arma::vec cluster_weights_1,
-                     arma::vec cluster_weights_2
-  ) {
-    // Initialise b, the rate
-    double b = 0.0;
-    
-    // Find the subset of weights to use in calculating b
-    arma::vec sub_weights_1(n_clust);
-    arma::vec sub_weights_2(n_clust);
-    
-    sub_weights_1 = cluster_weights_1(arma::span(0, n_clust - 1) );
-    sub_weights_2 = cluster_weights_2(arma::span(0, n_clust - 1) );
-    
-    // Calculate b
-    b = v * sum(sub_weights_1 % sub_weights_2);
-    
-    return b;
-    
-  }
+  // double updateWeightHyperParameter(arma::uword k) {
+  //   
+  //   // Initialise b, the rate
+  //   double b = 0.0;
+  //   
+  //   if(k < n_clust){
+  //     b = v * (arma::sum(cluster_weights) + phi * cluster_weights(cluster_index));
+  //   } else {
+  //     b = v * (arma::sum(cluster_weights));
+  //   }
+  //   return b;
+  // }
+  // 
+  // // Calculate the rate for the gamma distribution for the class weights for MDI
+  // // This is defined as the sume of the cluster weights (upweighted by the 
+  // // correlation parameter, phi, if the labels match) multiplied by the variable v
+  // // Old name: mdi_phi_rate
+  // double calcPhiRate(double v,
+  //                    arma::uword n_clust,
+  //                    arma::vec cluster_weights_1,
+  //                    arma::vec cluster_weights_2
+  // ) {
+  //   // Initialise b, the rate
+  //   double b = 0.0;
+  //   
+  //   // Find the subset of weights to use in calculating b
+  //   arma::vec sub_weights_1(n_clust);
+  //   arma::vec sub_weights_2(n_clust);
+  //   
+  //   sub_weights_1 = cluster_weights_1(arma::span(0, n_clust - 1) );
+  //   sub_weights_2 = cluster_weights_2(arma::span(0, n_clust - 1) );
+  //   
+  //   // Calculate b
+  //   b = v * sum(sub_weights_1 % sub_weights_2);
+  //   
+  //   return b;
+  //   
+  // }
   
   
   
