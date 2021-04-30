@@ -374,14 +374,7 @@ public:
       // The exponent part of the MVN pdf
       dist_to_mean = item - mu.col(k);
       exponent = arma::as_scalar(dist_to_mean.t() * cov_inv.slice(k) * dist_to_mean);
-      
-      // std::cout << "\nItem:\n" << item;
-      // std::cout << "\nMean:\n" << mu.col(k);
-      // std::cout << "\nCov:\n" << cov.slice(k);
-      // std::cout << "\nCov inverse:\n" << cov_inv.slice(k);
-      // std::cout << "\nDistance to mean:\n" << dist_to_mean;
-      // std::cout << "\nexponent:\n" << exponent;
-      
+
       // Normal log likelihood
       ll(k) = -0.5 *(cov_log_det(k) + exponent + (double) P * log(2.0 * M_PI));
     }
@@ -408,6 +401,10 @@ public:
     arma::mat sample_cov(P, P), dist_from_prior(P, P), scale_n(P, P);
     
     for (arma::uword k = 0; k < K; k++) {
+      
+      // std::cout << "\nN_k: " << accu(labels == k);
+      // std::cout << "\nN_k: " << N_k;
+      
       
       // Find how many labels have the value
       n_k = N_k(k);
@@ -491,7 +488,7 @@ public:
     N_k;
   
   // The labels, weights in each dataset and the dataset correlation
-  arma::mat w, ones_mat, ones_lower_tri, phis_plus_1, phi_indicator_t_mat;
+  arma::mat w, phi_indicator_t_mat;
   
   // Cube of cluster members
   arma::ucube members;
@@ -522,7 +519,7 @@ public:
     
     // std::cout << "\n\nNumber slices: " << _X.n_slices;
     // std::cout << "\n\nSize: " << size(_X);
-    // std::cout << "\n\nSize 0: " << size(_X)(0);
+    std::cout << "\n\nSize 0: " << size(_X)(0);
     
     // The number of pairwise combinations
     LC2 = L * (L - 1) / 2;
@@ -543,12 +540,16 @@ public:
     // The count of members in each cluster
     N_k.set_size(K_max, L);
     
+    // std::cout << "\nCombination indicator failing?\nK to the L: "<< K_to_the_L;
+    
     // We want to track which combinations should be unweighed and by what phi.
     // This object will be used in calculating the normalising constant (Z), the
     // cluster weights (gammas) and the correlation coefficient (phis)
     // along with the phi_indicator matrix.
     comb_inds.set_size(K_to_the_L, L);
     comb_inds.zeros();
+    
+    // std::cout << "\nCombination indicator declared.\nK to the L: "<< K_to_the_L;
     
     one_to_K = linspace<uvec>(0, K_max - 1, K_max);
     one_to_L = linspace<uvec>(0, L - 1, L);
@@ -578,13 +579,17 @@ public:
     n_combinations = comb_inds.n_rows;
     
     // This is used enough that we may as well define it
-    ones_mat.ones(LC2, n_combinations);
+    // ones_mat.ones(LC2, n_combinations);
+    
+    // std::cout << "\n\nN combinations: " << n_combinations;
     
     // Now construct a matrix to record which phis are upweighing which weight
     // products, via an indicator matrix. This matrix has a column for each phi
     // (ncol = LC2) and a row for each combinations (nrow = n_combinations).
     phi_indicator.set_size(n_combinations, LC2);
     phi_indicator.zeros();
+    
+    // std::cout << "\n\nPhi indicator declared.";
     
     // Map between a dataset pair and the column index. This will be a lower 
     // triangular matrix of unsigned ints
@@ -668,8 +673,14 @@ public:
     
     // The members of each cluster across datasets. Each slice is a binary matrix
     // of the members of the kth class across the datasets.
-    members.set_size(N, L, K_max);
+    members.set_size(N, K_max, L);
     members.zeros();
+    
+    // for(uword l = 0; l < L; l++) {
+    //   for(k = 0; k < K(l); k++) {
+    //     members.slice(l).col(k) = labels.col(l) == k;
+    //   }
+    // }
     
     // std::cout << "\n\nHonestly this was an obvious expectation.\n";
     
@@ -815,33 +826,75 @@ public:
   
   // Update the cluster weights
   void updateWeights() {
+    
+    // std::cout << "\n\nWeights before update:\n" << w;
+    
+    // std::cout << "\n\nMembers:\n" << members;
+    
     double shape = 0.0, rate = 0.0;
+    uvec members_lk(N);
+    
     for(uword l = 0; l < L; l++) {
+      
+      // std::cout << "\nIn L loop: " << l;
+      // std::cout << "\n\nMembers l:\n" << members.slice(l);
+      
       for(uword k = 0; k < K(l); k++) {
         
+        // std::cout << "\nIn K_loop: " << k;
+        
+        // std::cout << "\nMembers slice l col k:\n" << members.slice(l).col(k);
+        
         // Find how many labels have the value of k
-        // members(span::all, span(k), span(l)) = (labels.col(l) == k);
-        members.slice(l).col(k) = (labels.col(l) == k);
-        N_k(k, l) = accu(members.slice(l).col(k));
+        members_lk = (labels.col(l) == k);
+        // members(span::all, span(l, l), span(k, k) = members_lk;
+        members.slice(l).col(k) = members_lk;
+        
+        // std::cout << "\nMembers accessed.";
+        
+        N_k(k, l) = accu(members_lk);
+        
+        // std::cout << "\nN_k updated.";
         
         // The hyperparameters
         shape = 1 + N_k(k, l);
         rate = calcWeightRate(l, k);
         
+        // std::cout << "\n\nShape:" << shape;
+        // std::cout << "\nRate:" << rate;
+        
         // Sample a new weight
         w(k, l) = randg(distr_param(w_shape_prior + shape, 
                         1.0 / (w_rate_prior + rate)));
+        
+        
+        // std::cout << "\nIssue";
+        
+        // Pass the allocation count down to the mixture
+        // (this is used in the parameter sampling)
+        mixtures[l].N_k = N_k(span(0, K(l) - 1), l);
+        mixtures[l].members.col(k) = members_lk;
+        // std::cout << "\nWeight updated.";
       }
     }
+    
+    // std::cout << "\n\nWeights after update:\n" << w;
   };
   
   // Update the context similarity parameters
   void updatePhis() {
+    
+    // std::cout << "\n\nPhis before update:\n" << phis;
+    
     double shape = 0.0, rate = 0.0;
     for(uword l = 0; l < (L - 1); l++) {
       for(uword m = l + 1; m < L; m++) {
         shape = 1 + accu(labels.col(l) == labels.col(m));
         rate = calcPhiRate(l, m);
+        
+        // std::cout << "\n\nShape:" << shape;
+        // std::cout << "\nRate:" << rate;
+        
         phis(phi_ind_map(m, l)) = randg(distr_param(
             phi_shape_prior + shape, 
             1.0 / (phi_rate_prior + rate)
@@ -849,6 +902,9 @@ public:
         );
       }
     }
+    
+    // std::cout << "\n\nPhis after update:\n" << phis;
+    
   };
   
   // Updates the normalising constant for the posterior
@@ -2595,12 +2651,14 @@ Rcpp::List runMDI(arma::uword R,
     X(l) = Y(l);
   }
   
+  // std::cout << "\n\nMDI initialisation.";
   mdiModel my_mdi(X, K, labels);
   N = my_mdi.N;
   
   ucube class_record(R, N, L);
   class_record.zeros();
   
+  std::cout << "\nMeh.";
   mat phis_record(R, my_mdi.LC2);
   cube weight_record(R, my_mdi.K_max, L);
   
@@ -2615,21 +2673,25 @@ Rcpp::List runMDI(arma::uword R,
     // std::cout << "\n\nNormalising constant.";
     my_mdi.updateNormalisingConst();
     
-    // std::cout << "\nWeights updated.";
+    // std::cout << "\nStrategic latent variable.";
+    my_mdi.sampleStrategicLatentVariabel();
+    
+    // std::cout << "\nWeights update.";
     my_mdi.updateWeights();
     
-    // std::cout << "\nPhis updated.";
+    // std::cout << "\nPhis update.";
     my_mdi.updatePhis();
-    
+
     // std::cout << "\nSample mixture parameters.";
     for(arma::uword l = 0; l < L; l++) {
       my_mdi.mixtures[l].sampleParameters();
       my_mdi.mixtures[l].matrixCombinations();
     }
     
-    // std::cout << "\nAllocations updated.";
+    // std::cout << "\nAllocations update.";
     my_mdi.updateAllocation();
     
+    // std::cout << "\nSave objects.";
     for(uword l = 0; l < L; l++) {
       // arma::urowvec labels_l = my_mdi.labels.col(l).t();
       class_record.slice(l).row(r) = my_mdi.labels.col(l).t();
@@ -2643,7 +2705,7 @@ Rcpp::List runMDI(arma::uword R,
   return(List::create(Named("samples") = class_record,
                       Named("phis") = phis_record,
                       Named("weights") = weight_record
-                        )
+                      )
            );
   
 }
