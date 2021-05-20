@@ -1010,8 +1010,8 @@ public:
 };
 
 // Factory for creating instances of samplers
-//' @name samplerFactory
-//' @title Factory for different sampler subtypes.
+//' @name mixtureFactory
+//' @title Factory for different types of mixtures.
 //' @description The factory allows the type of mixture implemented to change
 //' based upon the user input.
 //' @field new Constructor \itemize{
@@ -1152,13 +1152,15 @@ public:
 //   }
 // };
 
+
 class mdiModel {
 
 private:
 
 public:
 
-  arma::uword N, L, K_max, K_prod, K_to_the_L, LC2, n_combinations;
+  arma::uword N, L, LC2 = 1, K_max, K_prod, K_to_the_L, n_combinations;
+  // int LC2 = 1;
   double Z = 0.0,
     v = 0.0,
     w_shape_prior = 2.0,
@@ -1174,21 +1176,21 @@ public:
   // Weight combination indices
   arma::umat labels,
 
-    // Various objects used to calculate MDI weights, normalising constant and phis
-    comb_inds,
-    phi_indicator,
-    phi_ind_map,
-    phi_indicator_t,
+  // Various objects used to calculate MDI weights, normalising constant and phis
+  comb_inds,
+  phi_indicator,
+  phi_ind_map,
+  phi_indicator_t,
 
-    // Class membership in each dataset
-    N_k,
+  // Class membership in each dataset
+  N_k,
 
-    // Indicator matrix for item n being an outlier in dataset l
-    outliers,
+  // Indicator matrix for item n being an outlier in dataset l
+  outliers,
 
-    // Indicator matrix for item n being welll-described by its component
-    // in dataset l
-    non_outliers;
+  // Indicator matrix for item n being welll-described by its component
+  // in dataset l
+  non_outliers;
 
   // The labels, weights in each dataset and the dataset correlation
   arma::mat w, phi_indicator_t_mat;
@@ -1219,6 +1221,8 @@ public:
     // Mixture types
     types = _types;
 
+    // std::cout << "\n\nTypes:\n" << types;
+    
     // First allocate the inputs to their saved, class
 
     // The number of datasets modelled
@@ -1229,8 +1233,17 @@ public:
     // std::cout << "\n\nSize 0: " << size(_X)(0);
 
     // The number of pairwise combinations
-    LC2 = std::max(1, L * (L - 1) / 2.0);
+    // LC2 = 2;
+    // throw (LC2);
+    
+    // LC2 = std::max(the_number_one, L * (L - 1) / 2);
+    if(L > 1) {
+      LC2 = L * (L - 1) / 2;
+    }
 
+    // std::cout << "\n\nLC2: " << LC2;
+    // throw;
+    
     // Used to check all datasets have matching number of rows
     arma::uvec N_check(L);
 
@@ -1246,6 +1259,8 @@ public:
 
     // The count of members in each cluster
     N_k.set_size(K_max, L);
+    
+    // throw std::invalid_argument( "K declared?" );
 
     // std::cout << "\nCombination indicator failing?\nK to the L: "<< K_to_the_L;
 
@@ -1285,8 +1300,7 @@ public:
     // The final number of combinations
     n_combinations = comb_inds.n_rows;
 
-    std::cout << n_combinations;
-    throw;
+    // std::cout << n_combinations;
     
     // This is used enough that we may as well define it
     // ones_mat.ones(LC2, n_combinations);
@@ -3423,13 +3437,24 @@ Rcpp::List runMDI(arma::uword R,
   uword L = size(Y)(0), N;
   arma::field<arma::mat> X(L);
 
-  for(uword l = 0;l < L; l++) {
+  // std::cout << "\n\nL: " << L;
+  
+  // std::cout << "\n\nY:\n" << Y;
+  
+  // throw
+  
+  for(uword l = 0; l < L; l++) {
     X(l) = Y(l);
+    // std::cout << "\n\nX[l]:\n" << X(l).head_rows( 3 );
   }
 
+  // throw std::invalid_argument( "X is happy." );
+  
   // std::cout << "\n\nMDI initialisation.";
   mdiModel my_mdi(X, types, K, labels);
-
+  // std::cout << "\n\nL: " << my_mdi.L;
+  // throw std::invalid_argument( "MDI declated." );
+  
   // Initialise the dataset level mixtures
   my_mdi.initialiseMixtures();
 
