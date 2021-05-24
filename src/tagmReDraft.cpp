@@ -189,6 +189,8 @@ public:
     // Class populations
     N_k = arma::zeros<arma::uvec>(K);
 
+    // std::cout << "\n\nN_k:\n" << N_k;
+    
     // Weights
     // double x, y;
     // w = arma::zeros<arma::vec>(K);
@@ -280,6 +282,9 @@ public:
       comp_prob = exp(comp_prob - max(comp_prob));
       comp_prob = comp_prob / sum(comp_prob);
 
+      // Save the allocation probabilities
+      alloc.row(n) = comp_prob.t();
+      
       // Prediction and update
       u = arma::randu<double>( );
 
@@ -404,6 +409,8 @@ public:
   virtual void sampleCovPrior() {
     for(arma::uword k = 0; k < K; k++){
       cov.slice(k) = arma::iwishrnd(scale, nu);
+      cov_inv.slice(k) = arma::inv_sympd(cov.slice(k));
+      cov_log_det(k) = arma::log_det(cov.slice(k)).real();
     }
   };
 
@@ -467,36 +474,65 @@ public:
 
     for (arma::uword k = 0; k < K; k++) {
 
-      // std::cout << "\nN_k: " << accu(labels == k);
-      // std::cout << "\nN_k: " << N_k;
+      // std::cout << "\nN_k (wrong): " << accu(labels == k);
+      // std::cout << "\nN_k (should be right): " << N_k(k);
 
 
       // Find how many labels have the value
       n_k = N_k(k);
+      
+      // std::cout << "\n\nMembers:\n" << size(find(members.col(k)));
+      // std::cout << "\n\nOutliers:\n" << size(find(non_outliers == 1));
+      // std::cout << "\n\nNon-outlier members:\n" << size(find(members.col(k) && non_outliers == 1));
+      
       if(n_k > 0){
 
+        // std::cout << "\n\nSampling new value";
+        
         // Component data
         arma::mat component_data = X.rows( arma::find(members.col(k) && (non_outliers == 1)) );
 
+        // std::cout << "\n\nComponent data subsetted.\n" << size(component_data);
+        
         // Sample mean in the component data
         sample_mean = arma::mean(component_data).t();
+
+        // std::cout << "\n\nSampled mean acquired:\n" << sample_mean;
+        
         sample_cov = calcSampleCov(component_data, sample_mean, n_k, P);
 
+        // std::cout << "\n\nSampled cov acquired:\n" << sample_cov;
+        
         // Calculate the distance of the sample mean from the prior
         dist_from_prior = (sample_mean - xi) * (sample_mean - xi).t();
-
+        
+        // std::cout << "\n\nDistance from prior calculated:\n" << dist_from_prior;
+        
         // Update the scale hyperparameter
         scale_n = scale + sample_cov + ((kappa * n_k) / (double) (kappa + n_k)) * dist_from_prior;
-
+        
+        // std::cout << "\n\nDistance from prior calculated:\n" << dist_from_prior;
+        // 
+        // std::cout << "\n\nCovariacne:\n" << cov.slice(k);
+        // std::cout << "\n\nNu: " << nu;
+        // std::cout << "\nN_k: " << n_k;
+        
         // Sample a new covariance matrix
         cov.slice(k) = arma::iwishrnd(scale_n, nu + n_k);
-
+        
+        // std::cout << "\n\nCovariance sampled";
+        
         // The weighted average of the prior mean and sample mean
         mu_n = (kappa * xi + n_k * sample_mean) / (double)(kappa + n_k);
-
+        
+        // std::cout << "\nMu_n calculated";
+        
         // Sample a new mean vector
         mu.col(k) = arma::mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k), 1);
-
+        
+        // std::cout << "\nMean sampled";
+        // std::cout << "\n\nDistance from prior calculated:\n" << dist_from_prior;
+        
       } else{
 
         // If no members in the component, draw from the prior distribution
@@ -504,210 +540,215 @@ public:
         mu.col(k) = arma::mvnrnd(xi, (1.0 / (double) kappa) * cov.slice(k), 1);
 
       }
+      
+      // Save the inverse and log determinant of the new covariance matrices
+      cov_inv.slice(k) = arma::inv_sympd(cov.slice(k));
+      cov_log_det(k) = arma::log_det(cov.slice(k)).real();
+      
     }
   }
 };
 
 
-//' @name gaussianSampler
-//' @title Gaussian mixture type
-//' @description The sampler for a mixture of Gaussians, where each feature is
-//' assumed to be independent (i.e. a multivariate Normal with a diagonal
-//' covariance matrix).
-//' @field new Constructor \itemize{
-//' \item Parameter: K - the number of components to model
-//' \item Parameter: labels - the initial clustering of the data
-//' \item Parameter: concentration - the vector for the prior concentration of
-//' the Dirichlet distribution of the component weights
-//' \item Parameter: X - the data to model
-//' }
-//' @field printType Print the sampler type called.
-//' @field updateWeights Update the weights of each component based on current
-//' clustering.
-//' @field updateAllocation Sample a new clustering.
-//' @field sampleFromPrior Sample from the priors for the Gaussian density.
-//' @field calcBIC Calculate the BIC of the model.
-//' @field logLikelihood Calculate the likelihood of a given data point in each
-//' component. \itemize{
-//' \item Parameter: point - a data point.
-//' }
-class gaussianMixture: virtual public mixture {
-
-public:
-
-  double xi, kappa, alpha, g, h, a;
-  arma::vec beta;
-  arma::mat mu, tau;
-
-  using mixture::mixture;
-
-  // Parametrised
-  gaussianMixture(
-    arma::uword _K,
-    arma::uvec _labels,
-    // arma::vec _concentration,
-    arma::mat _X
-  ) : mixture(_K, _labels, _X) {
-
-    double data_range_inv = pow(1.0 / (X.max() - X.min()), 2);
-
-    alpha = 2.0;
-    g = 0.2;
-    a = 10;
-
-    xi = arma::accu(X)/(N * P);
-
-    kappa = data_range_inv;
-    h = a * data_range_inv;
-
-    beta.set_size(P);
-    beta.zeros();
-
-    mu.set_size(P, K);
-    mu.zeros();
-
-    tau.set_size(P, K);
-    tau.zeros();
-
-  }
-
-  gaussianMixture(
-    arma::uword _K,
-    arma::uvec _labels,
-    // arma::vec _concentration,
-    arma::mat _X,
-    double _xi,
-    double _kappa,
-    double _alpha,
-    double _g,
-    double _h,
-    double _a
-  ) : mixture {_K, _labels, _X} {
-
-    xi = _xi;
-    kappa = _kappa;
-    alpha = _alpha;
-    g = _g;
-    h = _h;
-    a = _a;
-
-    beta.set_size(P);
-    beta.zeros();
-
-    mu.set_size(P, K);
-    mu.zeros();
-
-    tau.set_size(P, K);
-    tau.zeros();
-
-  }
-
-  // Destructor
-  virtual ~gaussianMixture() { };
-
-  // Print the sampler type.
-  virtual void printType() {
-    std::cout << "\nType: Gaussian.\n";
-  }
-
-  // Parameters for the mixture model. The priors are empirical and follow the
-  // suggestions of Richardson and Green <https://doi.org/10.1111/1467-9868.00095>.
-  void sampleFromPriors() {
-    for(arma::uword p = 0; p < P; p++){
-      beta(p) = arma::randg<double>( arma::distr_param(g, 1.0 / h) );
-      for(arma::uword k = 0; k < K; k++){
-        mu(p, k) = (arma::randn<double>() / kappa) + xi;
-        tau(p, k) = arma::randg<double>( arma::distr_param(alpha, 1.0 / arma::as_scalar(beta(p))) );
-      }
-
-    }
-  }
-
-
-  // Sample beta
-  void updateBeta(){
-
-    double a = g + K * alpha;
-    double b = 0.0;
-
-    for(arma::uword p = 0; p < P; p++){
-      b = h + arma::accu(tau.row(p));
-      beta(p) = arma::randg<double>( arma::distr_param(a, 1.0 / b) );
-    }
-  }
-
-  // Sample mu
-  void updateMuTau() {
-
-    arma::uword n_k = 0;
-    double _sd = 0, _mean = 0;
-
-    double a, b;
-    arma::vec mu_k(P);
-
-    for (arma::uword k = 0; k < K; k++) {
-
-      // Find how many labels have the value
-      n_k = N_k(k);
-      if(n_k > 0){
-
-        arma::mat component_data = X.rows( arma::find((labels == k) ) );
-
-        for (arma::uword p = 0; p < P; p++){
-
-          // The updated parameters for mu
-          _sd = 1.0/(tau(p, k) * n_k + kappa);
-          _mean = (tau(p, k) * arma::sum(component_data.col(p)) + kappa * xi) / (1.0/_sd) ;
-
-
-          // Sample a new value
-          mu(p, k) = arma::randn<double>() * _sd + _mean;
-
-          // Parameters of the distribution for tau
-          a = alpha + 0.5 * n_k;
-
-          arma::vec b_star = component_data.col(p) - mu(p, k);
-          b = beta(p) + 0.5 * arma::accu(b_star % b_star);
-
-          // The updated parameters
-          tau(p, k) = arma::randg<double>(arma::distr_param(a, 1.0 / b) );
-        }
-      } else {
-        for (arma::uword p = 0; p < P; p++){
-          // Sample a new value from the priors
-          mu(p, k) = arma::randn<double>() * (1.0/kappa) + xi;
-          tau(p, k) = arma::randg<double>(arma::distr_param(alpha, 1.0 / beta(p)) );
-        }
-      }
-    }
-  };
-
-  void sampleParameters() {
-    updateMuTau();
-    updateBeta();
-  }
-
-  arma::vec itemLogLikelihood(arma::vec item) {
-
-    arma::vec ll(K);
-    ll.zeros();
-
-    for(arma::uword k = 0; k < K; k++){
-      for (arma::uword p = 0; p < P; p++){
-        ll(k) += -0.5*(std::log(2) + std::log(PI) - std::log(arma::as_scalar(tau(p, k)))) - arma::as_scalar(0.5 * tau(p, k) * pow(item(p) - mu(p, k), 2));
-      }
-    }
-    return ll;
-  };
-
-  virtual void calcBIC(){
-
-    arma::uword n_param = (P + P) * K_occ;
-    BIC = n_param * std::log(N) - 2 * model_likelihood;
-
-  }
-
-};
+// //' @name gaussianSampler
+// //' @title Gaussian mixture type
+// //' @description The sampler for a mixture of Gaussians, where each feature is
+// //' assumed to be independent (i.e. a multivariate Normal with a diagonal
+// //' covariance matrix).
+// //' @field new Constructor \itemize{
+// //' \item Parameter: K - the number of components to model
+// //' \item Parameter: labels - the initial clustering of the data
+// //' \item Parameter: concentration - the vector for the prior concentration of
+// //' the Dirichlet distribution of the component weights
+// //' \item Parameter: X - the data to model
+// //' }
+// //' @field printType Print the sampler type called.
+// //' @field updateWeights Update the weights of each component based on current
+// //' clustering.
+// //' @field updateAllocation Sample a new clustering.
+// //' @field sampleFromPrior Sample from the priors for the Gaussian density.
+// //' @field calcBIC Calculate the BIC of the model.
+// //' @field logLikelihood Calculate the likelihood of a given data point in each
+// //' component. \itemize{
+// //' \item Parameter: point - a data point.
+// //' }
+// class gaussianMixture: virtual public mixture {
+// 
+// public:
+// 
+//   double xi, kappa, alpha, g, h, a;
+//   arma::vec beta;
+//   arma::mat mu, tau;
+// 
+//   using mixture::mixture;
+// 
+//   // Parametrised
+//   gaussianMixture(
+//     arma::uword _K,
+//     arma::uvec _labels,
+//     // arma::vec _concentration,
+//     arma::mat _X
+//   ) : mixture(_K, _labels, _X) {
+// 
+//     double data_range_inv = pow(1.0 / (X.max() - X.min()), 2);
+// 
+//     alpha = 2.0;
+//     g = 0.2;
+//     a = 10;
+// 
+//     xi = arma::accu(X)/(N * P);
+// 
+//     kappa = data_range_inv;
+//     h = a * data_range_inv;
+// 
+//     beta.set_size(P);
+//     beta.zeros();
+// 
+//     mu.set_size(P, K);
+//     mu.zeros();
+// 
+//     tau.set_size(P, K);
+//     tau.zeros();
+// 
+//   }
+// 
+//   gaussianMixture(
+//     arma::uword _K,
+//     arma::uvec _labels,
+//     // arma::vec _concentration,
+//     arma::mat _X,
+//     double _xi,
+//     double _kappa,
+//     double _alpha,
+//     double _g,
+//     double _h,
+//     double _a
+//   ) : mixture {_K, _labels, _X} {
+// 
+//     xi = _xi;
+//     kappa = _kappa;
+//     alpha = _alpha;
+//     g = _g;
+//     h = _h;
+//     a = _a;
+// 
+//     beta.set_size(P);
+//     beta.zeros();
+// 
+//     mu.set_size(P, K);
+//     mu.zeros();
+// 
+//     tau.set_size(P, K);
+//     tau.zeros();
+// 
+//   }
+// 
+//   // Destructor
+//   virtual ~gaussianMixture() { };
+// 
+//   // Print the sampler type.
+//   virtual void printType() {
+//     std::cout << "\nType: Gaussian.\n";
+//   }
+// 
+//   // Parameters for the mixture model. The priors are empirical and follow the
+//   // suggestions of Richardson and Green <https://doi.org/10.1111/1467-9868.00095>.
+//   void sampleFromPriors() {
+//     for(arma::uword p = 0; p < P; p++){
+//       beta(p) = arma::randg<double>( arma::distr_param(g, 1.0 / h) );
+//       for(arma::uword k = 0; k < K; k++){
+//         mu(p, k) = (arma::randn<double>() / kappa) + xi;
+//         tau(p, k) = arma::randg<double>( arma::distr_param(alpha, 1.0 / arma::as_scalar(beta(p))) );
+//       }
+// 
+//     }
+//   }
+// 
+// 
+//   // Sample beta
+//   void updateBeta(){
+// 
+//     double a = g + K * alpha;
+//     double b = 0.0;
+// 
+//     for(arma::uword p = 0; p < P; p++){
+//       b = h + arma::accu(tau.row(p));
+//       beta(p) = arma::randg<double>( arma::distr_param(a, 1.0 / b) );
+//     }
+//   }
+// 
+//   // Sample mu
+//   void updateMuTau() {
+// 
+//     arma::uword n_k = 0;
+//     double _sd = 0, _mean = 0;
+// 
+//     double a, b;
+//     arma::vec mu_k(P);
+// 
+//     for (arma::uword k = 0; k < K; k++) {
+// 
+//       // Find how many labels have the value
+//       n_k = N_k(k);
+//       if(n_k > 0){
+// 
+//         arma::mat component_data = X.rows( arma::find((labels == k) ) );
+// 
+//         for (arma::uword p = 0; p < P; p++){
+// 
+//           // The updated parameters for mu
+//           _sd = 1.0/(tau(p, k) * n_k + kappa);
+//           _mean = (tau(p, k) * arma::sum(component_data.col(p)) + kappa * xi) / (1.0/_sd) ;
+// 
+// 
+//           // Sample a new value
+//           mu(p, k) = arma::randn<double>() * _sd + _mean;
+// 
+//           // Parameters of the distribution for tau
+//           a = alpha + 0.5 * n_k;
+// 
+//           arma::vec b_star = component_data.col(p) - mu(p, k);
+//           b = beta(p) + 0.5 * arma::accu(b_star % b_star);
+// 
+//           // The updated parameters
+//           tau(p, k) = arma::randg<double>(arma::distr_param(a, 1.0 / b) );
+//         }
+//       } else {
+//         for (arma::uword p = 0; p < P; p++){
+//           // Sample a new value from the priors
+//           mu(p, k) = arma::randn<double>() * (1.0/kappa) + xi;
+//           tau(p, k) = arma::randg<double>(arma::distr_param(alpha, 1.0 / beta(p)) );
+//         }
+//       }
+//     }
+//   };
+// 
+//   void sampleParameters() {
+//     updateMuTau();
+//     updateBeta();
+//   }
+// 
+//   arma::vec itemLogLikelihood(arma::vec item) {
+// 
+//     arma::vec ll(K);
+//     ll.zeros();
+// 
+//     for(arma::uword k = 0; k < K; k++){
+//       for (arma::uword p = 0; p < P; p++){
+//         ll(k) += -0.5*(std::log(2) + std::log(PI) - std::log(arma::as_scalar(tau(p, k)))) - arma::as_scalar(0.5 * tau(p, k) * pow(item(p) - mu(p, k), 2));
+//       }
+//     }
+//     return ll;
+//   };
+// 
+//   virtual void calcBIC(){
+// 
+//     arma::uword n_param = (P + P) * K_occ;
+//     BIC = n_param * std::log(N) - 2 * model_likelihood;
+// 
+//   }
+// 
+// };
 
 
 //' @name tAdjustedSampler
@@ -926,7 +967,8 @@ public:
     // First update the outlier parameters
     updateOutlierWeights();
 
-    for(arma::uword n = 0; n < N; n++){
+    for (auto& n : unfixed_ind) {
+    // for(arma::uword n = 0; n < N; n++){
       ll = itemLogLikelihood(X_t.col(n));
 
       // Update with weights
@@ -992,7 +1034,7 @@ public:
   // arma::mat global_cov;
   // double df = 4.0, u = 2.0, v = 10.0, b = 0.0, outlier_weight = 0.0;
 
-  using tAdjustedMixture::tAdjustedMixture;
+  using mvnMixture::mvnMixture;
 
   tagmMixture(arma::uword _K,
           arma::uvec _labels,
@@ -1071,7 +1113,7 @@ public:
     // case C: return std::make_unique<categoricalSampler>(K, labels, concentration, X);
     case TMVN: return std::make_unique<tagmMixture>(K, labels, X);
     // case TG: return std::make_unique<tagmGaussian>(K, labels, concentration, X);
-    default: throw "invalid sampler type.";
+    default: throw std::invalid_argument( "invalid sampler type." );
     }
 
   }
@@ -1175,8 +1217,18 @@ public:
     
     // Pass the indicator vector for being fixed to the ``fixed`` object.
     fixed = _fixed;
+    
+    uword N_fixed = accu(fixed);
+    
     fixed_ind = find(fixed == 1);
     unfixed_ind = find(fixed == 0);
+    
+    // Set the known label allocations to 1
+    for(uword n = 0; n < N; n++) {
+      if(fixed(n) == 1) {
+        alloc(n, labels(n)) = 1.0;
+      }
+    }
     
   };
   
@@ -1198,7 +1250,17 @@ public:
                     arma::mat _X) :
     mixture(_K, _labels, _X),
     mvnMixture(_K, _labels, _X),
-    semiSupervisedMixture(_K, _labels, _fixed, _X) {
+    semiSupervisedMixture(_K, _labels, _fixed, _X)
+     {
+    
+    // std::cout << "\nNumber fixed: " << accu(fixed);
+    // std::cout << "\nFixed inds:\n" << fixed_ind.head(4);
+    // std::cout << "\nUnfixed inds:\n" << unfixed_ind.head(4);
+    // 
+    // std::cout << "\nMembers:\n" << size(members);
+    // 
+    // std::cout << "\nN_k:\n" << N_k;
+  
   };
   
   // Destructor
@@ -1208,8 +1270,9 @@ public:
 
 
 class semiSupervisedTAGM : 
-  virtual public semiSupervisedMixture,
-  virtual public tagmMixture
+  virtual public tagmMixture,
+  virtual public semiSupervisedMixture
+  
 {
   
 public:
@@ -1225,12 +1288,61 @@ public:
     semiSupervisedMixture(_K, _labels, _fixed, _X),
     // mvnMixture(_K, _labels, _X),
     tagmMixture(_K, _labels, _X){
+    
+    // In this case initialise the outlier members as the non-fixed points
+    outliers = 1 - fixed;
+    non_outliers = fixed;
+    
+    // std::cout << "\nNumber fixed: " << accu(fixed);
+    // std::cout << "\nFixed inds: " << fixed_ind.head(4);
+    // std::cout << "\nNumber fixed: " << unfixed_ind.head(4);
+    
   };
   
   // Destructor
   virtual ~semiSupervisedTAGM() { };
   
 };
+
+
+class semiSupervisedMixtureFactory {
+  
+public:
+  
+  
+  // empty contructor
+  semiSupervisedMixtureFactory(){ };
+  
+  // destructor
+  virtual ~semiSupervisedMixtureFactory(){ };
+  
+  // copy constructor
+  semiSupervisedMixtureFactory(const semiSupervisedMixtureFactory &L);
+  
+  enum mixtureType {
+    // G = 0,
+    MVN = 1,
+    // C = 2,
+    TMVN = 3 //,
+    // TG = 4
+  };
+  
+  static std::unique_ptr<semiSupervisedMixture> createMixture(mixtureType type,
+                                                              arma::uword K,
+                                                              arma::uvec labels,
+                                                              arma::uvec fixed,
+                                                              arma::mat X) {
+    switch (type) {
+    // case G: return std::make_unique<gaussianSampler>(K, labels, concentration, X);
+    case MVN: return std::make_unique<semiSupervisedMVN>(K, labels, fixed, X);
+      // case C: return std::make_unique<categoricalSampler>(K, labels, concentration, X);
+    case TMVN: return std::make_unique<semiSupervisedTAGM>(K, labels, fixed, X);
+      // case TG: return std::make_unique<tagmGaussian>(K, labels, concentration, X);
+    default: throw std::invalid_argument( "invalid sampler type." );
+    }
+  }
+};
+
 
 class mdiModel {
 
@@ -1269,7 +1381,9 @@ public:
 
   // Indicator matrix for item n being welll-described by its component
   // in dataset l
-  non_outliers;
+  non_outliers,
+  
+  fixed;
 
   // The labels, weights in each dataset and the dataset correlation
   arma::mat w, phi_indicator_t_mat;
@@ -1282,8 +1396,9 @@ public:
 
   // The collection of mixtures
   // std::vector<gaussianMixture> mixtures;
-  std::vector< std::unique_ptr<mixture> > mixtures;
-
+  // std::vector< std::unique_ptr<mixture> > mixtures;
+  std::vector< std::unique_ptr<semiSupervisedMixture> > mixtures;
+  
   // // Cluster weights in each dataset. As possibly ragged need a field not a matrix.
   // arma::field<arma::vec> w;
 
@@ -1291,7 +1406,8 @@ public:
     arma::field<arma::mat> _X,
     uvec _types,
     arma::uvec _K,
-    arma::umat _labels
+    arma::umat _labels,
+    arma::umat _fixed
   ) {
 
     // These are used locally in some constructions
@@ -1338,6 +1454,7 @@ public:
 
     // The count of members in each cluster
     N_k.set_size(K_max, L);
+    N_k.zeros();
     
     // throw std::invalid_argument( "K declared?" );
 
@@ -1465,8 +1582,7 @@ public:
     }
 
     if(arma::any(N_check != N_check(0))) {
-      std::cout << "\n\nDatasets not matching in number of rows.";
-      throw;
+      throw std::invalid_argument( "\n\nDatasets not matching in number of rows." );
     }
 
     // std::cout << "\n\nDo we reach this?";
@@ -1489,11 +1605,15 @@ public:
 
     // These are used in t-adjusted mixtures. In all other models they should
     // never be changed.
-    outliers.set_size(N, L);
-    outliers.zeros();
-
-    non_outliers.set_size(N, L);
-    non_outliers.ones();
+    // outliers.set_size(N, L);
+    // outliers.zeros();
+    // 
+    // non_outliers.set_size(N, L);
+    // non_outliers.ones();
+    
+    fixed = _fixed;
+    outliers = 1 - fixed;
+    non_outliers = fixed;
   };
 
 
@@ -1502,42 +1622,72 @@ public:
 
   // This wrapper to declare the mixtures at the dataset level is kept as its
   // own separate function to make a semi-supervised class easier
-  virtual void initialiseMixtures() {
+  void initialiseMixtures() {
+    
+    std::cout << "\n\nInitialising mixtures?\n";
+    
+    // delete mixtures*;
+    
+    // std::vector< std::unique_ptr<semiSupervisedMixture> > mixtures;
+    
     // Initialise the collection of mixtures (will need a vector of types too,, currently all are MVN)
-    // VecWrapper myMixtures(L, K, types, labels, X);
-    // mixtures = myMixtures.ver;
-
     mixtures.reserve(L);
-
-    mixtureFactory my_factory;
-
+    
+    semiSupervisedMixtureFactory my_factory;
+    
     for(uword l = 0; l < L; l++) {
-      mixtureFactory::mixtureType val = static_cast<mixtureFactory::mixtureType>(types(l));
-
-      // Make a pointer to the correct type of sampler
-      // (*ver)[l] = my_factory.createMixture(val,
-      //   K(l),
-      //   labels.col(l),
-      //   X(l)
-      // );
-
-      // Make a pointer to a mixture created by the factory to handle polymorphisms
-      // std::unique_ptr<mixture> mix_l = my_factory.createMixture(val,
-      //   K(l),
-      //   labels.col(l),
-      //   X(l)
-      // );
-
+      semiSupervisedMixtureFactory::mixtureType val = static_cast<semiSupervisedMixtureFactory::mixtureType>(types(l));
+      
       // Push it to the back of the vector
       mixtures.push_back(my_factory.createMixture(val,
-          K(l),
-          labels.col(l),
-          X(l)
-        )
+                                                  K(l),
+                                                  labels.col(l),
+                                                  fixed.col(l),
+                                                  X(l)
+      )
       );
+      
+      // // We have to pass
+      // non_outliers.col(l) = mixtures[l]->non_outliers;
     }
-
   };
+  
+  // virtual void initialiseMixtures() {
+  //   // Initialise the collection of mixtures (will need a vector of types too,, currently all are MVN)
+  //   // VecWrapper myMixtures(L, K, types, labels, X);
+  //   // mixtures = myMixtures.ver;
+  // 
+  //   mixtures.reserve(L);
+  // 
+  //   mixtureFactory my_factory;
+  // 
+  //   for(uword l = 0; l < L; l++) {
+  //     mixtureFactory::mixtureType val = static_cast<mixtureFactory::mixtureType>(types(l));
+  // 
+  //     // Make a pointer to the correct type of sampler
+  //     // (*ver)[l] = my_factory.createMixture(val,
+  //     //   K(l),
+  //     //   labels.col(l),
+  //     //   X(l)
+  //     // );
+  // 
+  //     // Make a pointer to a mixture created by the factory to handle polymorphisms
+  //     // std::unique_ptr<mixture> mix_l = my_factory.createMixture(val,
+  //     //   K(l),
+  //     //   labels.col(l),
+  //     //   X(l)
+  //     // );
+  // 
+  //     // Push it to the back of the vector
+  //     mixtures.push_back(my_factory.createMixture(val,
+  //         K(l),
+  //         labels.col(l),
+  //         X(l)
+  //       )
+  //     );
+  //   }
+  // 
+  // };
 
   double calcWeightRate(uword lstar, uword kstar) {
     // The rate for the (k, l)th cluster weight is the sum across all of the clusters
@@ -1691,9 +1841,11 @@ public:
 
         // std::cout << "\nMembers slice l col k:\n" << members.slice(l).col(k);
 
+        // std::cout << "\nNumber of non-outleirs: \n" << accu(non_outliers);
+        
         // Find how many labels have the value of k and are not considered
         // outliers
-        members_lk = ((labels.col(l) == k) % (non_outliers.col(l)));
+        members_lk = ((labels.col(l) == k) % (non_outliers.col(l) == 1));
         // members(span::all, span(l, l), span(k, k) = members_lk;
         members.slice(l).col(k) = members_lk;
 
@@ -1705,6 +1857,10 @@ public:
 
         // The hyperparameters
         shape = 1 + N_k(k, l);
+        
+        // throw std::invalid_argument( "\nMy inverses diverged." );
+        
+        
         rate = calcWeightRate(l, k);
 
         // std::cout << "\n\nShape:" << shape;
@@ -1715,6 +1871,7 @@ public:
                         1.0 / (w_rate_prior + rate)));
 
 
+        // throw std::invalid_argument( "\nMy inverses diverged." );
         // std::cout << "\nIssue";
 
         // Pass the allocation count down to the mixture
@@ -1725,13 +1882,35 @@ public:
         // (*mixtures)[l]->N_k = N_k(span(0, K(l) - 1), l);
         // (*mixtures)[l]->members.col(k) = members_lk;
         
-        mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
+        
+        // std::cout << "\n\nMembers (MDI) dim:n" << size(members_lk);
+        // std::cout << "\n\nMembers (MDI) :n" << dim(members_lk);
+        
+        
+        // std::cout << "\n\nMembers (Mixture) dim:n" << size(mixtures[l]->members);
+        // std::cout << "\n\nMembers (Mixture) :n" << dim(members_lk);
+        
+        // throw std::invalid_argument( "\nCraic." );
+        
         mixtures[l]->members.col(k) = members_lk;
 
+        
         // std::cout << "\nWeight updated.";
       }
+      
+      // std::cout << "\n\nN_k (MDI):\n" << N_k;
+      // std::cout << "\n\nN_k (mixture):\n" << mixtures[l]->N_k;
+      
+      // throw std::invalid_argument( "\nMy inverses diverged." );
+      
+      mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
+      
+      // std::cout << "\n\nN_kl:\n" << mixtures[l]->N_k;
+      
     }
 
+    // std::cout << "\n\nN_k:\n" << N_k;
+    
     // std::cout << "\n\nWeights after update:\n" << w;
   };
 
@@ -3505,45 +3684,7 @@ public:
 //
 // };
 
-class semiSupervisedMixtureFactory {
-
-public:
-  
-  
-  // empty contructor
-  semiSupervisedMixtureFactory(){ };
-  
-  // destructor
-  virtual ~semiSupervisedMixtureFactory(){ };
-  
-  // copy constructor
-  semiSupervisedMixtureFactory(const semiSupervisedMixtureFactory &L);
-
-  enum mixtureType {
-    // G = 0,
-    MVN = 1,
-    // C = 2,
-    TMVN = 3 //,
-    // TG = 4
-  };
-  
-  static std::unique_ptr<semiSupervisedMixture> createMixture(mixtureType type,
-                                                arma::uword K,
-                                                arma::uvec labels,
-                                                arma::uvec fixed,
-                                                arma::mat X) {
-    switch (type) {
-    // case G: return std::make_unique<gaussianSampler>(K, labels, concentration, X);
-    case MVN: return std::make_unique<semiSupervisedMVN>(K, labels, fixed, X);
-      // case C: return std::make_unique<categoricalSampler>(K, labels, concentration, X);
-    case TMVN: return std::make_unique<semiSupervisedTAGM>(K, labels, fixed, X);
-      // case TG: return std::make_unique<tagmGaussian>(K, labels, concentration, X);
-    default: throw "invalid sampler type.";
-    }
-  }
-};
-
-class semiSupervisedMDIModel: public mdiModel {
+class semiSupervisedMDIModel: virtual public mdiModel {
   
 public:
   
@@ -3564,14 +3705,27 @@ public:
     _X,
     _types,
     _K,
-    _labels
+    _labels,
+    _fixed
   ) {
     
     // Indicator matrix for known labels across datasets
     fixed = _fixed;
+    
+    outliers = 1 - fixed;
+    non_outliers = fixed;
+    
+    
   };
   
-  virtual void initialiseMixtures() {
+  void initialiseMixtures() {
+    
+    // std::cout << "\n\nInitialising mixtures?\n";
+    
+    // delete mixtures*;
+    
+    // std::vector< std::unique_ptr<semiSupervisedMixture> > mixtures;
+    
     // Initialise the collection of mixtures (will need a vector of types too,, currently all are MVN)
     mixtures.reserve(L);
     
@@ -3588,115 +3742,128 @@ public:
           X(l)
         )
       );
+      
+      // We have to pass the outliers back to the MDI level
+      non_outliers.col(l) = mixtures[l]->non_outliers;
     }
   };
 };
 
-// [[Rcpp::export]]
-Rcpp::List runMDI(arma::uword R,
-         arma::field<arma::mat> Y,
-         arma::uvec K,
-         arma::uvec types,
-         arma::umat labels) {
-
-  uword L = size(Y)(0), N;
-  arma::field<arma::mat> X(L);
-
-  // std::cout << "\n\nL: " << L;
-  
-  // std::cout << "\n\nY:\n" << Y;
-  
-  // throw
-  
-  for(uword l = 0; l < L; l++) {
-    X(l) = Y(l);
-    // std::cout << "\n\nX[l]:\n" << X(l).head_rows( 3 );
-  }
-
-  // throw std::invalid_argument( "X is happy." );
-  
-  // std::cout << "\n\nMDI initialisation.";
-  mdiModel my_mdi(X, types, K, labels);
-  // std::cout << "\n\nL: " << my_mdi.L;
-  // throw std::invalid_argument( "MDI declated." );
-  
-  // Initialise the dataset level mixtures
-  my_mdi.initialiseMixtures();
-
-  N = my_mdi.N;
-
-  ucube class_record(R, N, L);
-  class_record.zeros();
-
-  // std::cout << "\nMeh.";
-  mat phis_record(R, my_mdi.LC2);
-  cube weight_record(R, my_mdi.K_max, L);
-
-  // std::cout << "\nSample from priors.";
-  my_mdi.sampleFromPriors();
-  for(arma::uword l = 0; l < L; l++) {
-    // my_mdi.mixtures[l].sampleFromPriors();
-    // my_mdi.mixtures[l].matrixCombinations();
-
-    // (*my_mdi.mixtures)[l]->sampleFromPriors();
-    // (*my_mdi.mixtures)[l]->matrixCombinations();
-    
-    // std::cout << "\nSample from priors at mixture level.";
-    my_mdi.mixtures[l]->sampleFromPriors();
-    my_mdi.mixtures[l]->matrixCombinations();
-    
-  }
-
-  for(uword r = 0; r < R; r++) {
-
-    // std::cout << "\n\nNormalising constant.";
-    my_mdi.updateNormalisingConst();
-
-    // std::cout << "\nStrategic latent variable.";
-    my_mdi.sampleStrategicLatentVariable();
-
-    // std::cout << "\nWeights update.";
-    my_mdi.updateWeights();
-
-    // std::cout << "\nPhis update.";
-    my_mdi.updatePhis();
-
-    // std::cout << "\nSample mixture parameters.";
-    for(arma::uword l = 0; l < L; l++) {
-      // my_mdi.mixtures[l].sampleParameters();
-      // my_mdi.mixtures[l].matrixCombinations();
-
-      // (*my_mdi.mixtures)[l]->sampleParameters();
-      // (*my_mdi.mixtures)[l]->matrixCombinations();
-      
-      my_mdi.mixtures[l]->sampleParameters();
-      my_mdi.mixtures[l]->matrixCombinations();
-      
-    }
-
-    // std::cout << "\nAllocations update.";
-    my_mdi.updateAllocation();
-
-    // std::cout << "\nSave objects.";
-    for(uword l = 0; l < L; l++) {
-      // arma::urowvec labels_l = my_mdi.labels.col(l).t();
-      class_record.slice(l).row(r) = my_mdi.labels.col(l).t();
-      weight_record.slice(l).row(r) = my_mdi.w.col(l).t();
-    }
-
-    phis_record.row(r) = my_mdi.phis.t();
-
-    // std::cout << "one iteration done.";
-    // throw;
-  }
-
-  return(List::create(Named("samples") = class_record,
-                      Named("phis") = phis_record,
-                      Named("weights") = weight_record
-                      )
-           );
-
-}
+// // [[Rcpp::export]]
+// Rcpp::List runMDI(arma::uword R,
+//          arma::field<arma::mat> Y,
+//          arma::uvec K,
+//          arma::uvec types,
+//          arma::umat labels,
+//          arma::umat fixed) {
+// 
+//   uword L = size(Y)(0), N;
+//   arma::field<arma::mat> X(L);
+// 
+//   // std::cout << "\n\nL: " << L;
+//   
+//   // std::cout << "\n\nY:\n" << Y;
+//   
+//   // throw
+//   
+//   for(uword l = 0; l < L; l++) {
+//     X(l) = Y(l);
+//     // std::cout << "\n\nX[l]:\n" << X(l).head_rows( 3 );
+//   }
+// 
+//   // throw std::invalid_argument( "X is happy." );
+//   
+//   // std::cout << "\n\nMDI initialisation.";
+//   mdiModel my_mdi(X, types, K, labels);
+//   // std::cout << "\n\nL: " << my_mdi.L;
+//   // throw std::invalid_argument( "MDI declated." );
+//   
+//   // Initialise the dataset level mixtures
+//   my_mdi.initialiseMixtures();
+// 
+//   N = my_mdi.N;
+// 
+//   ucube class_record(R, N, L);
+//   class_record.zeros();
+// 
+//   // std::cout << "\nMeh.";
+//   mat phis_record(R, my_mdi.LC2);
+//   cube weight_record(R, my_mdi.K_max, L);
+// 
+//   // std::cout << "\nSample from priors.";
+//   my_mdi.sampleFromPriors();
+//   for(arma::uword l = 0; l < L; l++) {
+//     // my_mdi.mixtures[l].sampleFromPriors();
+//     // my_mdi.mixtures[l].matrixCombinations();
+// 
+//     // (*my_mdi.mixtures)[l]->sampleFromPriors();
+//     // (*my_mdi.mixtures)[l]->matrixCombinations();
+//     
+//     // std::cout << "\nSample from priors at mixture level.";
+//     my_mdi.mixtures[l]->sampleFromPriors();
+//     my_mdi.mixtures[l]->matrixCombinations();
+//     // 
+//     // std::cout << "\n\n\nMixture " << l << " members.";
+//     // std::cout << "\nFixed inds:\n" << my_mdi.mixtures[l]->fixed_ind.head(4);
+//     // std::cout << "\nUnfixed inds:\n" << my_mdi.mixtures[l]->unfixed_ind.head(4);
+//     // 
+//     // std::cout << "\nMembers:\n" << size(my_mdi.mixtures[l]->members);
+//     // 
+//     // std::cout << "\nN_k:\n" << my_mdi.mixtures[l]->N_k;
+//     // 
+//       
+//   }
+// 
+//   for(uword r = 0; r < R; r++) {
+// 
+//     // std::cout << "\n\nNormalising constant.";
+//     my_mdi.updateNormalisingConst();
+// 
+//     // std::cout << "\nStrategic latent variable.";
+//     my_mdi.sampleStrategicLatentVariable();
+// 
+//     // std::cout << "\nWeights update.";
+//     my_mdi.updateWeights();
+// 
+//     // std::cout << "\nPhis update.";
+//     my_mdi.updatePhis();
+// 
+//     // std::cout << "\nSample mixture parameters.";
+//     for(arma::uword l = 0; l < L; l++) {
+//       // my_mdi.mixtures[l].sampleParameters();
+//       // my_mdi.mixtures[l].matrixCombinations();
+// 
+//       // (*my_mdi.mixtures)[l]->sampleParameters();
+//       // (*my_mdi.mixtures)[l]->matrixCombinations();
+//       
+//       my_mdi.mixtures[l]->sampleParameters();
+//       my_mdi.mixtures[l]->matrixCombinations();
+//       
+//     }
+// 
+//     // std::cout << "\nAllocations update.";
+//     my_mdi.updateAllocation();
+// 
+//     // std::cout << "\nSave objects.";
+//     for(uword l = 0; l < L; l++) {
+//       // arma::urowvec labels_l = my_mdi.labels.col(l).t();
+//       class_record.slice(l).row(r) = my_mdi.labels.col(l).t();
+//       weight_record.slice(l).row(r) = my_mdi.w.col(l).t();
+//     }
+// 
+//     phis_record.row(r) = my_mdi.phis.t();
+// 
+//     // std::cout << "one iteration done.";
+//     // throw;
+//   }
+// 
+//   return(List::create(Named("samples") = class_record,
+//                       Named("phis") = phis_record,
+//                       Named("weights") = weight_record
+//                       )
+//            );
+// 
+// }
 
 
 
@@ -3725,7 +3892,7 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   // throw std::invalid_argument( "X is happy." );
   
   // std::cout << "\n\nMDI initialisation.";
-  semiSupervisedMDIModel my_mdi(X, types, K, labels ,fixed);
+  mdiModel my_mdi(X, types, K, labels ,fixed);
   
   // std::cout << "\n\nL: " << my_mdi.L;
   // throw std::invalid_argument( "MDI declated." );
@@ -3742,6 +3909,11 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   mat phis_record(R, my_mdi.LC2);
   cube weight_record(R, my_mdi.K_max, L);
   
+  field<mat> alloc(L);
+  for(uword l = 0; l < L; l++) {
+    alloc(l) = zeros<mat>(N, K(l));
+  }
+  
   // std::cout << "\nSample from priors.";
   my_mdi.sampleFromPriors();
   for(arma::uword l = 0; l < L; l++) {
@@ -3753,9 +3925,11 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     
     // std::cout << "\nSample from priors at mixture level.";
     my_mdi.mixtures[l]->sampleFromPriors();
-    my_mdi.mixtures[l]->matrixCombinations();
+    // my_mdi.mixtures[l]->matrixCombinations();
     
   }
+  
+  // my_mdi.mixtures[0]->N_k;
   
   for(uword r = 0; r < R; r++) {
     
@@ -3773,6 +3947,9 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     
     // std::cout << "\nSample mixture parameters.";
     for(arma::uword l = 0; l < L; l++) {
+      
+      // std::cout << "\n\nMixture " << l;
+      
       // my_mdi.mixtures[l].sampleParameters();
       // my_mdi.mixtures[l].matrixCombinations();
       
@@ -3780,20 +3957,27 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
       // (*my_mdi.mixtures)[l]->matrixCombinations();
       
       my_mdi.mixtures[l]->sampleParameters();
-      my_mdi.mixtures[l]->matrixCombinations();
+      // my_mdi.mixtures[l]->matrixCombinations();
+      
+      // std::cout << "\n\n" << my_mdi.mixtures[l]->mu;
       
     }
     
     // std::cout << "\nAllocations update.";
-    // my_mdi.updateAllocation();
+    my_mdi.updateAllocation();
     
     // std::cout << "\nSave objects.";
     for(uword l = 0; l < L; l++) {
       // arma::urowvec labels_l = my_mdi.labels.col(l).t();
       class_record.slice(l).row(r) = my_mdi.labels.col(l).t();
       weight_record.slice(l).row(r) = my_mdi.w.col(l).t();
+      
+      // Save the allocation probabilities
+      alloc(l) += my_mdi.mixtures[l]->alloc;
+      
     }
     
+    // std::cout << "\n\nSave phis.";
     phis_record.row(r) = my_mdi.phis.t();
     
     // std::cout << "one iteration done.";
@@ -3802,7 +3986,8 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   
   return(List::create(Named("samples") = class_record,
                       Named("phis") = phis_record,
-                      Named("weights") = weight_record
+                      Named("weights") = weight_record,
+                      Named("alloc") = alloc
   )
   );
   
