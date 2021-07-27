@@ -86,7 +86,7 @@ void mvnMixture::matrixCombinations() {
   }
 };
 
-// The log likelihood of a item belonging to each cluster given the batch label.
+// The log likelihood of a item belonging to each cluster.
 arma::vec mvnMixture::itemLogLikelihood(arma::vec item) {
 
   double exponent = 0.0;
@@ -103,6 +103,23 @@ arma::vec mvnMixture::itemLogLikelihood(arma::vec item) {
     // Normal log likelihood
     ll(k) = -0.5 *(cov_log_det(k) + exponent + (double) P * log(2.0 * M_PI));
   }
+  return(ll);
+};
+
+// The log likelihood of a item belonging to a specific cluster.
+double mvnMixture::logLikelihood(arma::vec item, arma::uword k) {
+  
+  double exponent = 0.0, ll = 0.0;
+  arma::vec dist_to_mean(P);
+  dist_to_mean.zeros();
+
+  // The exponent part of the MVN pdf
+  dist_to_mean = item - mu.col(k);
+  exponent = arma::as_scalar(dist_to_mean.t() * cov_inv.slice(k) * dist_to_mean);
+    
+  // Normal log likelihood
+  ll = -0.5 *(cov_log_det(k) + exponent + (double) P * log(2.0 * M_PI));
+  
   return(ll);
 };
 

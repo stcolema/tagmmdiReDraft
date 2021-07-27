@@ -68,8 +68,11 @@ public:
   // Update the common matrix manipulations to avoid recalculating N times
   virtual void matrixCombinations();
 
-  // The log likelihood of a item belonging to each cluster given the batch label.
+  // The log likelihood of a item belonging to each cluster
   virtual arma::vec itemLogLikelihood(arma::vec item);
+  
+  // The log likelihood of a item belonging to a specific cluster
+  virtual double logLikelihood(arma::vec item, arma::uword k);
 
   virtual void calcBIC();
 
