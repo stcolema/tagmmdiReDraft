@@ -69,38 +69,38 @@ void mixture::updateAllocation(arma::vec weights, arma::mat upweigths) {
   uvec uniqueK;
   vec comp_prob(K);
   
-  for (auto& n : unfixed_ind) {
-    // for(uword n = 0; n < N; n++){
+  complete_likelihood = 0.0;
+  observed_likelihood = 0.0;
+  
+  for(uword n = 0; n < N; n++){
     
+    // The mixture-specific log likelihood for each observation in each class
     ll = itemLogLikelihood(X_t.col(n));
     
-    // std::cout << "\n\nAllocation log likelihood: " << ll;
     // Update with weights
     comp_prob = ll + log(weights) + log(upweigths.col(n));
     
-    // std::cout << "\nComparison probabilty:\n" << comp_prob;
-    // std::cout << "\nLoglikelihood:\n" << ll;
-    // std::cout << "\nWeights:\n" << log(weights);
-    // std::cout << "\nCorrelation scaling:\n" << log(upweigths.col(n));
+    // Record the likelihood - this is used to calculate the observed likelihood
+    // likelihood(n) = accu(comp_prob);
+    observed_likelihood += accu(comp_prob);
     
-    likelihood(n) = accu(comp_prob);
-    
-    // Normalise and overflow
+    // Handle overflow problems and then normalise to convert to probabilities
     comp_prob = exp(comp_prob - max(comp_prob));
     comp_prob = comp_prob / sum(comp_prob);
-    
+  
     // Save the allocation probabilities
     alloc.row(n) = comp_prob.t();
-    
+  
     // Prediction and update
     u = randu<double>( );
     
     labels(n) = sum(u > cumsum(comp_prob));
+    
+    // Update the complete likelihood based on the new labelling
+    complete_likelihood += ll(labels(n));
+
   }
-  
-  // The model log likelihood
-  model_likelihood = accu(likelihood);
-  
+
   // Number of occupied components (used in BIC calculation)
   uniqueK = unique(labels);
   K_occ = uniqueK.n_elem;

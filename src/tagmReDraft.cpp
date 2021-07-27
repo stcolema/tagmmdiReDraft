@@ -1730,14 +1730,8 @@ public:
     weight_products.ones(n_used);
     phi_products.ones(n_used);
 
-    // std::cout << "\n\nRelevant phi indicators:\n" << relevant_phi_inidicators;
-    // std::cout << "\n\nRelevant phis:\n" << relevant_phis;
-
     // The phi products (should be a matrix of 0's and phis)
     phi_prod_mat = relevant_phi_inidicators.each_col() % relevant_phis;
-
-    // // The phi products (should be a matrix of 0's and phis)
-    // phi_prod_mat = relevant_phi_inidicators.each_row() * relevant_phis;
 
     // Add 1 to each entry to have the object ready to be multiplied
     phi_prod_mat++;
@@ -1992,6 +1986,151 @@ public:
     }
   };
 
+  
+  
+  double sampleLabel(arma::uword k, arma::vec K_inv_cum) {
+    
+    // Select another label randomly
+    double u = randu();
+    uword k_prime = sum(u > K_inv_cum);
+    
+    // If it is >= than the current label under consideration, add one
+    if(k_prime >= k) {
+      k_prime++;
+    }
+    return k_prime;
+  }
+  
+  double calcScore(arma::uword l, arma::umat labels) {
+    
+    bool not_current_context = true;
+    double score = 0.0;
+    uvec agreeing_labels;
+    
+    for(uword m = 0; m < L; m++) {
+      
+      // Skip the current context (the lth context)
+      not_current_context = m != l;
+      if(not_current_context) {
+        
+        // Find which labels agree between datasets
+        agreeing_labels = 1 * (labels.col(m) == labels.col(l));
+        
+        // Update the score based on the phi's
+        score += accu(log(1 + phis(phi_ind_map(m, l)) * agreeing_labels));
+      }
+    }
+    
+    // // Find which labels match in the other contexts
+    // umat matching_labels(N, L - 1);
+    // matching_labels = dummy_labels.each_col([this, l](uvec i)
+    // {
+    //   return 1 * (i == labels.col(l));
+    // }); 
+    
+    return score;
+  }
+  
+  // Check if labels should be swapped to improve correlation of clustering
+  // across datasets via random sampling.
+  arma::umat swapLabels(arma::uword l, arma::uword k, arma::uword k_prime) {
+    
+    // The labels in the current context, which will be changed
+    uvec loc_labs = labels.col(l), 
+      
+      // The indices for the clusters labelled k and k prime
+      cluster_k,
+      cluster_k_prime;
+    
+    // The labels for the other contexts
+    umat dummy_labels = labels;
+    
+    // Find which indices are to be swapped
+    cluster_k = find(loc_labs == k);
+    cluster_k_prime = find(loc_labs == k_prime);
+    
+    // Swap the label associated with the two clusters
+    loc_labs.elem(cluster_k).fill(k_prime);
+    loc_labs.elem(cluster_k_prime).fill(k);
+    
+    dummy_labels.col(l) = loc_labs;
+    return dummy_labels;
+  }
+  
+  // Check if labels should be swapped to improve correlation of clustering
+  // across datasets via random sampling.
+  void updateLabels() {
+    
+    // The other component considered
+    uword k_prime = 0;
+    
+    // Random uniform number
+    double u = 0.0,
+      
+      // The current likelihood
+      curr_score = 0.0,
+      
+      // The competitor
+      alt_score = 0.0,
+      
+      // The accpetance probability
+      accept = 1.0,
+      log_accept = 0.0,
+      
+      // The weight of the kth component if we do accept the swap
+      old_weight = 0.0;
+
+      // Vector of entries equal to 1/(K - 1) (as we exclude the current label) and
+      // its cumulative sum, used to sample another label to consider swapping.
+      vec K_inv, K_inv_cum;
+      
+      umat swapped_labels(N, L);
+      
+      for(uword l = 0; l < L; l++) {
+    
+        K_inv = ones<vec>(K(l) - 1) * 1 / (K(l) - 1);
+        K_inv_cum = cumsum(K_inv);
+        
+        // The score associated with the current labelling
+        curr_score = calcScore(l, labels);
+        
+        for(uword k = 0; k < K(l); k++) {
+          
+          // Select another label randomly
+          k_prime = sampleLabel(k, K_inv_cum);
+          
+          // The label matrix updated with the swapped labels
+          swapped_labels = swapLabels(l, k, k_prime);
+          
+          // The score for the swap
+          alt_score = calcScore(l, swapped_labels);
+          
+          // The log acceptance probability
+          log_accept = alt_score - curr_score;
+          
+          if(log_accept < 0) {
+            accept = std::exp(log_accept);
+          }
+          
+          // If we accept the label swap, update labels, weights and score
+          if(randu() < accept) {
+            
+            // Update the current score
+            curr_score = alt_score;
+            labels = swapped_labels;
+            
+            // Update the component weights
+            old_weight = w(k, l);
+            w(k, l) = w(k_prime, l);
+            w(k_prime, l) = old_weight;
+            
+          } 
+          
+        } 
+      }
+    }
+  
+  
   // double updateWeightHyperParameter(arma::uword k) {
   //
   //   // Initialise b, the rate
@@ -3913,6 +4052,10 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     
     // std::cout << "\nAllocations update.";
     my_mdi.updateAllocation();
+    
+    // Try and swap labels within datasets to improve the correlation between 
+    // clusterings across datasets
+    my_mdi.updateLabels();
     
     // std::cout << "\nSave objects.";
     for(uword l = 0; l < L; l++) {

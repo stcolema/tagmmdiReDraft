@@ -18,7 +18,10 @@ mixture(_K, _labels, _X){
   
 void tagmMixture::calcBIC(){
     
-  arma::uword n_param = (P + P * (P + 1) * 0.5) * (K_occ + 1);
-  BIC = n_param * std::log(N) - 2 * model_likelihood;
+  // The outlier component introduces an additional n_param parameters (arguably 
+  // + 1 for the d.o.f)
+  BIC = 2 * complete_likelihood - n_param * (K_occ + 1) * std::log(N);
+  
+  // BIC = n_param * std::log(N) - 2 * model_likelihood;
   
 };

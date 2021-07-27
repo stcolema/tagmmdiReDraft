@@ -167,6 +167,10 @@ void tAdjustedMixture::updateAllocation(arma::vec weights, arma::mat upweigths) 
     // Update with weights
     comp_prob = ll + log(weights) + log(upweigths.col(n));
     
+    // Record the likelihood - this is used to calculate the observed likelihood
+    // likelihood(n) = accu(comp_prob);
+    observed_likelihood += accu(comp_prob);
+    
     // Normalise and overflow
     comp_prob = exp(comp_prob - max(comp_prob));
     comp_prob = comp_prob / sum(comp_prob);
@@ -175,23 +179,17 @@ void tAdjustedMixture::updateAllocation(arma::vec weights, arma::mat upweigths) 
     u = arma::randu<double>( );
     labels(n) = sum(u > cumsum(comp_prob));
     alloc.row(n) = comp_prob.t();
-    
-    // Record the likelihood of the item in it's allocated component
-    likelihood(n) = ll(labels(n));
+
+    // Update the complete likelihood based on the new labelling
+    complete_likelihood += ll(labels(n));
   
     // Update if the point is an outlier or not
     outliers(n) = sampleOutlier(n);
   }
 
-// Update our vector indicating if we're not an outlier
+  // Update our vector indicating if we're not an outlier
   non_outliers = 1 - outliers;
-  
-  // std::cout << "\n\nNumber outliers: " << sum(outliers);
-  // std::cout << "\nNumber non-outliers: " << sum(non_outliers);
-  
-  // The model log likelihood
-  model_likelihood = accu(likelihood);
-  
+
   // Number of occupied components (used in BIC calculation)
   uniqueK = unique(labels);
   K_occ = uniqueK.n_elem;

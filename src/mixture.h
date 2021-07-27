@@ -19,18 +19,18 @@ private:
 public:
   
   uword K, N, P, K_occ;
-  double model_likelihood = 0.0, BIC = 0.0;
+  double complete_likelihood = 0.0, observed_likelihood = 0.0, BIC = 0.0;
   uvec labels, 
-  N_k, 
-  batch_vec, 
-  N_b, 
-  outliers, 
-  non_outliers, 
-  vec_of_ones,
-  fixed,
-  fixed_ind,
-  unfixed_ind;
-  
+    N_k, 
+    batch_vec, 
+    N_b, 
+    outliers, 
+    non_outliers, 
+    vec_of_ones,
+    fixed,
+    fixed_ind,
+    unfixed_ind;
+    
   vec concentration, w, ll, likelihood;
   umat members;
   mat X, X_t, alloc;
@@ -53,6 +53,7 @@ public:
   virtual void sampleParameters() = 0;
   virtual void calcBIC() = 0;
   virtual arma::vec itemLogLikelihood(arma::vec x) = 0;
+  virtual double logLikelihood(arma::vec x, arma::uword k) = 0;
   
   // // Not every class needs to save matrix combinations, so this is not purely
   // // virtual

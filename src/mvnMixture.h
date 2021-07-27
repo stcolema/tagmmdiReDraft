@@ -41,7 +41,7 @@ class mvnMixture: virtual public mixture {
 public:
 
   // Each component has a weight, a mean vector and a symmetric covariance matrix.
-  arma::uword n_param_cluster = 0;
+  arma::uword n_param = 0;
 
   double kappa, nu;
   arma::vec xi, cov_log_det;

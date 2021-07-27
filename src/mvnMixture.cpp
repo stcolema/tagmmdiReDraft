@@ -18,7 +18,8 @@ mvnMixture::mvnMixture(
   // _concentration,
   _X) {
 
-    n_param_cluster = 1 + P + P * (P + 1) * 0.5;
+    // Mean vector and covariance matrix and a component weight
+    n_param = (1 + P + P * (P + 1) * 0.5);
 
     // Default values for hyperparameters
     // Cluster hyperparameters for the Normal-inverse Wishart
@@ -127,7 +128,7 @@ void mvnMixture::calcBIC(){
 
   // BIC = 2 * model_likelihood;
 
-  BIC = 2 * model_likelihood - n_param_cluster * std::log(N);
+  BIC = 2 * complete_likelihood - n_param * K_occ * std::log(N);
 
   // for(arma::uword k = 0; k < K; k++) {
   //   BIC -= n_param_cluster * std::log(N_k(k) + 1);
