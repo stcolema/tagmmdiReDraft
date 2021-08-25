@@ -1304,8 +1304,8 @@ public:
     v = 0.0,
     w_shape_prior = 2.0,
     w_rate_prior = 2.0,
-    phi_shape_prior = 2.0,
-    phi_rate_prior = 2.0;
+    phi_shape_prior = 0.1,
+    phi_rate_prior = 0.2;
 
   // Number of clusters in each dataset
   arma::uvec K, one_to_K, one_to_L, KL_powers, rows_to_shed, types;
@@ -1856,31 +1856,113 @@ public:
     // std::cout << "\n\nWeights after update:\n" << w;
   };
 
-  // Update the context similarity parameters
+  double samplePhiShape(arma::uword l, arma::uword m, double rate) {
+    bool rTooSmall = false, priorShapeTooSmall = false;
+    
+    uword r = 0, N_lm = 0;
+    double shape = 0.0,
+      u = 0.0,
+      prod_to_phi_shape = 0.0, 
+      prod_to_r_less_1 = 0.0;
+    
+    vec weights;
+    
+    N_lm = accu(labels.col(l) == labels.col(m));
+    rate = calcPhiRate(l, m);
+    weights = zeros<vec>(N_lm + 1);
+    
+    if(phi_shape_prior < 2) {
+      priorShapeTooSmall = true;
+      prod_to_phi_shape = 1.0; 
+    }
+    
+    for(uword r = 0; r < (N_lm + 1); r++) {
+      
+      // Some of the products can be ``backwards'', i.e. the top index is less 
+      // than (or equal to) the bottom index. If this occurs we want to keep the 
+      // contribution of these products as the identity.
+      
+      // Reset vlaues that might have changed in the previous iteration
+      rTooSmall = false;
+      prod_to_phi_shape = 1.0; 
+      prod_to_r_less_1= 1.0;
+      
+      if(r < 2) {
+        rTooSmall = true;
+      }
+      
+      if(! rTooSmall) {
+        for(uword i = 0; i < r; i++) {
+          prod_to_r_less_1 *= (N_lm - i);
+        }
+      }
+      
+      if(! priorShapeTooSmall) {
+        for(uword j = 1; j < phi_shape_prior; j++) {
+          prod_to_phi_shape *= (r + j);
+        }
+      }
+      
+      weights(r) = prod_to_r_less_1 * prod_to_phi_shape / std::pow(rate + phi_rate_prior, r + 1);
+      
+
+    }
+    // Prediction and update
+    u = randu<double>( );
+    
+    shape = sum(u > cumsum(weights)) ;
+   
+   return shape; 
+  }
+  
   void updatePhis() {
-
-    // std::cout << "\n\nPhis before update:\n" << phis;
-
+    uword r = 0;
     double shape = 0.0, rate = 0.0;
     for(uword l = 0; l < (L - 1); l++) {
       for(uword m = l + 1; m < L; m++) {
-        shape = 1 + accu(labels.col(l) == labels.col(m));
+        
+        // Find the parameters based on the likelihood
         rate = calcPhiRate(l, m);
-
+        shape = samplePhiShape(l, m, rate);
+        
+        
         // std::cout << "\n\nShape:" << shape;
         // std::cout << "\nRate:" << rate;
-
+        
         phis(phi_ind_map(m, l)) = randg(distr_param(
-            phi_shape_prior + shape,
-            1.0 / (phi_rate_prior + rate)
-          )
+          phi_shape_prior + shape,
+          1.0 / (phi_rate_prior + rate)
+        )
         );
       }
     }
-
-    // std::cout << "\n\nPhis after update:\n" << phis;
-
-  };
+  }
+  
+  // // Update the context similarity parameters
+  // void updatePhis() {
+  // 
+  //   // std::cout << "\n\nPhis before update:\n" << phis;
+  // 
+  //   double shape = 0.0, rate = 0.0;
+  //   for(uword l = 0; l < (L - 1); l++) {
+  //     for(uword m = l + 1; m < L; m++) {
+  //       shape = 1 + accu(labels.col(l) == labels.col(m));
+  //       rate = calcPhiRate(l, m);
+  // 
+  //       // std::cout << "\n\nShape:" << shape;
+  //       // std::cout << "\nRate:" << rate;
+  // 
+  //       phis(phi_ind_map(m, l)) = randg(distr_param(
+  //           phi_shape_prior + shape,
+  //           1.0 / (phi_rate_prior + rate)
+  //         )
+  //       );
+  //     }
+  //   }
+// 
+//     // std::cout << "\n\nPhis after update:\n" << phis;
+// 
+//   };
 
   // Updates the normalising constant for the posterior
   void updateNormalisingConst() {
@@ -1987,7 +2069,7 @@ public:
   };
 
   
-  
+  // This is used to consider possible label swaps
   double sampleLabel(arma::uword k, arma::vec K_inv_cum) {
     
     // Select another label randomly
