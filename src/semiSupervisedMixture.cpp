@@ -1,5 +1,5 @@
 
-# include "mixture.h"
+# include "semiSupervisedMixture.h"
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -8,9 +8,10 @@ using namespace arma ;
 
 
 // Parametrised class
-mixture::mixture(
+semiSupervisedMixture::semiSupervisedMixture(
   arma::uword _K,
   arma::uvec _labels,
+  arma::uvec _fixed,
   // arma::vec _concentration,
   arma::mat _X)
 {
@@ -47,23 +48,32 @@ mixture::mixture(
   alloc.set_size(N, K);
   alloc.zeros();
   
-  // not used in this, solely to enable t-adjusted mixtures in MDI.
-  // 0 indicates not outlier, 1 indicates outlier within assigned cluster.
-  // Outliers do not contribute to cluster parameters.
-  outliers = zeros<uvec>(N);
-  non_outliers = ones<uvec>(N);
+  // Pass the indicator vector for being fixed to the ``fixed`` object.
+  fixed = _fixed;
+  
+  N_fixed = accu(fixed);
+  
+  fixed_ind = find(fixed == 1);
+  unfixed_ind = find(fixed == 0);
+  
+  std::cout << "\n\nNumber fixed: " << N_fixed;
+  
+  // Set the known label allocations to 1
+  for(uword n = 0; n < N; n++) {
+    if(fixed(n) == 1) {
+      alloc(n, labels(n)) = 1.0;
+    }
+  }
   
   // Used a few times
   vec_of_ones = ones<uvec>(N);
   
-  // For semi-supervised methods. A little inefficient to have here,
-  // but unsupervised is not my priority.
-  fixed = zeros<uvec>(N);
-  fixed_ind = find(fixed == 1);
-  unfixed_ind = find(fixed == 0);
+  // Outlier vectors; not used really here
+  non_outliers = ones<uvec>(N);
+  outliers = zeros<uvec>(N);
 };
-  
-void mixture::updateAllocation(arma::vec weights, arma::mat upweigths) {
+
+void semiSupervisedMixture::updateAllocation(arma::vec weights, arma::mat upweigths) {
   
   double u = 0.0;
   uvec uniqueK;
@@ -87,10 +97,10 @@ void mixture::updateAllocation(arma::vec weights, arma::mat upweigths) {
     // Handle overflow problems and then normalise to convert to probabilities
     comp_prob = exp(comp_prob - max(comp_prob));
     comp_prob = comp_prob / sum(comp_prob);
-  
+    
     // Save the allocation probabilities
     alloc.row(n) = comp_prob.t();
-  
+    
     // Prediction and update
     u = randu<double>( );
     
@@ -98,9 +108,9 @@ void mixture::updateAllocation(arma::vec weights, arma::mat upweigths) {
     
     // Update the complete likelihood based on the new labelling
     complete_likelihood += ll(labels(n));
-
+    
   }
-
+  
   // Number of occupied components (used in BIC calculation)
   uniqueK = unique(labels);
   K_occ = uniqueK.n_elem;

@@ -46,11 +46,29 @@ private:
 public:
   // for use in the outlier distribution
   double global_log_det = 0.0, t_likelihood_const = 0.0;
-  // arma::uvec outlier;
   
-  arma::vec global_mean, t_ll;
+  // Vector indicating if the item is an outlier (value of 1) or not (value of 0)
+  arma::uvec outlier;
+  
+  arma::vec 
+    // The dataset mean
+    global_mean, 
+    
+    // The outleier component likelihood
+    t_ll;
+  
+  // The dataset covariance
   arma::mat global_cov_inv;
-  double df = 4.0, u = 2.0, v = 10.0, b = 0.0, outlier_weight = 0.0;
+  
+  double 
+    // T degrees of freedom
+    df = 4.0, 
+    
+    // Hyperparameters  
+    u = 2.0, v = 10.0, b = 0.0, 
+    
+    // Outlier component weight
+    outlier_weight = 0.0;
   
   using mixture::mixture;
   

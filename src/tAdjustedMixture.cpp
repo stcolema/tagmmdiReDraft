@@ -18,9 +18,11 @@ tAdjustedMixture::tAdjustedMixture(arma::uword _K,
     // for use in the outlier distribution
     mat global_cov = 0.5 * cov(X);
     
+    // Do we need to add a very little to the diagonal to ensure we can inverse 
+    // the dataset covariance matrix?
     uword count_here = 0;
     while( (rcond(global_cov) < 1e-5) && (count_here < 20) ) {
-      global_cov.diag() += 1 * 0.005;
+      global_cov.diag() += 1 * 0.0001;
       count_here++;
     }
     
@@ -36,9 +38,10 @@ tAdjustedMixture::tAdjustedMixture(arma::uword _K,
     // std::cout << "\n\nGlobal mean: \n" << global_mean;
     // std::cout << "\n\nGlobal cov: \n" << global_cov;
     
-    // outliers = arma::zeros<arma::uvec>(N);
+
+    outliers = zeros<uvec>(N);
     
-    b = N; // (double) sum(non_outliers);
+    b = (double) sum(outliers); // sum(non_outliers);
     outlier_weight = rBeta(b + u, N + v - b);
     
     // Components of the t-distribution likelihood that do not change
