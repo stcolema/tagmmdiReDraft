@@ -31,6 +31,7 @@ public:
   
     // The number of observed labels
     N_fixed = 0;
+  
   double complete_likelihood = 0.0, observed_likelihood = 0.0, BIC = 0.0;
   
   uvec 

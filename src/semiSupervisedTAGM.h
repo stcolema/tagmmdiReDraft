@@ -63,12 +63,12 @@ public:
   double 
     // T degrees of freedom
     df = 4.0, 
-      
-      // Hyperparameters  
-      u = 2.0, v = 10.0, b = 0.0, 
-      
-      // Outlier component weight
-      outlier_weight = 0.0;
+    
+    // Hyperparameters  
+    u = 2.0, v = 10.0, b = 0.0, 
+    
+    // Outlier component weight
+    outlier_weight = 0.0;
   
   using semiSupervisedMVN::semiSupervisedMVN;
   
@@ -165,7 +165,7 @@ public:
   
   arma::uword sampleOutlier(arma::uword n);
   
-  void updateAllocation(arma::vec weights, arma::mat upweigths) override;
+  virtual void updateAllocation(arma::vec weights, arma::mat upweigths) override;
   
 };
 

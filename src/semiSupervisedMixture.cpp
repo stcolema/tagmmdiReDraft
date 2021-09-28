@@ -56,7 +56,7 @@ semiSupervisedMixture::semiSupervisedMixture(
   fixed_ind = find(fixed == 1);
   unfixed_ind = find(fixed == 0);
   
-  std::cout << "\n\nNumber fixed: " << N_fixed;
+  // std::cout << "\n\nNumber fixed: " << N_fixed;
   
   // Set the known label allocations to 1
   for(uword n = 0; n < N; n++) {
@@ -82,8 +82,9 @@ void semiSupervisedMixture::updateAllocation(arma::vec weights, arma::mat upweig
   complete_likelihood = 0.0;
   observed_likelihood = 0.0;
   
-  for (auto& n : unfixed_ind) {
-    
+  // for (auto& n : unfixed_ind) {
+  for (uword n = 0; n < N; n++) {
+      
     // The mixture-specific log likelihood for each observation in each class
     ll = itemLogLikelihood(X_t.col(n));
     
@@ -94,17 +95,20 @@ void semiSupervisedMixture::updateAllocation(arma::vec weights, arma::mat upweig
     // likelihood(n) = accu(comp_prob);
     observed_likelihood += accu(comp_prob);
     
-    // Handle overflow problems and then normalise to convert to probabilities
-    comp_prob = exp(comp_prob - max(comp_prob));
-    comp_prob = comp_prob / sum(comp_prob);
-    
-    // Save the allocation probabilities
-    alloc.row(n) = comp_prob.t();
-    
-    // Prediction and update
-    u = randu<double>( );
-    
-    labels(n) = sum(u > cumsum(comp_prob));
+
+    if(fixed(n) == 0) {
+      // Handle overflow problems and then normalise to convert to probabilities
+      comp_prob = exp(comp_prob - max(comp_prob));
+      comp_prob = comp_prob / sum(comp_prob);
+      
+      // Save the allocation probabilities
+      alloc.row(n) = comp_prob.t();
+      
+      // Prediction and update
+      u = randu<double>( );
+      
+      labels(n) = sum(u > cumsum(comp_prob));
+    }
     
     // Update the complete likelihood based on the new labelling
     complete_likelihood += ll(labels(n));

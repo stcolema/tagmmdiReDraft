@@ -1338,7 +1338,9 @@ public:
     one_to_L,           // [0, 1, ..., L] 
     KL_powers,          // K to the power of the members of one_to_L
     rows_to_shed,       // rows initialised assuming symmetric K that are shed
-    types;              // mixture types used 
+    types,              // mixture types used 
+    K_unfixed,          // Number of components not fixed
+    K_fixed;            // Number of components fixed (i.e. at least one member has an observed label)
 
   arma::vec phis;
 
@@ -1369,6 +1371,8 @@ public:
   // Cube of cluster members
   arma::ucube members;
 
+  arma::field<arma::uvec> fixed_ind;
+  
   // The data can have varying numbers of columns
   arma::field<arma::mat> X;
 
@@ -1611,8 +1615,28 @@ public:
     // non_outliers.ones();
     
     fixed = _fixed;
+    // fixed_ind.set_size(L);
+    // K_fixed.set_size(L);
+    // K_unfixed.set_size(L);
+    // 
+    // uvec fixed_l, fixed_labels, labels_l;
+    // 
+    // for(uword l = 0; l < L; l++){
+    // 
+    //   fixed_l = find(fixed.col(l) == 1);
+    //   labels_l = labels.col(l);
+    // 
+    // 
+    //   // fixed_ind(l) = fixed_l;
+    //   fixed_labels = unique(labels_l(fixed_l));
+    //   K_fixed(l) = fixed_labels.n_elem;
+    //   K_unfixed(l) = K(l) - K_fixed(l);
+    // }
+    
     outliers = zeros<umat>(N, L); //1 - fixed;
     non_outliers = ones<umat>(N, L);
+    
+    
   };
 
 
@@ -1838,10 +1862,20 @@ public:
 
         // std::cout << "\nNumber of non-outleirs: \n" << accu(non_outliers);
         
+        
+        // std::cout << "\n\nLabels in dataset " << l << ":\n" << labels.col(l);
+        // std::cout << "\n\nLabels in dataset " << l << " of class " << k << ":\n" << (labels.col(l) == k);
+        // std::cout << "\n\nNon-outliers in dataset " << l << ":\n" << non_outliers.col(l);
+        
         // Find how many labels have the value of k and are not considered
         // outliers
-        members_lk = ((labels.col(l) == k) % non_outliers.col(l));
+        members_lk = ((labels.col(l) == k)); // % non_outliers.col(l));
         
+        // std::cout << "\n\nN_k (before outliers): " << accu(members_lk);
+        
+        // members_lk = members_lk % non_outliers.col(l);
+        
+        // std::cout << "\n\nN_k (after outliers): " << accu(members_lk);
         
         // std::cout << "\n\nNon_outliers (MDI):\n" << non_outliers.col(l);
         // std::cout << "\n\nNon_outliers (Mixture):\n" << mixtures[l]->non_outliers;
@@ -2088,6 +2122,8 @@ public:
     uvec matching_labels(N);
     mat upweigths(N, K_max);
 
+    // throw std::invalid_argument( "in MDI allocation." );
+    
     for(uword l = 0; l < L; l++) {
       upweigths.set_size(N, K(l));
       upweigths.zeros();
@@ -2104,13 +2140,15 @@ public:
             } else {
               upweigths.col(k) = phis(phi_ind_map(l, m)) * conv_to<vec>::from(matching_labels);
             }
-
           }
         }
       }
 
       upweigths++;
 
+      // throw std::invalid_argument( "in MDI allocation." );
+      
+      
       // std::cout << "\n\nUpdate allocations in mixture.\n";
       //
       // std::cout << "\n\nUpweights:\n" << upweigths;
@@ -2142,6 +2180,12 @@ public:
   
   // This is used to consider possible label swaps
   double sampleLabel(arma::uword k, arma::vec K_inv_cum) {
+    
+    // Need to account for the fixed labels
+    // Need the non-fixed classes (e.g., we now need, K, K_fixed and K_unfixed)
+    // uvec fixed_classes = unique(labels(fixed_ind));
+    // uword K_fixed = length(fixed_classes)
+    
     
     // Select another label randomly
     double u = randu();
@@ -2214,6 +2258,8 @@ public:
   // across datasets via random sampling.
   void updateLabels() {
     
+    bool multipleUnfixedComponents = false;
+    
     // The other component considered
     uword k_prime = 0;
     
@@ -2241,45 +2287,49 @@ public:
       
       for(uword l = 0; l < L; l++) {
     
-        K_inv = ones<vec>(K(l) - 1) * 1 / (K(l) - 1);
-        K_inv_cum = cumsum(K_inv);
-        
-        // The score associated with the current labelling
-        curr_score = calcScore(l, labels);
-        
-        for(uword k = 0; k < K(l); k++) {
+        multipleUnfixedComponents = (K_unfixed(l) > 1);
+        if(multipleUnfixedComponents) {
+          // K_inv = ones<vec>(K(l) - 1) * 1 / (K(l) - 1);
+          K_inv = ones<vec>(K_unfixed(l) - 1) * 1 / (K_unfixed(l) - 1);
+          K_inv_cum = cumsum(K_inv);
           
-          // Select another label randomly
-          k_prime = sampleLabel(k, K_inv_cum);
+          // The score associated with the current labelling
+          curr_score = calcScore(l, labels);
           
-          // The label matrix updated with the swapped labels
-          swapped_labels = swapLabels(l, k, k_prime);
-          
-          // The score for the swap
-          alt_score = calcScore(l, swapped_labels);
-          
-          // The log acceptance probability
-          log_accept = alt_score - curr_score;
-          
-          if(log_accept < 0) {
-            accept = std::exp(log_accept);
-          }
-          
-          // If we accept the label swap, update labels, weights and score
-          if(randu() < accept) {
+          for(uword k = K_fixed(l); k < K(l); k++) {
             
-            // Update the current score
-            curr_score = alt_score;
-            labels = swapped_labels;
+            // Select another label randomly
+            k_prime = sampleLabel(k, K_inv_cum) + K_fixed(l);
             
-            // Update the component weights
-            old_weight = w(k, l);
-            w(k, l) = w(k_prime, l);
-            w(k_prime, l) = old_weight;
+            // The label matrix updated with the swapped labels
+            swapped_labels = swapLabels(l, k, k_prime);
+            
+            // The score for the swap
+            alt_score = calcScore(l, swapped_labels);
+            
+            // The log acceptance probability
+            log_accept = alt_score - curr_score;
+            
+            if(log_accept < 0) {
+              accept = std::exp(log_accept);
+            }
+            
+            // If we accept the label swap, update labels, weights and score
+            if(randu() < accept) {
+              
+              // Update the current score
+              curr_score = alt_score;
+              labels = swapped_labels;
+              
+              // Update the component weights
+              old_weight = w(k, l);
+              w(k, l) = w(k_prime, l);
+              w(k_prime, l) = old_weight;
+              
+            } 
             
           } 
-          
-        } 
+        }
       }
     }
   
@@ -4131,7 +4181,7 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   
   // throw std::invalid_argument( "X is happy." );
   
-  fixed.head_rows(4);
+  // std::cout << "\n\n" << fixed.head_rows(4);
   
   // std::cout << "\n\nMDI initialisation.";
   mdiModel my_mdi(X, types, K, labels, fixed);
@@ -4142,11 +4192,15 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   // Initialise the dataset level mixtures
   my_mdi.initialiseMixtures();
   
+  // std::cout << "\nHere:!\n";
+  
+
   N = my_mdi.N;
   
   ucube class_record(R, N, L),
-    outlier_record(R, N, L);
-  
+    outlier_record(R, N, L),
+    N_k_record(my_mdi.K_max, L, R);
+      
   class_record.zeros();
   outlier_record.zeros();
   
@@ -4201,8 +4255,12 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
       // (*my_mdi.mixtures)[l]->sampleParameters();
       // (*my_mdi.mixtures)[l]->matrixCombinations();
       
+      
       my_mdi.mixtures[l]->sampleParameters();
       // my_mdi.mixtures[l]->matrixCombinations();
+      
+      // throw std::invalid_argument( "sample parameters." );
+      
       
       // std::cout << "\n\n" << my_mdi.mixtures[l]->mu;
       
@@ -4213,7 +4271,10 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     
     // Try and swap labels within datasets to improve the correlation between 
     // clusterings across datasets
-    my_mdi.updateLabels();
+    // my_mdi.updateLabels();
+    
+    // throw std::invalid_argument( "lols." );
+    
     
     // std::cout << "\nSave objects.";
     for(uword l = 0; l < L; l++) {
@@ -4231,6 +4292,8 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     // std::cout << "\n\nSave phis.";
     phis_record.row(r) = my_mdi.phis.t();
     
+    N_k_record.slice(r) = my_mdi.N_k;
+    
     // std::cout << "one iteration done.";
     // throw;
   }
@@ -4239,7 +4302,8 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
       Named("phis") = phis_record,
       Named("weights") = weight_record,
       Named("outliers") = outlier_record,
-      Named("alloc") = alloc
+      Named("alloc") = alloc,
+      Named("N_k") = N_k_record
     )
   );
   
