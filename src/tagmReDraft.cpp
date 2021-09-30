@@ -1616,25 +1616,30 @@ public:
     
     fixed = _fixed;
     // fixed_ind.set_size(L);
-    // K_fixed.set_size(L);
-    // K_unfixed.set_size(L);
-    // 
-    // uvec fixed_l, fixed_labels, labels_l;
-    // 
-    // for(uword l = 0; l < L; l++){
-    // 
-    //   fixed_l = find(fixed.col(l) == 1);
-    //   labels_l = labels.col(l);
-    // 
-    // 
-    //   // fixed_ind(l) = fixed_l;
-    //   fixed_labels = unique(labels_l(fixed_l));
-    //   K_fixed(l) = fixed_labels.n_elem;
-    //   K_unfixed(l) = K(l) - K_fixed(l);
-    // }
     
-    outliers = zeros<umat>(N, L); //1 - fixed;
-    non_outliers = ones<umat>(N, L);
+    
+    K_fixed.set_size(L);
+    K_unfixed.set_size(L);
+
+    uvec fixed_l, fixed_labels, labels_l, fixed_components;
+
+    for(uword l = 0; l < L; l++){
+
+      fixed_l = find(fixed.col(l) == 1);
+      labels_l = labels.col(l);
+
+
+      // fixed_ind(l) = fixed_l;
+      fixed_labels = labels_l(fixed_l);
+      fixed_components = arma::unique(fixed_labels);
+      K_fixed(l) = fixed_components.n_elem;
+      K_unfixed(l) = K(l) - K_fixed(l);
+    }
+    
+    // throw std::invalid_argument("Throw reached.");
+    
+    // outliers = zeros<umat>(N, L); //1 - fixed;
+    // non_outliers = ones<umat>(N, L);
     
     
   };
@@ -1673,7 +1678,7 @@ public:
       // std::cout << "\n\nWhat:\n" << size(non_outliers) << "\n" << size(mixtures[l]->non_outliers);
       
       // We have to pass this back up
-      non_outliers.col(l) = mixtures[l]->non_outliers;
+      // non_outliers.col(l) = mixtures[l]->non_outliers;
     }
   };
   
@@ -1867,9 +1872,12 @@ public:
         // std::cout << "\n\nLabels in dataset " << l << " of class " << k << ":\n" << (labels.col(l) == k);
         // std::cout << "\n\nNon-outliers in dataset " << l << ":\n" << non_outliers.col(l);
         
-        // Find how many labels have the value of k and are not considered
-        // outliers
-        members_lk = ((labels.col(l) == k)); // % non_outliers.col(l));
+        // Find how many labels have the value of k. We used to consider which
+        // were outliers and which were not, but the non-outliers still 
+        // contribute to the component weight, but not to the component parameters
+        // and we use ot hand this down to the local mixture, mistakenly using 
+        // the same value for N_k for the component parameters and the weights.
+        members_lk = 1 * ((labels.col(l) == k)); // % non_outliers.col(l));
         
         // std::cout << "\n\nN_k (before outliers): " << accu(members_lk);
         
@@ -2025,15 +2033,15 @@ public:
     double shape = 0.0, rate = 0.0;
     for(uword l = 0; l < (L - 1); l++) {
       for(uword m = l + 1; m < L; m++) {
-        
+
         // Find the parameters based on the likelihood
         rate = calcPhiRate(l, m);
         shape = samplePhiShape(l, m, rate);
-        
-        
+
+
         // std::cout << "\n\nShape:" << shape;
         // std::cout << "\nRate:" << rate;
-        
+
         phis(phi_ind_map(m, l)) = randg(distr_param(
           phi_shape_prior + shape,
           1.0 / (phi_rate_prior + rate)
@@ -2043,27 +2051,27 @@ public:
     }
   }
   
-  // // Update the context similarity parameters
-  // void updatePhis() {
-  // 
-  //   // std::cout << "\n\nPhis before update:\n" << phis;
-  // 
-  //   double shape = 0.0, rate = 0.0;
-  //   for(uword l = 0; l < (L - 1); l++) {
-  //     for(uword m = l + 1; m < L; m++) {
-  //       shape = 1 + accu(labels.col(l) == labels.col(m));
-  //       rate = calcPhiRate(l, m);
-  // 
-  //       // std::cout << "\n\nShape:" << shape;
-  //       // std::cout << "\nRate:" << rate;
-  // 
-  //       phis(phi_ind_map(m, l)) = randg(distr_param(
-  //           phi_shape_prior + shape,
-  //           1.0 / (phi_rate_prior + rate)
-  //         )
-  //       );
-  //     }
-  //   }
+  // Update the context similarity parameters
+// void updatePhis() {
+// 
+//   // std::cout << "\n\nPhis before update:\n" << phis;
+// 
+//   double shape = 0.0, rate = 0.0;
+//   for(uword l = 0; l < (L - 1); l++) {
+//     for(uword m = l + 1; m < L; m++) {
+//       shape = 1 + accu(labels.col(l) == labels.col(m));
+//       rate = calcPhiRate(l, m);
+// 
+//       // std::cout << "\n\nShape:" << shape;
+//       // std::cout << "\nRate:" << rate;
+// 
+//       phis(phi_ind_map(m, l)) = randg(distr_param(
+//           phi_shape_prior + shape,
+//           1.0 / (phi_rate_prior + rate)
+//         )
+//       );
+//     }
+//   }
 // 
 //     // std::cout << "\n\nPhis after update:\n" << phis;
 // 
@@ -2171,7 +2179,7 @@ public:
       // std::cout << "\n\nPass from mixtures back to MDI level.\n";
       
       labels.col(l) = mixtures[l]->labels;
-      non_outliers.col(l) = mixtures[l]->non_outliers;
+      // non_outliers.col(l) = mixtures[l]->non_outliers;
       
 
     }
@@ -2258,7 +2266,7 @@ public:
   // across datasets via random sampling.
   void updateLabels() {
     
-    bool multipleUnfixedComponents = false;
+    bool multipleUnfixedComponents = true;
     
     // The other component considered
     uword k_prime = 0;
@@ -4192,6 +4200,8 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   // Initialise the dataset level mixtures
   my_mdi.initialiseMixtures();
   
+  // throw std::invalid_argument("Throw reached.");
+  
   // std::cout << "\nHere:!\n";
   
 
@@ -4213,6 +4223,7 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     alloc(l) = zeros<mat>(N, K(l));
   }
   
+  
   // std::cout << "\nSample from priors.";
   my_mdi.sampleFromPriors();
   for(arma::uword l = 0; l < L; l++) {
@@ -4230,6 +4241,11 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   
   // my_mdi.mixtures[0]->N_k;
   
+  // throw std::invalid_argument("Throw reached.");
+  
+  
+  // std::cout << "\n\nMain loop.";
+  
   for(uword r = 0; r < R; r++) {
     
     // std::cout << "\n\nNormalising constant.";
@@ -4243,6 +4259,7 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     
     // std::cout << "\nPhis update.";
     my_mdi.updatePhis();
+    
     
     // std::cout << "\nSample mixture parameters.";
     for(arma::uword l = 0; l < L; l++) {
@@ -4266,12 +4283,15 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
       
     }
     
+    
+    // throw std::invalid_argument("Throw reached.");
+    
     // std::cout << "\nAllocations update.";
     my_mdi.updateAllocation();
     
     // Try and swap labels within datasets to improve the correlation between 
     // clusterings across datasets
-    // my_mdi.updateLabels();
+    my_mdi.updateLabels();
     
     // throw std::invalid_argument( "lols." );
     

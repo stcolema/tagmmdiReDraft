@@ -142,7 +142,7 @@ void semiSupervisedTAGM::updateOutlierWeights(){
   b = (double) sum(outliers);
   outlier_weight = rBeta(b + u, N + v - b);
   
-  std::cout << "\n\nOutlier weight: " << outlier_weight;
+  // std::cout << "\n\nOutlier weight: " << outlier_weight;
   
 };
 

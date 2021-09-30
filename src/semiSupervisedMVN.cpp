@@ -144,6 +144,7 @@ void semiSupervisedMVN::calcBIC(){
 void semiSupervisedMVN::sampleParameters() {
   
   arma::uword n_k = 0;
+  uvec rel_inds;
   arma::vec mu_n(P), sample_mean(P);
   arma::mat sample_cov(P, P), dist_from_prior(P, P), scale_n(P, P);
   
@@ -153,8 +154,10 @@ void semiSupervisedMVN::sampleParameters() {
     // std::cout << "\nN_k (should be right): " << N_k(k);
     
     
+    rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+    
     // Find how many labels have the value
-    n_k = N_k(k);
+    n_k = rel_inds.n_elem; // N_k(k);
     
     // std::cout << "\n\nMembers:\n" << size(find(members.col(k)));
     // std::cout << "\n\nOutliers:\n" << size(find(non_outliers == 1));
@@ -165,12 +168,16 @@ void semiSupervisedMVN::sampleParameters() {
       // std::cout << "\n\nSampling new value";
       
       // Component data
-      arma::mat component_data = X.rows( arma::find(members.col(k) && (non_outliers == 1)) );
+      arma::mat component_data = X.rows( rel_inds ) ; // arma::find((members.col(k) == 1) && (non_outliers == 1)) );
       
       // std::cout << "\n\nComponent data subsetted.\n" << size(component_data);
       
+      // throw std::invalid_argument("Throw reached.");
+      
       // Sample mean in the component data
-      sample_mean = arma::mean(component_data).t();
+      sample_mean = mean(component_data).t();
+      
+      
       
       // std::cout << "\n\nSampled mean acquired:\n" << sample_mean;
       
@@ -186,6 +193,8 @@ void semiSupervisedMVN::sampleParameters() {
       // Update the scale hyperparameter
       scale_n = scale + sample_cov + ((kappa * n_k) / (double) (kappa + n_k)) * dist_from_prior;
       
+      // throw std::invalid_argument("Throw reached.");
+      
       // std::cout << "\n\nDistance from prior calculated:\n" << dist_from_prior;
       // 
         // std::cout << "\n\nCovariacne:\n" << cov.slice(k);
@@ -193,7 +202,7 @@ void semiSupervisedMVN::sampleParameters() {
       // std::cout << "\nN_k: " << n_k;
       
       // Sample a new covariance matrix
-      cov.slice(k) = arma::iwishrnd(scale_n, nu + n_k);
+      cov.slice(k) = iwishrnd(scale_n, nu + n_k);
       
       // std::cout << "\n\nCovariance sampled";
       
@@ -203,22 +212,37 @@ void semiSupervisedMVN::sampleParameters() {
       // std::cout << "\nMu_n calculated";
       
       // Sample a new mean vector
-      mu.col(k) = arma::mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k), 1);
+      mu.col(k) = mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k), 1);
       
       // std::cout << "\nMean sampled";
       // std::cout << "\n\nDistance from prior calculated:\n" << dist_from_prior;
       
     } else{
       
+      // std::cout << "\n\n\nScale:\n" << scale;
+      // std::cout << "\nNu: " << nu;
+      
       // If no members in the component, draw from the prior distribution
-      cov.slice(k) = arma::iwishrnd(scale, nu);
-      mu.col(k) = arma::mvnrnd(xi, (1.0 / (double) kappa) * cov.slice(k), 1);
+      cov.slice(k) = iwishrnd(scale, nu);
+      
+      // std::cout << "\n\nCov proposed.";
+      // 
+      // std::cout << "\nKappa: " << kappa;
+      // std::cout << "\n\nXi: \n" << xi;
+      
+      mu.col(k) = mvnrnd(xi, (1.0 / (double) kappa) * cov.slice(k), 1);
+      
+      // std::cout << "\n\nMean proposed.";
       
     }
     
+    // throw std::invalid_argument("Throw reached.");
+    
     // Save the inverse and log determinant of the new covariance matrices
-    cov_inv.slice(k) = arma::inv_sympd(cov.slice(k));
-    cov_log_det(k) = arma::log_det(cov.slice(k)).real();
+    cov_inv.slice(k) = inv_sympd(cov.slice(k));
+    cov_log_det(k) = log_det(cov.slice(k)).real();
+    
+    // throw std::invalid_argument("Throw reached.");
     
   }
 };
