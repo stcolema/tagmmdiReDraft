@@ -1955,6 +1955,10 @@ public:
       
       mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
       
+      // If we only have one dataset, flip back to normalised weights
+      if(L == 1) {
+        w = w / accu(w) ;
+      }
       
       // std::cout << "\n\nN_kl:\n" << mixtures[l]->N_k;
       
@@ -2028,54 +2032,54 @@ public:
    return shape; 
   }
   
-  void updatePhis() {
-    uword r = 0;
-    double shape = 0.0, rate = 0.0;
-    for(uword l = 0; l < (L - 1); l++) {
-      for(uword m = l + 1; m < L; m++) {
+  // void updatePhis() {
+  //   uword r = 0;
+  //   double shape = 0.0, rate = 0.0;
+  //   for(uword l = 0; l < (L - 1); l++) {
+  //     for(uword m = l + 1; m < L; m++) {
+  // 
+  //       // Find the parameters based on the likelihood
+  //       rate = calcPhiRate(l, m);
+  //       shape = samplePhiShape(l, m, rate);
+  // 
+  // 
+  //       // std::cout << "\n\nShape:" << shape;
+  //       // std::cout << "\nRate:" << rate;
+  // 
+  //       phis(phi_ind_map(m, l)) = randg(distr_param(
+  //         phi_shape_prior + shape,
+  //         1.0 / (phi_rate_prior + rate)
+  //       )
+  //       );
+  //     }
+  //   }
+  // }
+  // 
+  // Update the context similarity parameters
+void updatePhis() {
 
-        // Find the parameters based on the likelihood
-        rate = calcPhiRate(l, m);
-        shape = samplePhiShape(l, m, rate);
+  // std::cout << "\n\nPhis before update:\n" << phis;
 
+  double shape = 0.0, rate = 0.0;
+  for(uword l = 0; l < (L - 1); l++) {
+    for(uword m = l + 1; m < L; m++) {
+      shape = 1 + accu(labels.col(l) == labels.col(m));
+      rate = calcPhiRate(l, m);
 
-        // std::cout << "\n\nShape:" << shape;
-        // std::cout << "\nRate:" << rate;
+      // std::cout << "\n\nShape:" << shape;
+      // std::cout << "\nRate:" << rate;
 
-        phis(phi_ind_map(m, l)) = randg(distr_param(
+      phis(phi_ind_map(m, l)) = randg(distr_param(
           phi_shape_prior + shape,
           1.0 / (phi_rate_prior + rate)
         )
-        );
-      }
+      );
     }
   }
-  
-  // Update the context similarity parameters
-// void updatePhis() {
-// 
-//   // std::cout << "\n\nPhis before update:\n" << phis;
-// 
-//   double shape = 0.0, rate = 0.0;
-//   for(uword l = 0; l < (L - 1); l++) {
-//     for(uword m = l + 1; m < L; m++) {
-//       shape = 1 + accu(labels.col(l) == labels.col(m));
-//       rate = calcPhiRate(l, m);
-// 
-//       // std::cout << "\n\nShape:" << shape;
-//       // std::cout << "\nRate:" << rate;
-// 
-//       phis(phi_ind_map(m, l)) = randg(distr_param(
-//           phi_shape_prior + shape,
-//           1.0 / (phi_rate_prior + rate)
-//         )
-//       );
-//     }
-//   }
-// 
-//     // std::cout << "\n\nPhis after update:\n" << phis;
-// 
-//   };
+
+    // std::cout << "\n\nPhis after update:\n" << phis;
+
+  };
 
   // Updates the normalising constant for the posterior
   void updateNormalisingConst() {
@@ -4215,12 +4219,17 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   outlier_record.zeros();
   
   // std::cout << "\nMeh.";
-  mat phis_record(R, my_mdi.LC2);
+  mat phis_record(R, my_mdi.LC2),
+    likelihood_record(R, L);
+  
   cube weight_record(R, my_mdi.K_max, L);
   
-  field<mat> alloc(L);
+  // field<mat> alloc(L);
+  field<cube> alloc(R);
+  
   for(uword l = 0; l < L; l++) {
-    alloc(l) = zeros<mat>(N, K(l));
+    // alloc(l) = zeros<mat>(N, K(l));
+    alloc(l) = zeros<cube>(N, K(l), R);
   }
   
   
@@ -4303,10 +4312,14 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
       weight_record.slice(l).row(r) = my_mdi.w.col(l).t();
       
       // Save the allocation probabilities
-      alloc(l) += my_mdi.mixtures[l]->alloc;
+      // alloc(l) += my_mdi.mixtures[l]->alloc;
+      alloc(l).slice(r) = my_mdi.mixtures[l]->alloc;
       
       // Save the record of which items are considered outliers
       outlier_record.slice(l).row(r) = my_mdi.mixtures[l]->outliers.t();
+      
+      // Save the complete likelihood
+      likelihood_record(r, l) = my_mdi.mixtures[l]->complete_likelihood;
     }
     
     // std::cout << "\n\nSave phis.";
@@ -4323,7 +4336,8 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
       Named("weights") = weight_record,
       Named("outliers") = outlier_record,
       Named("alloc") = alloc,
-      Named("N_k") = N_k_record
+      Named("N_k") = N_k_record,
+      Named("complete_likelihood") = likelihood_record
     )
   );
   

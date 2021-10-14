@@ -43,24 +43,9 @@ class semiSupervisedTAGM :
   
 public:
   
-  double global_log_det = 0.0, t_likelihood_const = 0.0;
-  
-  // Vector indicating if the item is an outlier (value of 1) or not (value of 0)
-  // arma::uvec outliers,
-  //   non_outliers;
-  
-  
-  arma::vec 
-    // The dataset mean
-    global_mean, 
+  double global_log_det = 0.0,
+    t_likelihood_const = 0.0,
     
-    // The outleier component likelihood
-    t_ll;
-  
-  // The dataset covariance
-  arma::mat global_cov_inv;
-  
-  double 
     // T degrees of freedom
     df = 4.0, 
     
@@ -69,6 +54,20 @@ public:
     
     // Outlier component weight
     outlier_weight = 0.0;
+  
+  // Vector indicating if the item is an outlier (value of 1) or not (value of 0)
+  // arma::uvec outliers,
+  //   non_outliers;
+  
+  vec 
+    // The dataset mean
+    global_mean, 
+    
+    // The outleier component likelihood
+    t_ll;
+  
+  // The dataset covariance
+  mat global_cov_inv;
   
   using semiSupervisedMVN::semiSupervisedMVN;
   

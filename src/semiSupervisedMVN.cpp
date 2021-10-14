@@ -40,8 +40,8 @@ semiSupervisedMVN::semiSupervisedMVN(
   arma::vec diag_entries(P);
   // double scale_entry = arma::accu(scale_param % scale_param, 0) / (N * std::pow(K, 1.0 / (double) P));
   
-  arma::mat global_cov = arma::cov(X);
-  double scale_entry = (arma::accu(global_cov.diag()) / P) / std::pow(K, 2.0 / (double) P);
+  arma::mat global_cov_loc = arma::cov(X);
+  double scale_entry = (arma::accu(global_cov_loc.diag()) / P) / std::pow(K, 2.0 / (double) P);
   
   diag_entries.fill(scale_entry);
   scale = arma::diagmat( diag_entries );
@@ -147,6 +147,7 @@ void semiSupervisedMVN::sampleParameters() {
   uvec rel_inds;
   arma::vec mu_n(P), sample_mean(P);
   arma::mat sample_cov(P, P), dist_from_prior(P, P), scale_n(P, P);
+  mat arma_cov(P, P);
   
   for (arma::uword k = 0; k < K; k++) {
     
@@ -182,6 +183,13 @@ void semiSupervisedMVN::sampleParameters() {
       // std::cout << "\n\nSampled mean acquired:\n" << sample_mean;
       
       sample_cov = calcSampleCov(component_data, sample_mean, n_k, P);
+      arma_cov = (n_k - 1) * arma::cov(component_data);
+      
+      if(accu(abs(sample_cov - arma_cov)) > 1e-6) {
+        Rcpp::Rcout << "\n\nSample covariance (mine) disagrees with Armadillo.\n";
+        Rcpp::Rcout <<  "\nDIfference is: " << accu(abs(sample_cov - arma_cov));
+        throw std::invalid_argument("Throw reached.");
+      }
       
       // std::cout << "\n\nSampled cov acquired:\n" << sample_cov;
       
