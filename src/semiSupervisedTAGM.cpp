@@ -168,8 +168,8 @@ arma::uword semiSupervisedTAGM::sampleOutlier(arma::uword n) {
   // }
   
   // The likelihood of the point in the current cluster
-  // outlier_prob(0) = likelihood(n) + log(1 - outlier_weight);
-  outlier_prob(0) = logLikelihood(point, labels(n)) + log(1 - outlier_weight);
+  outlier_prob(0) = likelihood(n) + log(1 - outlier_weight);
+  // outlier_prob(0) = logLikelihood(point, labels(n)) + log(1 - outlier_weight);
   
   // Calculate outlier likelihood
   // out_likelihood = calcTdistnLikelihood(n); //calcTdistnLikelihood(point);

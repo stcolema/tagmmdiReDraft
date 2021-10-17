@@ -158,7 +158,8 @@ void semiSupervisedMVN::sampleParameters() {
     rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
     
     // Find how many labels have the value
-    n_k = rel_inds.n_elem; // N_k(k);
+    // n_k = N_k(k); // rel_inds.n_elem; // N_k(k);
+    n_k = rel_inds.n_elem;
     
     // std::cout << "\n\nMembers:\n" << size(find(members.col(k)));
     // std::cout << "\n\nOutliers:\n" << size(find(non_outliers == 1));

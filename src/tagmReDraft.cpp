@@ -1347,23 +1347,23 @@ public:
   // Weight combination indices
   arma::umat labels,
 
-  // Various objects used to calculate MDI weights, normalising constant and phis
-  comb_inds,
-  phi_indicator,
-  phi_ind_map,
-  phi_indicator_t,
-
-  // Class membership in each dataset
-  N_k,
-
-  // Indicator matrix for item n being an outlier in dataset l
-  outliers,
-
-  // Indicator matrix for item n being welll-described by its component
-  // in dataset l
-  non_outliers,
+    // Various objects used to calculate MDI weights, normalising constant and phis
+    comb_inds,
+    phi_indicator,
+    phi_ind_map,
+    phi_indicator_t,
   
-  fixed;
+    // Class membership in each dataset
+    N_k,
+  
+    // Indicator matrix for item n being an outlier in dataset l
+    outliers,
+  
+    // Indicator matrix for item n being welll-described by its component
+    // in dataset l
+    // non_outliers,
+    
+    fixed;
 
   // The labels, weights in each dataset and the dataset correlation
   arma::mat w, phi_indicator_t_mat;
@@ -1877,6 +1877,7 @@ public:
         // contribute to the component weight, but not to the component parameters
         // and we use ot hand this down to the local mixture, mistakenly using 
         // the same value for N_k for the component parameters and the weights.
+        // members_lk = 1 * ((labels.col(l) == k) % non_outliers.col(l));
         members_lk = 1 * ((labels.col(l) == k)); // % non_outliers.col(l));
         
         // std::cout << "\n\nN_k (before outliers): " << accu(members_lk);
@@ -1955,10 +1956,10 @@ public:
       
       mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
       
-      // If we only have one dataset, flip back to normalised weights
-      if(L == 1) {
-        w = w / accu(w) ;
-      }
+      // // If we only have one dataset, flip back to normalised weights
+      // if(L == 1) {
+      //   w = w / accu(w) ;
+      // }
       
       // std::cout << "\n\nN_kl:\n" << mixtures[l]->N_k;
       
@@ -1978,8 +1979,14 @@ public:
       prod_to_phi_shape = 0.0, 
       prod_to_r_less_1 = 0.0;
     
+    // uvec rel_inds_l(N), rel_inds_m(N);
+    
     vec weights;
     
+    // rel_inds_l = labels.col(l) % non_outliers.col(l);
+    // rel_inds_m = labels.col(m) % non_outliers.col(m);
+    // 
+    // N_lm = accu(rel_inds_l == rel_inds_m); 
     N_lm = accu(labels.col(l) == labels.col(m));
     rate = calcPhiRate(l, m);
     weights = zeros<vec>(N_lm + 1);
@@ -2059,10 +2066,18 @@ public:
 void updatePhis() {
 
   // std::cout << "\n\nPhis before update:\n" << phis;
-
+  uword N_lm = 0;
   double shape = 0.0, rate = 0.0;
+  // uvec rel_inds_l(N), rel_inds_m(N);
+  
   for(uword l = 0; l < (L - 1); l++) {
     for(uword m = l + 1; m < L; m++) {
+      // rel_inds_l = labels.col(l) % non_outliers.col(l);
+      // rel_inds_m = labels.col(m) % non_outliers.col(m);
+      // 
+      // N_lm = accu(rel_inds_l == rel_inds_m);
+      // shape = 1 + N_lm;
+      
       shape = 1 + accu(labels.col(l) == labels.col(m));
       rate = calcPhiRate(l, m);
 
