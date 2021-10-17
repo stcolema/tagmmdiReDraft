@@ -6,10 +6,14 @@
 # include "logLikelihoods.h"
 # include "genericFunctions.h"
 
-# include "mixture.h"
-# include "tAdjustedMixture.h"
-# include "mvnMixture.h"
-# include "tagmMixture.h"
+// # include "mixture.h"
+// # include "tAdjustedMixture.h"
+// # include "mvnMixture.h"
+// # include "tagmMixture.h"
+
+# include "semiSupervisedMixture.h"
+# include "semiSupervisedMVN.h"
+# include "semiSupervisedTAGM.h"
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -1151,106 +1155,119 @@ using namespace arma ;
 //     // free(ver);
 //   }
 // };
+// 
+// class semiSupervisedMixture : virtual public mixture {
+// private:
+//   
+// public:
+//   
+//   semiSupervisedMixture(arma::uword _K,
+//                    arma::uvec _labels,
+//                    arma::uvec _fixed,
+//                    arma::mat _X
+//   ) : mixture(_K, _labels, _X) {
+//     
+//     // Pass the indicator vector for being fixed to the ``fixed`` object.
+//     fixed = _fixed;
+//     
+//     uword N_fixed = accu(fixed);
+//     
+//     fixed_ind = find(fixed == 1);
+//     unfixed_ind = find(fixed == 0);
+//     
+//     // Set the known label allocations to 1
+//     for(uword n = 0; n < N; n++) {
+//       if(fixed(n) == 1) {
+//         alloc(n, labels(n)) = 1.0;
+//       }
+//     }
+//     
+//   };
+//   
+// };
+// 
 
-class semiSupervisedMixture : virtual public mixture {
-private:
-  
-public:
-  
-  semiSupervisedMixture(arma::uword _K,
-                   arma::uvec _labels,
-                   arma::uvec _fixed,
-                   arma::mat _X
-  ) : mixture(_K, _labels, _X) {
-    
-    // Pass the indicator vector for being fixed to the ``fixed`` object.
-    fixed = _fixed;
-    
-    uword N_fixed = accu(fixed);
-    
-    fixed_ind = find(fixed == 1);
-    unfixed_ind = find(fixed == 0);
-    
-    // Set the known label allocations to 1
-    for(uword n = 0; n < N; n++) {
-      if(fixed(n) == 1) {
-        alloc(n, labels(n)) = 1.0;
-      }
-    }
-    
-  };
-  
-};
+// class semiSupervisedMVN :
+//   virtual public mvnMixture,
+//   virtual public semiSupervisedMixture
+// {
+// 
+// public:
+// 
+//   uvec outliers, non_outliers;
+// 
+//   using mvnMixture::mvnMixture;
+// 
+//   semiSupervisedMVN(arma::uword _K,
+//                     arma::uvec _labels,
+//                     arma::uvec _fixed,
+//                     arma::mat _X) :
+//     mixture(_K, _labels, _X),
+//     mvnMixture(_K, _labels, _X),
+//     semiSupervisedMixture(_K, _labels, _fixed, _X)
+//      {
+// 
+// 
+//     outliers = zeros<uvec>(N);
+//     non_outliers = ones<uvec>(N);
+// 
+//     fixed = _fixed;
+// 
+//     uword N_fixed = accu(fixed);
+// 
+//     fixed_ind = find(fixed == 1);
+//     unfixed_ind = find(fixed == 0);
+// 
+//     // std::cout << "\nNumber fixed: " << accu(fixed);
+//     // std::cout << "\nFixed inds:\n" << fixed_ind.head(4);
+//     // std::cout << "\nUnfixed inds:\n" << unfixed_ind.head(4);
+//     //
+//     // std::cout << "\nMembers:\n" << size(members);
+//     //
+//     // std::cout << "\nN_k:\n" << N_k;
+// 
+//   };
+// 
+//   // Destructor
+//   virtual ~semiSupervisedMVN() { };
+// 
+// };
 
-
-class semiSupervisedMVN : 
-  virtual public mvnMixture, 
-  virtual public semiSupervisedMixture
-{
-  
-public:
-  
-  using mvnMixture::mvnMixture;
-  
-  semiSupervisedMVN(arma::uword _K,
-                    arma::uvec _labels,
-                    arma::uvec _fixed,
-                    arma::mat _X) :
-    mixture(_K, _labels, _X),
-    mvnMixture(_K, _labels, _X),
-    semiSupervisedMixture(_K, _labels, _fixed, _X)
-     {
-    
-    // std::cout << "\nNumber fixed: " << accu(fixed);
-    // std::cout << "\nFixed inds:\n" << fixed_ind.head(4);
-    // std::cout << "\nUnfixed inds:\n" << unfixed_ind.head(4);
-    // 
-    // std::cout << "\nMembers:\n" << size(members);
-    // 
-    // std::cout << "\nN_k:\n" << N_k;
-  
-  };
-  
-  // Destructor
-  virtual ~semiSupervisedMVN() { };
-  
-};
-
-
-class semiSupervisedTAGM : 
-  virtual public tagmMixture,
-  virtual public semiSupervisedMixture
-  
-{
-  
-public:
-  
-  using tagmMixture::tagmMixture;
-  
-  semiSupervisedTAGM(arma::uword _K,
-              arma::uvec _labels,
-              arma::uvec _fixed,
-              arma::mat _X
-  ) : 
-    mixture(_K, _labels, _X),
-    semiSupervisedMixture(_K, _labels, _fixed, _X),
-    // mvnMixture(_K, _labels, _X),
-    tagmMixture(_K, _labels, _X){
-    
-    // In this case initialise the outlier members as the non-fixed points
-    outliers = 1 - fixed;
-    non_outliers = fixed;
-    
-    // std::cout << "\nNumber fixed: " << accu(fixed);
-    // std::cout << "\nFixed inds: " << fixed_ind.head(4);
-    // std::cout << "\nNumber fixed: " << unfixed_ind.head(4);
-    
-  };
-  
-  // Destructor
-  virtual ~semiSupervisedTAGM() { };
-  
-};
+// 
+// class semiSupervisedTAGM : 
+//   virtual public tagmMixture,
+//   virtual public semiSupervisedMixture
+//   
+// {
+//   
+// public:
+//   
+//   using tagmMixture::tagmMixture;
+//   
+//   semiSupervisedTAGM(arma::uword _K,
+//               arma::uvec _labels,
+//               arma::uvec _fixed,
+//               arma::mat _X
+//   ) : 
+//     mixture(_K, _labels, _X),
+//     semiSupervisedMixture(_K, _labels, _fixed, _X),
+//     // mvnMixture(_K, _labels, _X),
+//     tagmMixture(_K, _labels, _X){
+//     
+//     // In this case initialise the outlier members as the non-fixed points
+//     outliers = 1 - fixed;
+//     non_outliers = fixed;
+//     
+//     // std::cout << "\nNumber fixed: " << accu(fixed);
+//     // std::cout << "\nFixed inds: " << fixed_ind.head(4);
+//     // std::cout << "\nNumber fixed: " << unfixed_ind.head(4);
+//     
+//   };
+//   
+//   // Destructor
+//   virtual ~semiSupervisedTAGM() { };
+//   
+// };
 
 
 class semiSupervisedMixtureFactory {
@@ -1300,38 +1317,53 @@ public:
 
   arma::uword N, L, LC2 = 1, K_max, K_prod, K_to_the_L, n_combinations;
   // int LC2 = 1;
-  double Z = 0.0,
+  double 
+    // Normalising constant
+    Z = 0.0,
+      
+    // Strategic latent variable
     v = 0.0,
+    
+    // Prior hyperparameters for component weights
     w_shape_prior = 2.0,
     w_rate_prior = 2.0,
-    phi_shape_prior = 2.0,
-    phi_rate_prior = 2.0;
+    
+    // Prior hyperparameters for MDI phi parameters
+    phi_shape_prior = 1.0,
+    phi_rate_prior = 0.2;
 
-  // Number of clusters in each dataset
-  arma::uvec K, one_to_K, one_to_L, KL_powers, rows_to_shed, types;
+  
+  arma::uvec K,         // Number of clusters in each dataset
+    one_to_K,           // [0, 1, ..., K]
+    one_to_L,           // [0, 1, ..., L] 
+    KL_powers,          // K to the power of the members of one_to_L
+    rows_to_shed,       // rows initialised assuming symmetric K that are shed
+    types,              // mixture types used 
+    K_unfixed,          // Number of components not fixed
+    K_fixed;            // Number of components fixed (i.e. at least one member has an observed label)
 
   arma::vec phis;
 
   // Weight combination indices
   arma::umat labels,
 
-  // Various objects used to calculate MDI weights, normalising constant and phis
-  comb_inds,
-  phi_indicator,
-  phi_ind_map,
-  phi_indicator_t,
-
-  // Class membership in each dataset
-  N_k,
-
-  // Indicator matrix for item n being an outlier in dataset l
-  outliers,
-
-  // Indicator matrix for item n being welll-described by its component
-  // in dataset l
-  non_outliers,
+    // Various objects used to calculate MDI weights, normalising constant and phis
+    comb_inds,
+    phi_indicator,
+    phi_ind_map,
+    phi_indicator_t,
   
-  fixed;
+    // Class membership in each dataset
+    N_k,
+  
+    // Indicator matrix for item n being an outlier in dataset l
+    outliers,
+  
+    // Indicator matrix for item n being welll-described by its component
+    // in dataset l
+    // non_outliers,
+    
+    fixed;
 
   // The labels, weights in each dataset and the dataset correlation
   arma::mat w, phi_indicator_t_mat;
@@ -1339,6 +1371,8 @@ public:
   // Cube of cluster members
   arma::ucube members;
 
+  arma::field<arma::uvec> fixed_ind;
+  
   // The data can have varying numbers of columns
   arma::field<arma::mat> X;
 
@@ -1415,6 +1449,20 @@ public:
     comb_inds.set_size(K_to_the_L, L);
     comb_inds.zeros();
 
+    // The gammas combine in a form like (letting g denote gamma)
+    // g_{11} g_{12} ... g_{1L}
+    //          .
+    //          .
+    //          .
+    // g_{K1} g_{12} ... g_{1L}
+    // g_{11} g_{22} ... g_{1L}
+    //          .
+    //          .
+    //          .
+    // g_{K1} g_{K2} ... g_{KL}
+    // 
+    // Hence our matrix is initially of size K^L \times L
+    
     // std::cout << "\nCombination indicator declared.\nK to the L: "<< K_to_the_L;
 
     one_to_K = linspace<uvec>(0, K_max - 1, K_max);
@@ -1434,8 +1482,11 @@ public:
         comb_inds(i, l) = k;
       }
     }
+    
+    // std::cout << "Combination indices:\n" << comb_inds << "\n\n";
 
-    // Drop any rows that contain weights for clusters that shouldn't be modelled
+    // Drop any rows that contain weights for clusters that shouldn't be 
+    // modelled (i.e. if unique K_l are used)
     for(arma::uword l = 0; l < L; l++) {
       rows_to_shed = find(comb_inds.col(l) >= K(l));
       comb_inds.shed_rows(rows_to_shed);
@@ -1453,7 +1504,11 @@ public:
 
     // Now construct a matrix to record which phis are upweighing which weight
     // products, via an indicator matrix. This matrix has a column for each phi
-    // (ncol = LC2) and a row for each combinations (nrow = n_combinations).
+    // (ncol = LC2) and a row for each combination (nrow = n_combinations).
+    // This is working with the combi_inds object above. That indicated which 
+    // weights to use, this indicates the corresponding up weights (e.g.,
+    // we'd expect the first row to be all ones as all weights are for the first
+    // component in each dataset, similarly for the last row).
     phi_indicator.set_size(n_combinations, LC2);
     phi_indicator.zeros();
 
@@ -1560,8 +1615,33 @@ public:
     // non_outliers.ones();
     
     fixed = _fixed;
-    outliers = 1 - fixed;
-    non_outliers = fixed;
+    // fixed_ind.set_size(L);
+    
+    
+    K_fixed.set_size(L);
+    K_unfixed.set_size(L);
+
+    uvec fixed_l, fixed_labels, labels_l, fixed_components;
+
+    for(uword l = 0; l < L; l++){
+
+      fixed_l = find(fixed.col(l) == 1);
+      labels_l = labels.col(l);
+
+
+      // fixed_ind(l) = fixed_l;
+      fixed_labels = labels_l(fixed_l);
+      fixed_components = arma::unique(fixed_labels);
+      K_fixed(l) = fixed_components.n_elem;
+      K_unfixed(l) = K(l) - K_fixed(l);
+    }
+    
+    // throw std::invalid_argument("Throw reached.");
+    
+    // outliers = zeros<umat>(N, L); //1 - fixed;
+    // non_outliers = ones<umat>(N, L);
+    
+    
   };
 
 
@@ -1572,7 +1652,7 @@ public:
   // own separate function to make a semi-supervised class easier
   void initialiseMixtures() {
     
-    std::cout << "\n\nInitialising mixtures?\n";
+    // std::cout << "\n\nInitialising mixtures?\n";
     
     // delete mixtures*;
     
@@ -1588,14 +1668,16 @@ public:
       
       // Push it to the back of the vector
       mixtures.push_back(my_factory.createMixture(val,
-                                                  K(l),
-                                                  labels.col(l),
-                                                  fixed.col(l),
-                                                  X(l)
-      )
+          K(l),
+          labels.col(l),
+          fixed.col(l),
+          X(l)
+        )
       );
       
-      // // We have to pass
+      // std::cout << "\n\nWhat:\n" << size(non_outliers) << "\n" << size(mixtures[l]->non_outliers);
+      
+      // We have to pass this back up
       // non_outliers.col(l) = mixtures[l]->non_outliers;
     }
   };
@@ -1730,14 +1812,8 @@ public:
     weight_products.ones(n_used);
     phi_products.ones(n_used);
 
-    // std::cout << "\n\nRelevant phi indicators:\n" << relevant_phi_inidicators;
-    // std::cout << "\n\nRelevant phis:\n" << relevant_phis;
-
     // The phi products (should be a matrix of 0's and phis)
     phi_prod_mat = relevant_phi_inidicators.each_col() % relevant_phis;
-
-    // // The phi products (should be a matrix of 0's and phis)
-    // phi_prod_mat = relevant_phi_inidicators.each_row() * relevant_phis;
 
     // Add 1 to each entry to have the object ready to be multiplied
     phi_prod_mat++;
@@ -1791,9 +1867,34 @@ public:
 
         // std::cout << "\nNumber of non-outleirs: \n" << accu(non_outliers);
         
-        // Find how many labels have the value of k and are not considered
-        // outliers
-        members_lk = ((labels.col(l) == k) % (non_outliers.col(l) == 1));
+        
+        // std::cout << "\n\nLabels in dataset " << l << ":\n" << labels.col(l);
+        // std::cout << "\n\nLabels in dataset " << l << " of class " << k << ":\n" << (labels.col(l) == k);
+        // std::cout << "\n\nNon-outliers in dataset " << l << ":\n" << non_outliers.col(l);
+        
+        // Find how many labels have the value of k. We used to consider which
+        // were outliers and which were not, but the non-outliers still 
+        // contribute to the component weight, but not to the component parameters
+        // and we use ot hand this down to the local mixture, mistakenly using 
+        // the same value for N_k for the component parameters and the weights.
+        // members_lk = 1 * ((labels.col(l) == k) % non_outliers.col(l));
+        members_lk = 1 * ((labels.col(l) == k)); // % non_outliers.col(l));
+        
+        // std::cout << "\n\nN_k (before outliers): " << accu(members_lk);
+        
+        // members_lk = members_lk % non_outliers.col(l);
+        
+        // std::cout << "\n\nN_k (after outliers): " << accu(members_lk);
+        
+        // std::cout << "\n\nNon_outliers (MDI):\n" << non_outliers.col(l);
+        // std::cout << "\n\nNon_outliers (Mixture):\n" << mixtures[l]->non_outliers;
+        
+        // if(accu(non_outliers.col(l) != mixtures[l]->non_outliers) > 0) {
+        //   std::cout << "\n\nDataset: " << l << "\nDisagreement non_outliers:\n" << accu(non_outliers.col(l) != mixtures[l]->non_outliers);
+        // }
+        // std::cout << "\n\nDataset: " << l << "\nCluster: " << k << "\nMembers:\n" << accu(members_lk);
+        
+        
         // members(span::all, span(l, l), span(k, k) = members_lk;
         members.slice(l).col(k) = members_lk;
 
@@ -1816,7 +1917,9 @@ public:
 
         // Sample a new weight
         w(k, l) = randg(distr_param(w_shape_prior + shape,
-                        1.0 / (w_rate_prior + rate)));
+            1.0 / (w_rate_prior + rate)
+          )
+        );
 
 
         // throw std::invalid_argument( "\nMy inverses diverged." );
@@ -1853,6 +1956,11 @@ public:
       
       mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
       
+      // // If we only have one dataset, flip back to normalised weights
+      // if(L == 1) {
+      //   w = w / accu(w) ;
+      // }
+      
       // std::cout << "\n\nN_kl:\n" << mixtures[l]->N_k;
       
     }
@@ -1862,27 +1970,127 @@ public:
     // std::cout << "\n\nWeights after update:\n" << w;
   };
 
-  // Update the context similarity parameters
-  void updatePhis() {
-
-    // std::cout << "\n\nPhis before update:\n" << phis;
-
-    double shape = 0.0, rate = 0.0;
-    for(uword l = 0; l < (L - 1); l++) {
-      for(uword m = l + 1; m < L; m++) {
-        shape = 1 + accu(labels.col(l) == labels.col(m));
-        rate = calcPhiRate(l, m);
-
-        // std::cout << "\n\nShape:" << shape;
-        // std::cout << "\nRate:" << rate;
-
-        phis(phi_ind_map(m, l)) = randg(distr_param(
-            phi_shape_prior + shape,
-            1.0 / (phi_rate_prior + rate)
-          )
-        );
-      }
+  double samplePhiShape(arma::uword l, arma::uword m, double rate) {
+    bool rTooSmall = false, priorShapeTooSmall = false;
+    
+    uword r = 0, N_lm = 0;
+    double shape = 0.0,
+      u = 0.0,
+      prod_to_phi_shape = 0.0, 
+      prod_to_r_less_1 = 0.0;
+    
+    // uvec rel_inds_l(N), rel_inds_m(N);
+    
+    vec weights;
+    
+    // rel_inds_l = labels.col(l) % non_outliers.col(l);
+    // rel_inds_m = labels.col(m) % non_outliers.col(m);
+    // 
+    // N_lm = accu(rel_inds_l == rel_inds_m); 
+    N_lm = accu(labels.col(l) == labels.col(m));
+    rate = calcPhiRate(l, m);
+    weights = zeros<vec>(N_lm + 1);
+    
+    if(phi_shape_prior < 2) {
+      priorShapeTooSmall = true;
+      prod_to_phi_shape = 1.0; 
     }
+    
+    for(uword r = 0; r < (N_lm + 1); r++) {
+      
+      // Some of the products can be ``backwards'', i.e. the top index is less 
+      // than (or equal to) the bottom index. If this occurs we want to keep the 
+      // contribution of these products as the identity.
+      
+      // Reset vlaues that might have changed in the previous iteration
+      rTooSmall = false;
+      prod_to_phi_shape = 1.0; 
+      prod_to_r_less_1= 1.0;
+      
+      if(r < 2) {
+        rTooSmall = true;
+      }
+      
+      if(! rTooSmall) {
+        for(uword i = 0; i < r; i++) {
+          prod_to_r_less_1 *= (N_lm - i);
+        }
+      }
+      
+      if(! priorShapeTooSmall) {
+        for(uword j = 1; j < phi_shape_prior; j++) {
+          prod_to_phi_shape *= (r + j);
+        }
+      }
+      
+      weights(r) = prod_to_r_less_1 * prod_to_phi_shape / std::pow(rate + phi_rate_prior, r + 1);
+      
+
+    }
+    
+    // Normalise the weights
+    weights = weights / accu(weights);
+    
+    // Prediction and update
+    u = randu<double>( );
+    
+    shape = sum(u > cumsum(weights)) ;
+   
+   return shape; 
+  }
+  
+  // void updatePhis() {
+  //   uword r = 0;
+  //   double shape = 0.0, rate = 0.0;
+  //   for(uword l = 0; l < (L - 1); l++) {
+  //     for(uword m = l + 1; m < L; m++) {
+  // 
+  //       // Find the parameters based on the likelihood
+  //       rate = calcPhiRate(l, m);
+  //       shape = samplePhiShape(l, m, rate);
+  // 
+  // 
+  //       // std::cout << "\n\nShape:" << shape;
+  //       // std::cout << "\nRate:" << rate;
+  // 
+  //       phis(phi_ind_map(m, l)) = randg(distr_param(
+  //         phi_shape_prior + shape,
+  //         1.0 / (phi_rate_prior + rate)
+  //       )
+  //       );
+  //     }
+  //   }
+  // }
+  // 
+  // Update the context similarity parameters
+void updatePhis() {
+
+  // std::cout << "\n\nPhis before update:\n" << phis;
+  uword N_lm = 0;
+  double shape = 0.0, rate = 0.0;
+  // uvec rel_inds_l(N), rel_inds_m(N);
+  
+  for(uword l = 0; l < (L - 1); l++) {
+    for(uword m = l + 1; m < L; m++) {
+      // rel_inds_l = labels.col(l) % non_outliers.col(l);
+      // rel_inds_m = labels.col(m) % non_outliers.col(m);
+      // 
+      // N_lm = accu(rel_inds_l == rel_inds_m);
+      // shape = 1 + N_lm;
+      
+      shape = 1 + accu(labels.col(l) == labels.col(m));
+      rate = calcPhiRate(l, m);
+
+      // std::cout << "\n\nShape:" << shape;
+      // std::cout << "\nRate:" << rate;
+
+      phis(phi_ind_map(m, l)) = randg(distr_param(
+          phi_shape_prior + shape,
+          1.0 / (phi_rate_prior + rate)
+        )
+      );
+    }
+  }
 
     // std::cout << "\n\nPhis after update:\n" << phis;
 
@@ -1941,6 +2149,8 @@ public:
     uvec matching_labels(N);
     mat upweigths(N, K_max);
 
+    // throw std::invalid_argument( "in MDI allocation." );
+    
     for(uword l = 0; l < L; l++) {
       upweigths.set_size(N, K(l));
       upweigths.zeros();
@@ -1957,13 +2167,15 @@ public:
             } else {
               upweigths.col(k) = phis(phi_ind_map(l, m)) * conv_to<vec>::from(matching_labels);
             }
-
           }
         }
       }
 
       upweigths++;
 
+      // throw std::invalid_argument( "in MDI allocation." );
+      
+      
       // std::cout << "\n\nUpdate allocations in mixture.\n";
       //
       // std::cout << "\n\nUpweights:\n" << upweigths;
@@ -1986,12 +2198,169 @@ public:
       // std::cout << "\n\nPass from mixtures back to MDI level.\n";
       
       labels.col(l) = mixtures[l]->labels;
-      non_outliers.col(l) = mixtures[l]->non_outliers;
+      // non_outliers.col(l) = mixtures[l]->non_outliers;
       
 
     }
   };
 
+  
+  // This is used to consider possible label swaps
+  double sampleLabel(arma::uword k, arma::vec K_inv_cum) {
+    
+    // Need to account for the fixed labels
+    // Need the non-fixed classes (e.g., we now need, K, K_fixed and K_unfixed)
+    // uvec fixed_classes = unique(labels(fixed_ind));
+    // uword K_fixed = length(fixed_classes)
+    
+    
+    // Select another label randomly
+    double u = randu();
+    uword k_prime = sum(u > K_inv_cum);
+    
+    // If it is >= than the current label under consideration, add one
+    if(k_prime >= k) {
+      k_prime++;
+    }
+    return k_prime;
+  }
+  
+  double calcScore(arma::uword l, arma::umat labels) {
+    
+    bool not_current_context = true;
+    double score = 0.0;
+    uvec agreeing_labels;
+    
+    for(uword m = 0; m < L; m++) {
+      
+      // Skip the current context (the lth context)
+      not_current_context = m != l;
+      if(not_current_context) {
+        
+        // Find which labels agree between datasets
+        agreeing_labels = 1 * (labels.col(m) == labels.col(l));
+        
+        // Update the score based on the phi's
+        score += accu(log(1 + phis(phi_ind_map(m, l)) * agreeing_labels));
+      }
+    }
+    
+    // // Find which labels match in the other contexts
+    // umat matching_labels(N, L - 1);
+    // matching_labels = dummy_labels.each_col([this, l](uvec i)
+    // {
+    //   return 1 * (i == labels.col(l));
+    // }); 
+    
+    return score;
+  }
+  
+  // Check if labels should be swapped to improve correlation of clustering
+  // across datasets via random sampling.
+  arma::umat swapLabels(arma::uword l, arma::uword k, arma::uword k_prime) {
+    
+    // The labels in the current context, which will be changed
+    uvec loc_labs = labels.col(l), 
+      
+      // The indices for the clusters labelled k and k prime
+      cluster_k,
+      cluster_k_prime;
+    
+    // The labels for the other contexts
+    umat dummy_labels = labels;
+    
+    // Find which indices are to be swapped
+    cluster_k = find(loc_labs == k);
+    cluster_k_prime = find(loc_labs == k_prime);
+    
+    // Swap the label associated with the two clusters
+    loc_labs.elem(cluster_k).fill(k_prime);
+    loc_labs.elem(cluster_k_prime).fill(k);
+    
+    dummy_labels.col(l) = loc_labs;
+    return dummy_labels;
+  }
+  
+  // Check if labels should be swapped to improve correlation of clustering
+  // across datasets via random sampling.
+  void updateLabels() {
+    
+    bool multipleUnfixedComponents = true;
+    
+    // The other component considered
+    uword k_prime = 0;
+    
+    // Random uniform number
+    double u = 0.0,
+      
+      // The current likelihood
+      curr_score = 0.0,
+      
+      // The competitor
+      alt_score = 0.0,
+      
+      // The accpetance probability
+      accept = 1.0,
+      log_accept = 0.0,
+      
+      // The weight of the kth component if we do accept the swap
+      old_weight = 0.0;
+
+      // Vector of entries equal to 1/(K - 1) (as we exclude the current label) and
+      // its cumulative sum, used to sample another label to consider swapping.
+      vec K_inv, K_inv_cum;
+      
+      umat swapped_labels(N, L);
+      
+      for(uword l = 0; l < L; l++) {
+    
+        multipleUnfixedComponents = (K_unfixed(l) > 1);
+        if(multipleUnfixedComponents) {
+          // K_inv = ones<vec>(K(l) - 1) * 1 / (K(l) - 1);
+          K_inv = ones<vec>(K_unfixed(l) - 1) * 1 / (K_unfixed(l) - 1);
+          K_inv_cum = cumsum(K_inv);
+          
+          // The score associated with the current labelling
+          curr_score = calcScore(l, labels);
+          
+          for(uword k = K_fixed(l); k < K(l); k++) {
+            
+            // Select another label randomly
+            k_prime = sampleLabel(k, K_inv_cum) + K_fixed(l);
+            
+            // The label matrix updated with the swapped labels
+            swapped_labels = swapLabels(l, k, k_prime);
+            
+            // The score for the swap
+            alt_score = calcScore(l, swapped_labels);
+            
+            // The log acceptance probability
+            log_accept = alt_score - curr_score;
+            
+            if(log_accept < 0) {
+              accept = std::exp(log_accept);
+            }
+            
+            // If we accept the label swap, update labels, weights and score
+            if(randu() < accept) {
+              
+              // Update the current score
+              curr_score = alt_score;
+              labels = swapped_labels;
+              
+              // Update the component weights
+              old_weight = w(k, l);
+              w(k, l) = w(k_prime, l);
+              w(k_prime, l) = old_weight;
+              
+            } 
+            
+          } 
+        }
+      }
+    }
+  
+  
   // double updateWeightHyperParameter(arma::uword k) {
   //
   //   // Initialise b, the rate
@@ -3632,70 +4001,70 @@ public:
 //
 // };
 
-class semiSupervisedMDIModel: virtual public mdiModel {
-  
-public:
-  
-  using mdiModel::mdiModel;
-  
-  std::vector< std::unique_ptr<semiSupervisedMixture> > mixtures;
-  
-  arma::umat fixed;
-  
-  semiSupervisedMDIModel(
-    arma::field<arma::mat> _X,
-    uvec _types,
-    arma::uvec _K,
-    arma::umat _labels,
-    arma::umat _fixed
-  ) :
-  mdiModel(
-    _X,
-    _types,
-    _K,
-    _labels,
-    _fixed
-  ) {
-    
-    // Indicator matrix for known labels across datasets
-    fixed = _fixed;
-    
-    outliers = 1 - fixed;
-    non_outliers = fixed;
-    
-    
-  };
-  
-  void initialiseMixtures() {
-    
-    // std::cout << "\n\nInitialising mixtures?\n";
-    
-    // delete mixtures*;
-    
-    // std::vector< std::unique_ptr<semiSupervisedMixture> > mixtures;
-    
-    // Initialise the collection of mixtures (will need a vector of types too,, currently all are MVN)
-    mixtures.reserve(L);
-    
-    semiSupervisedMixtureFactory my_factory;
-    
-    for(uword l = 0; l < L; l++) {
-      semiSupervisedMixtureFactory::mixtureType val = static_cast<semiSupervisedMixtureFactory::mixtureType>(types(l));
-      
-      // Push it to the back of the vector
-      mixtures.push_back(my_factory.createMixture(val,
-          K(l),
-          labels.col(l),
-          fixed.col(l),
-          X(l)
-        )
-      );
-      
-      // We have to pass the outliers back to the MDI level
-      non_outliers.col(l) = mixtures[l]->non_outliers;
-    }
-  };
-};
+// class semiSupervisedMDIModel: virtual public mdiModel {
+//   
+// public:
+//   
+//   using mdiModel::mdiModel;
+//   
+//   std::vector< std::unique_ptr<semiSupervisedMixture> > mixtures;
+//   
+//   arma::umat fixed;
+//   
+//   semiSupervisedMDIModel(
+//     arma::field<arma::mat> _X,
+//     uvec _types,
+//     arma::uvec _K,
+//     arma::umat _labels,
+//     arma::umat _fixed
+//   ) :
+//   mdiModel(
+//     _X,
+//     _types,
+//     _K,
+//     _labels,
+//     _fixed
+//   ) {
+//     
+//     // Indicator matrix for known labels across datasets
+//     fixed = _fixed;
+//     
+//     outliers = 1 - fixed;
+//     non_outliers = fixed;
+//     
+//     
+//   };
+//   
+//   void initialiseMixtures() {
+//     
+//     // std::cout << "\n\nInitialising mixtures?\n";
+//     
+//     // delete mixtures*;
+//     
+//     // std::vector< std::unique_ptr<semiSupervisedMixture> > mixtures;
+//     
+//     // Initialise the collection of mixtures (will need a vector of types too,, currently all are MVN)
+//     mixtures.reserve(L);
+//     
+//     semiSupervisedMixtureFactory my_factory;
+//     
+//     for(uword l = 0; l < L; l++) {
+//       semiSupervisedMixtureFactory::mixtureType val = static_cast<semiSupervisedMixtureFactory::mixtureType>(types(l));
+//       
+//       // Push it to the back of the vector
+//       mixtures.push_back(my_factory.createMixture(val,
+//           K(l),
+//           labels.col(l),
+//           fixed.col(l),
+//           X(l)
+//         )
+//       );
+//       
+//       // We have to pass the outliers back to the MDI level
+//       non_outliers.col(l) = mixtures[l]->non_outliers;
+//     }
+//   };
+// };
 
 // // [[Rcpp::export]]
 // Rcpp::List runMDI(arma::uword R,
@@ -3839,8 +4208,10 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   
   // throw std::invalid_argument( "X is happy." );
   
+  // std::cout << "\n\n" << fixed.head_rows(4);
+  
   // std::cout << "\n\nMDI initialisation.";
-  mdiModel my_mdi(X, types, K, labels ,fixed);
+  mdiModel my_mdi(X, types, K, labels, fixed);
   
   // std::cout << "\n\nL: " << my_mdi.L;
   // throw std::invalid_argument( "MDI declated." );
@@ -3848,19 +4219,34 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   // Initialise the dataset level mixtures
   my_mdi.initialiseMixtures();
   
+  // throw std::invalid_argument("Throw reached.");
+  
+  // std::cout << "\nHere:!\n";
+  
+
   N = my_mdi.N;
   
-  ucube class_record(R, N, L);
+  ucube class_record(R, N, L),
+    outlier_record(R, N, L),
+    N_k_record(my_mdi.K_max, L, R);
+      
   class_record.zeros();
+  outlier_record.zeros();
   
   // std::cout << "\nMeh.";
-  mat phis_record(R, my_mdi.LC2);
+  mat phis_record(R, my_mdi.LC2),
+    likelihood_record(R, L);
+  
   cube weight_record(R, my_mdi.K_max, L);
   
-  field<mat> alloc(L);
+  // field<mat> alloc(L);
+  field<cube> alloc(R);
+  
   for(uword l = 0; l < L; l++) {
-    alloc(l) = zeros<mat>(N, K(l));
+    // alloc(l) = zeros<mat>(N, K(l));
+    alloc(l) = zeros<cube>(N, K(l), R);
   }
+  
   
   // std::cout << "\nSample from priors.";
   my_mdi.sampleFromPriors();
@@ -3879,6 +4265,11 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   
   // my_mdi.mixtures[0]->N_k;
   
+  // throw std::invalid_argument("Throw reached.");
+  
+  
+  // std::cout << "\n\nMain loop.";
+  
   for(uword r = 0; r < R; r++) {
     
     // std::cout << "\n\nNormalising constant.";
@@ -3893,6 +4284,7 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     // std::cout << "\nPhis update.";
     my_mdi.updatePhis();
     
+    
     // std::cout << "\nSample mixture parameters.";
     for(arma::uword l = 0; l < L; l++) {
       
@@ -3904,15 +4296,29 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
       // (*my_mdi.mixtures)[l]->sampleParameters();
       // (*my_mdi.mixtures)[l]->matrixCombinations();
       
+      
       my_mdi.mixtures[l]->sampleParameters();
       // my_mdi.mixtures[l]->matrixCombinations();
+      
+      // throw std::invalid_argument( "sample parameters." );
+      
       
       // std::cout << "\n\n" << my_mdi.mixtures[l]->mu;
       
     }
     
+    
+    // throw std::invalid_argument("Throw reached.");
+    
     // std::cout << "\nAllocations update.";
     my_mdi.updateAllocation();
+    
+    // Try and swap labels within datasets to improve the correlation between 
+    // clusterings across datasets
+    my_mdi.updateLabels();
+    
+    // throw std::invalid_argument( "lols." );
+    
     
     // std::cout << "\nSave objects.";
     for(uword l = 0; l < L; l++) {
@@ -3921,22 +4327,33 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
       weight_record.slice(l).row(r) = my_mdi.w.col(l).t();
       
       // Save the allocation probabilities
-      alloc(l) += my_mdi.mixtures[l]->alloc;
+      // alloc(l) += my_mdi.mixtures[l]->alloc;
+      alloc(l).slice(r) = my_mdi.mixtures[l]->alloc;
       
+      // Save the record of which items are considered outliers
+      outlier_record.slice(l).row(r) = my_mdi.mixtures[l]->outliers.t();
+      
+      // Save the complete likelihood
+      likelihood_record(r, l) = my_mdi.mixtures[l]->complete_likelihood;
     }
     
     // std::cout << "\n\nSave phis.";
     phis_record.row(r) = my_mdi.phis.t();
+    
+    N_k_record.slice(r) = my_mdi.N_k;
     
     // std::cout << "one iteration done.";
     // throw;
   }
   
   return(List::create(Named("samples") = class_record,
-                      Named("phis") = phis_record,
-                      Named("weights") = weight_record,
-                      Named("alloc") = alloc
-  )
+      Named("phis") = phis_record,
+      Named("weights") = weight_record,
+      Named("outliers") = outlier_record,
+      Named("alloc") = alloc,
+      Named("N_k") = N_k_record,
+      Named("complete_likelihood") = likelihood_record
+    )
   );
   
 }

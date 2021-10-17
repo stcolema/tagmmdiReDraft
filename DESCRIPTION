@@ -1,12 +1,27 @@
 Package: tagmReDraft
 Type: Package
-Title: What the package does (short line)
-Version: 1.0
-Date: 2021-07-15
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Title: TAGMMDI
+License: GPL-3 + file LICENSE
+Version: 0.0.1
+Date: 2021-01-15
+Authors@R: c(person(given = "Stephen", family = "Coleman",
+                    email = "stephen.coleman@mrc-bsu.cam.ac.uk",
+                    role = c("aut","cre")),
+             person(given = "Paul", family ="Kirk",
+                    email = "paul.kirk@mrc-bsu.cam.ac.uk",
+                    role = "aut"),
+             person(given = "Oliver", family ="Crook",
+                    email = "olly@crook.com",
+                    role = "aut"))
+Description: Integrative clustering and semi-supervised prediction.
+  This package includes a C++ implementation of both semi- and 
+  un-supervised Multiple Dataset Integration, an extension of Bayesian mixture models
+  to the integrative (multiple dataset) setting.
 Imports: Rcpp (>= 1.0.6), RcppArmadillo
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo, testthat
+Suggests: xml2
+SystemRequirements: GNU make
+Encoding: UTF-8
+URL: https://github.com/stcolema/tagmmdiReDraft
+BugReports: https://github.com/stcolema/tagmmdiReDraft/issues
 RoxygenNote: 7.1.1
