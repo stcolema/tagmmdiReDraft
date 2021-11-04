@@ -14,9 +14,11 @@ semiSupervisedTAGM::semiSupervisedTAGM(arma::uword _K,
   semiSupervisedMixture(_K, _labels, _fixed, _X)
 {
   
+  // double DBL_EPSILON = std::numeric_limits<double>::epsilon();
+  
   // Doubles for leading coefficient of outlier distribution likelihood
   double lgamma_df_p = 0.0, lgamma_df = 0.0, log_pi_df = 0.0;
-  vec dist_in_T(N), diff_data_global_mean(P);
+  // vec dist_in_T(N), diff_data_global_mean(P);
   
   // for use in the outlier distribution
   mat global_cov = 0.5 * arma::cov(X);
@@ -24,10 +26,22 @@ semiSupervisedTAGM::semiSupervisedTAGM(arma::uword _K,
   // Do we need to add a very little to the diagonal to ensure we can inverse 
   // the dataset covariance matrix?
   uword count_here = 0;
-  while( (rcond(global_cov) < 1e-5) && (count_here < 20) ) {
-    global_cov.diag() += 1 * 0.00001;
-    count_here++;
+  
+  vec eigval = eig_sym( global_cov );
+  
+  // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
+  // small constant to the diagonal entries
+  if(arma::min(eigval) < DBL_EPSILON) {
+    mat small_identity;
+    small_identity.eye(P, P);
+    small_identity *= 1e-6;
+    global_cov = 0.5 * arma::cov(X) + small_identity;
   }
+
+  // while( (rcond(global_cov) < DBL_EPSILON) ) {
+  //   global_cov.diag() += 1 * DBL_EPSILON;
+  //   count_here++;
+  // }
   
   // Rcpp::Rcout  << "\nNumber of vlaues added to diagonal: " << count_here;
   // 
@@ -50,11 +64,19 @@ semiSupervisedTAGM::semiSupervisedTAGM(arma::uword _K,
   non_outliers = fixed;
   
   // One of the parameters for the outlier weight
-  b = (double) sum(non_outliers); // sum(non_outliers);
+  tau_1 = (double) sum(non_outliers); // sum(non_outliers);
+  
+  // I think this is a mistake!
+  tau_2 = (double) sum(outliers); // sum(non_outliers);
   
   // Rcpp::Rcout  << "\nb.\n";
+
   
-  outlier_weight = 1 - rBeta(b + v, N + u - b);
+  // non_outlier_weight = (tau_1 + v)/(N + u + v - 1);
+  // outlier_weight = (tau_2 + u)/(N + u + v - 1);
+  
+  non_outlier_weight = rBeta(tau_1 + v, N + u - tau_1);
+  outlier_weight = rBeta(tau_2 + u, N + v - tau_2);
   
   // Rcpp::Rcout  << "\nNumber of outliers: " << b;
   // Rcpp::Rcout  << "\nv: " << v;
@@ -88,30 +110,39 @@ semiSupervisedTAGM::semiSupervisedTAGM(arma::uword _K,
   
   // Rcpp::Rcout  << "\nLikelihood declared";
   
+  double t_ll_duplicate = 0.0;
+  
   for(uword n = 0; n < N; n++){
 
-    diff_data_global_mean = X_t.col(n) - global_mean;
-
+    // diff_data_global_mean = X_t.col(n) - global_mean;
+    // 
     // dist_in_T(n) = as_scalar(diff_data_global_mean.col(n).t()
     //   * global_cov_inv
     //   * diff_data_global_mean.col(n)
     // );
 
     // The "distance" part of the t-distribution for the current item
-    dist_in_T(n) = as_scalar(diff_data_global_mean.t()
-      * global_cov_inv
-      * diff_data_global_mean
-    );
+    // dist_in_T(n) = as_scalar(diff_data_global_mean.t()
+    //   * global_cov_inv
+    //   * diff_data_global_mean
+    // );
 
     // Rcpp::Rcout  << "\n\nT-distance form centre: " << dist_in_T(n);
     //
     // Rcpp::Rcout  << "\n\nExponent of likelihood: " << ((df + (double) P) / 2.0) * std::log(1.0 + (1.0 / df) * dist_in_T(n));
 
     // The likelihood of each point in the outlier distribution is constant
-    t_ll(n) = t_likelihood_const
-      - ((df + (double) P) / 2.0) * std::log(1.0 + (1.0 / df) * dist_in_T(n));
-
-    // Rcpp::Rcout  << "\n\nOutlier likelihood: " << t_ll(n);
+    t_ll(n) = calcTdistnLikelihood(n);
+    
+    // t_ll(n) = t_likelihood_const
+    //   - (((df + (double) P) / 2.0) * std::log(1.0 + ( dist_in_T(n) / df ) ));
+    // 
+    // t_ll_duplicate = calcTdistnLikelihood(n);
+    // 
+    // if(std::abs(t_ll_duplicate - t_ll(n)) > DBL_EPSILON ) {
+    //   Rcpp::Rcout  << "\n\nOutlier likelihoods disagree:\n" << t_ll(n) << "\n" << t_ll_duplicate;
+    //   throw std::invalid_argument("\nThrown.\n");
+    // }
 
   }
   
@@ -125,17 +156,11 @@ double semiSupervisedTAGM::calcTdistnLikelihood(arma::uword n) {
   
   double exponent = 0.0, ll = 0.0;
   
-  exponent = as_scalar(
-    (X_t.col(n) - global_mean).t()
-    * global_cov_inv
-    * (X_t.col(n) - global_mean)
-  );
+  vec diff_with_mean = X_t.col(n) - global_mean;
   
-  // Rcpp::Rcout  << "\nConstant: " << t_likelihood_const;
-  // Rcpp::Rcout  << "\nGlobal covariance log determinant: " << 0.5 * global_log_det;
+  exponent = as_scalar( diff_with_mean.t() * global_cov_inv * diff_with_mean );
   
-  // Rcpp::Rcout  << dist_in_T(n);
-  
+  // The T likelihood constant is calculated a member of the TAGM class
   ll = t_likelihood_const 
     - ((df + (double) P) / 2.0) * std::log(1.0 + (1.0 / df) * exponent);
   
@@ -145,8 +170,20 @@ double semiSupervisedTAGM::calcTdistnLikelihood(arma::uword n) {
 };
 
 void semiSupervisedTAGM::updateOutlierWeights(){
-  b = (double) accu(non_outliers);
-  outlier_weight = 1 - rBeta(b + v, N + u - b);
+  // b = (double) accu(non_outliers);
+  // outlier_weight = 1 - rBeta(tau_1 + v, N + u - tau_1);
+  
+  // One of the parameters for the outlier weight
+  tau_1 = (double) sum(non_outliers); // sum(non_outliers);
+  
+  // I think this is a mistake!
+  tau_2 = (double) sum(outliers); // sum(non_outliers); 
+
+  // non_outlier_weight = (tau_1 + v)/(N + u + v - 1);
+  // outlier_weight = (tau_2 + u)/(N + u + v - 1);
+  
+  non_outlier_weight = rBeta(tau_1 + v, N + u - tau_1);
+  outlier_weight = rBeta(tau_2 + u, N + v - tau_2);
   
   // Rcpp::Rcout  << "\n\nOutlier weight: " << outlier_weight;
   
@@ -168,7 +205,9 @@ arma::uword semiSupervisedTAGM::sampleOutlier(arma::uword n) {
   // }
   
   // The likelihood of the point in the current cluster
-  outlier_prob(0) = likelihood(n) + log(1 - outlier_weight);
+  // outlier_prob(0) = likelihood(n) + log(1 - outlier_weight);
+  outlier_prob(0) = likelihood(n) + log(non_outlier_weight);
+  
   // outlier_prob(0) = logLikelihood(point, labels(n)) + log(1 - outlier_weight);
   
   // Calculate outlier likelihood
@@ -207,6 +246,9 @@ void semiSupervisedTAGM::updateAllocation(arma::vec weights, arma::mat upweigths
   // First update the outlier parameters
   updateOutlierWeights();
   
+  observed_likelihood = 0.0;
+  complete_likelihood = 0.0;
+  
   // for (auto& n : unfixed_ind) {
   for (uword n = 0; n < N; n++) {
     
@@ -230,13 +272,14 @@ void semiSupervisedTAGM::updateAllocation(arma::vec weights, arma::mat upweigths
       
       // Prediction and update
       u = arma::randu<double>( );
+      
       labels(n) = sum(u > cumsum(comp_prob));
       alloc.row(n) = comp_prob.t();
-      
+
       // Update if the point is an outlier or not
       outliers(n) = sampleOutlier(n);
     }
-    
+
     // Update the complete likelihood based on the new labelling
     complete_likelihood += ll(labels(n));
     likelihood(n) = ll(labels(n));
