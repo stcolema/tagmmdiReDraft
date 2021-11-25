@@ -3,6 +3,10 @@
 callMDI <- function(X, K, types, labels, R, thin, n_chains,
                     fixed = NULL,
                     verbose = TRUE) {
+  
+  # What types are acceptable
+  acceptable_types <- c(1, 3)
+  
   X_is_not_a_list <- !is.list(X)
   if (X_is_not_a_list) {
     stop("X must be a list of matrices.")
@@ -58,17 +62,14 @@ callMDI <- function(X, K, types, labels, R, thin, n_chains,
   }
 
 
-  if (length(K) != L) {
+  if (length(K) != L)
     stop("K must be a vector of equal length to X.")
-  }
 
-  if (length(types) != L) {
+  if (length(types) != L)
     stop("types must be a vector of equal length to X.")
-  }
 
-  if (ncol(labels) != L) {
+  if (ncol(labels) != L)
     stop("The initial labels must have a column for each entry of X.")
-  }
 
   if (ncol(fixed) != L) {
     stop(
@@ -126,10 +127,20 @@ callMDI <- function(X, K, types, labels, R, thin, n_chains,
     }
     stop(err)
   }
-
+  
+  wrong_types_given <- ! all(types %in% acceptable_types)
+  if( wrong_types_given ) {
+    err <- paste0("types hold values in ", 
+      wrong_types_given, 
+      ". This has the association, 1 = MVT, 3 = TAGM."
+    )
+    stop(err)
+  }
+  
   # Create an object to save the output to. This is used to call ``lapply``.
   mdi_output <- vector("list", n_chains)
 
+  # Use lapply to parallelise the chains.
   mdi_output <- lapply(mdi_output, function(x) {
 
     # Call MDI
