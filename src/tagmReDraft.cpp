@@ -1361,7 +1361,7 @@ public:
   
     // Indicator matrix for item n being welll-described by its component
     // in dataset l
-    // non_outliers,
+    non_outliers,
     
     fixed;
 
@@ -1611,8 +1611,8 @@ public:
     // outliers.set_size(N, L);
     // outliers.zeros();
     // 
-    // non_outliers.set_size(N, L);
-    // non_outliers.ones();
+    non_outliers.set_size(N, L);
+    non_outliers.ones();
     
     fixed = _fixed;
     // fixed_ind.set_size(L);
@@ -1678,7 +1678,7 @@ public:
       // std::cout << "\n\nWhat:\n" << size(non_outliers) << "\n" << size(mixtures[l]->non_outliers);
       
       // We have to pass this back up
-      // non_outliers.col(l) = mixtures[l]->non_outliers;
+      non_outliers.col(l) = mixtures[l]->non_outliers;
     }
   };
   
@@ -1877,8 +1877,8 @@ public:
         // contribute to the component weight, but not to the component parameters
         // and we use ot hand this down to the local mixture, mistakenly using 
         // the same value for N_k for the component parameters and the weights.
-        // members_lk = 1 * ((labels.col(l) == k) % non_outliers.col(l));
-        members_lk = 1 * ((labels.col(l) == k)); // % non_outliers.col(l));
+        members_lk = 1 * ((labels.col(l) == k) % non_outliers.col(l));
+        // members_lk = 1 * ((labels.col(l) == k)); // % non_outliers.col(l));
         
         // std::cout << "\n\nN_k (before outliers): " << accu(members_lk);
         
@@ -1956,10 +1956,10 @@ public:
       
       mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
       
-      // // If we only have one dataset, flip back to normalised weights
-      // if(L == 1) {
-      //   w = w / accu(w) ;
-      // }
+      // If we only have one dataset, flip back to normalised weights
+      if(L == 1) {
+        w = w / accu(w) ;
+      }
       
       // std::cout << "\n\nN_kl:\n" << mixtures[l]->N_k;
       
@@ -1979,15 +1979,15 @@ public:
       prod_to_phi_shape = 0.0, 
       prod_to_r_less_1 = 0.0;
     
-    // uvec rel_inds_l(N), rel_inds_m(N);
+    uvec rel_inds_l(N), rel_inds_m(N);
     
     vec weights;
     
-    // rel_inds_l = labels.col(l) % non_outliers.col(l);
-    // rel_inds_m = labels.col(m) % non_outliers.col(m);
-    // 
-    // N_lm = accu(rel_inds_l == rel_inds_m); 
-    N_lm = accu(labels.col(l) == labels.col(m));
+    rel_inds_l = labels.col(l) % non_outliers.col(l);
+    rel_inds_m = labels.col(m) % non_outliers.col(m);
+
+    N_lm = accu(rel_inds_l == rel_inds_m);
+    // N_lm = accu(labels.col(l) == labels.col(m));
     rate = calcPhiRate(l, m);
     weights = zeros<vec>(N_lm + 1);
     
@@ -2068,17 +2068,17 @@ void updatePhis() {
   // std::cout << "\n\nPhis before update:\n" << phis;
   uword N_lm = 0;
   double shape = 0.0, rate = 0.0;
-  // uvec rel_inds_l(N), rel_inds_m(N);
+  uvec rel_inds_l(N), rel_inds_m(N);
   
   for(uword l = 0; l < (L - 1); l++) {
     for(uword m = l + 1; m < L; m++) {
-      // rel_inds_l = labels.col(l) % non_outliers.col(l);
-      // rel_inds_m = labels.col(m) % non_outliers.col(m);
-      // 
-      // N_lm = accu(rel_inds_l == rel_inds_m);
-      // shape = 1 + N_lm;
+      rel_inds_l = labels.col(l) % non_outliers.col(l);
+      rel_inds_m = labels.col(m) % non_outliers.col(m);
+
+      N_lm = accu(rel_inds_l == rel_inds_m);
+      shape = 1 + N_lm;
       
-      shape = 1 + accu(labels.col(l) == labels.col(m));
+      // shape = 1 + accu(labels.col(l) == labels.col(m));
       rate = calcPhiRate(l, m);
 
       // std::cout << "\n\nShape:" << shape;
@@ -2143,35 +2143,93 @@ void updatePhis() {
       }
     }
   };
+  
+  mat calculateUpweights(uword l) {
+    uvec matching_labels(N);
+    mat upweights(N, K(l));
+    upweights.zeros();
+    
+    for(uword m = 0; m < L; m++) {
+      
+      if(m != l){
+        
+        for(uword k = 0; k < K(l); k++) {
+          
+          matching_labels = (labels.col(m) == k);
+          
+          // Recall that the map assumes l < m; so account for that
+          if(l < m) {
+            upweights.col(k) = phis(phi_ind_map(m, l)) * conv_to<vec>::from(matching_labels);
+          } else {
+            upweights.col(k) = phis(phi_ind_map(l, m)) * conv_to<vec>::from(matching_labels);
+          }
+        }
+      }
+    }
+    
+    upweights++;
+    
+    return upweights;
+  };
+  
+  void initialiseMDI() {
+    // uvec matching_labels(N);
+    mat upweights;
+    
+    sampleFromPriors();
+    initialiseMixtures();
+    
+    for(uword l = 0; l < L; l++) {
+      upweights = calculateUpweights(l);
+    
+      
+      // Update the allocation within the mixture using MDI level weights and phis
+      // mixtures[l].updateAllocation(w(span(0, K(l) - 1), l), upweigths.t());
+      // (*mixtures)[l]->updateAllocation(w(span(0, K(l) - 1), l), upweigths.t());
+      mixtures[l]->initialiseMixture(w(span(0, K(l) - 1), l), upweights.t());
+      
+      labels.col(l) = mixtures[l]->labels;
+      non_outliers.col(l) = mixtures[l]->non_outliers;
+      
+    }
+    
+  };
 
   void updateAllocation() {
 
-    uvec matching_labels(N);
-    mat upweigths(N, K_max);
+    // uvec matching_labels(N);
+    mat upweights; // (N, K_max);
 
     // throw std::invalid_argument( "in MDI allocation." );
     
     for(uword l = 0; l < L; l++) {
-      upweigths.set_size(N, K(l));
-      upweigths.zeros();
-
-      for(uword m = 0; m < L; m++) {
-        if(m != l){
-          for(uword k = 0; k < K(l); k++) {
-
-            matching_labels = (labels.col(m) == k);
-
-            // Recall that the map assumes l < m; so account for that
-            if(l < m) {
-              upweigths.col(k) = phis(phi_ind_map(m, l)) * conv_to<vec>::from(matching_labels);
-            } else {
-              upweigths.col(k) = phis(phi_ind_map(l, m)) * conv_to<vec>::from(matching_labels);
-            }
-          }
-        }
-      }
-
-      upweigths++;
+      upweights = calculateUpweights(l);
+      
+      // upweights.set_size(N, K(l));
+      // upweights.zeros();
+      // 
+      // for(uword m = 0; m < L; m++) {
+      //   
+      //   
+      //   if(m != l){
+      //     Rcpp::Rcout << "\n\nDo we enter this loop when L = 1?\n";
+      //     
+      //     
+      //     for(uword k = 0; k < K(l); k++) {
+      // 
+      //       matching_labels = (labels.col(m) == k);
+      // 
+      //       // Recall that the map assumes l < m; so account for that
+      //       if(l < m) {
+      //         upweights.col(k) = phis(phi_ind_map(m, l)) * conv_to<vec>::from(matching_labels);
+      //       } else {
+      //         upweights.col(k) = phis(phi_ind_map(l, m)) * conv_to<vec>::from(matching_labels);
+      //       }
+      //     }
+      //   }
+      // }
+      // 
+      // upweights++;
 
       // throw std::invalid_argument( "in MDI allocation." );
       
@@ -2186,7 +2244,7 @@ void updatePhis() {
       // Update the allocation within the mixture using MDI level weights and phis
       // mixtures[l].updateAllocation(w(span(0, K(l) - 1), l), upweigths.t());
       // (*mixtures)[l]->updateAllocation(w(span(0, K(l) - 1), l), upweigths.t());
-      mixtures[l]->updateAllocation(w(span(0, K(l) - 1), l), upweigths.t());
+      mixtures[l]->updateAllocation(w(span(0, K(l) - 1), l), upweights.t());
       
       // Pass the new labels from the mixture level back to the MDI level.
       // labels.col(l) = mixtures[l].labels;
@@ -2198,7 +2256,7 @@ void updatePhis() {
       // std::cout << "\n\nPass from mixtures back to MDI level.\n";
       
       labels.col(l) = mixtures[l]->labels;
-      // non_outliers.col(l) = mixtures[l]->non_outliers;
+      non_outliers.col(l) = mixtures[l]->non_outliers;
       
 
     }
@@ -4186,13 +4244,21 @@ void updatePhis() {
 
 // [[Rcpp::export]]
 Rcpp::List runSemiSupervisedMDI(arma::uword R,
-                  arma::field<arma::mat> Y,
-                  arma::uvec K,
-                  arma::uvec types,
-                  arma::umat labels,
-                  arma::umat fixed) {
+  arma::uword thin,
+  arma::field<arma::mat> Y,
+  arma::uvec K,
+  arma::uvec types,
+  arma::umat labels,
+  arma::umat fixed
+) {
   
-  uword L = size(Y)(0), N;
+  // Indicator if the current iteration should be recorded
+  bool save_this_iteration = false;
+  
+  uword L = size(Y)(0),
+    n_saved = floor(R / thin) + 1,
+    save_ind = 0,
+    N = 0;
   arma::field<arma::mat> X(L);
   
   // std::cout << "\n\nL: " << L;
@@ -4217,7 +4283,8 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   // throw std::invalid_argument( "MDI declated." );
   
   // Initialise the dataset level mixtures
-  my_mdi.initialiseMixtures();
+  // my_mdi.initialiseMixtures();
+  my_mdi.initialiseMDI();
   
   // throw std::invalid_argument("Throw reached.");
   
@@ -4226,30 +4293,34 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
 
   N = my_mdi.N;
   
-  ucube class_record(R, N, L),
-    outlier_record(R, N, L),
-    N_k_record(my_mdi.K_max, L, R);
+  ucube class_record(n_saved, N, L),
+    outlier_record(n_saved, N, L),
+    N_k_record(my_mdi.K_max, L, n_saved);
       
   class_record.zeros();
   outlier_record.zeros();
   
   // std::cout << "\nMeh.";
-  mat phis_record(R, my_mdi.LC2),
-    likelihood_record(R, L);
+  mat phis_record(n_saved, my_mdi.LC2),
+    likelihood_record(n_saved, L);
   
-  cube weight_record(R, my_mdi.K_max, L);
+  cube weight_record(n_saved, my_mdi.K_max, L);
   
   // field<mat> alloc(L);
-  field<cube> alloc(R);
+  field<cube> alloc(n_saved);
   
   for(uword l = 0; l < L; l++) {
     // alloc(l) = zeros<mat>(N, K(l));
-    alloc(l) = zeros<cube>(N, K(l), R);
+    alloc(l) = zeros<cube>(N, K(l), n_saved);
+    
   }
   
   
+
+  
   // std::cout << "\nSample from priors.";
   my_mdi.sampleFromPriors();
+  
   for(arma::uword l = 0; l < L; l++) {
     // my_mdi.mixtures[l].sampleFromPriors();
     // my_mdi.mixtures[l].matrixCombinations();
@@ -4263,6 +4334,30 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     
   }
   
+
+  // Save the initial values for each object
+  for(uword l = 0; l < L; l++) {
+    // arma::urowvec labels_l = my_mdi.labels.col(l).t();
+    class_record.slice(l).row(save_ind) = my_mdi.labels.col(l).t();
+    weight_record.slice(l).row(save_ind) = my_mdi.w.col(l).t();
+    
+    // Save the allocation probabilities
+    // alloc(l) += my_mdi.mixtures[l]->alloc;
+    alloc(l).slice(save_ind) = my_mdi.mixtures[l]->alloc;
+    
+    // Save the record of which items are considered outliers
+    outlier_record.slice(l).row(save_ind) = my_mdi.mixtures[l]->outliers.t();
+    
+    // Save the complete likelihood
+    likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
+  }
+  
+  // std::cout << "\n\nSave phis.";
+  phis_record.row(save_ind) = my_mdi.phis.t();
+  
+  N_k_record.slice(save_ind) = my_mdi.N_k;
+  
+  
   // my_mdi.mixtures[0]->N_k;
   
   // throw std::invalid_argument("Throw reached.");
@@ -4271,6 +4366,13 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   // std::cout << "\n\nMain loop.";
   
   for(uword r = 0; r < R; r++) {
+    
+    // Should the current MCMC iteration be saved?
+    save_this_iteration = ((r + 1) % thin == 0);
+    
+    // Rcpp::Rcout << "\nr: " << r;
+    // Rcpp::Rcout << "\nSave this iteration? " << save_this_iteration;
+    
     
     // std::cout << "\n\nNormalising constant.";
     my_mdi.updateNormalisingConst();
@@ -4320,28 +4422,33 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     // throw std::invalid_argument( "lols." );
     
     
-    // std::cout << "\nSave objects.";
-    for(uword l = 0; l < L; l++) {
-      // arma::urowvec labels_l = my_mdi.labels.col(l).t();
-      class_record.slice(l).row(r) = my_mdi.labels.col(l).t();
-      weight_record.slice(l).row(r) = my_mdi.w.col(l).t();
+      if( save_this_iteration ) {
       
-      // Save the allocation probabilities
-      // alloc(l) += my_mdi.mixtures[l]->alloc;
-      alloc(l).slice(r) = my_mdi.mixtures[l]->alloc;
+      // std::cout << "\nSave objects.";
+      for(uword l = 0; l < L; l++) {
+        save_ind++;
+        
+        // arma::urowvec labels_l = my_mdi.labels.col(l).t();
+        class_record.slice(l).row(save_ind) = my_mdi.labels.col(l).t();
+        weight_record.slice(l).row(save_ind) = my_mdi.w.col(l).t();
+        
+        // Save the allocation probabilities
+        // alloc(l) += my_mdi.mixtures[l]->alloc;
+        alloc(l).slice(save_ind) = my_mdi.mixtures[l]->alloc;
+        
+        // Save the record of which items are considered outliers
+        outlier_record.slice(l).row(save_ind) = my_mdi.mixtures[l]->outliers.t();
+        
+        // Save the complete likelihood
+        likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
+      }
       
-      // Save the record of which items are considered outliers
-      outlier_record.slice(l).row(r) = my_mdi.mixtures[l]->outliers.t();
+      // std::cout << "\n\nSave phis.";
+      phis_record.row(save_ind) = my_mdi.phis.t();
       
-      // Save the complete likelihood
-      likelihood_record(r, l) = my_mdi.mixtures[l]->complete_likelihood;
+      N_k_record.slice(save_ind) = my_mdi.N_k;
     }
-    
-    // std::cout << "\n\nSave phis.";
-    phis_record.row(r) = my_mdi.phis.t();
-    
-    N_k_record.slice(r) = my_mdi.N_k;
-    
+
     // std::cout << "one iteration done.";
     // throw;
   }

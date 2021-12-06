@@ -50,10 +50,10 @@ public:
     df = 4.0, 
     
     // Hyperparameters  
-    u = 2.0, v = 10.0, b = 0.0, 
+    u = 2.0, v = 10.0, tau_1 = 0.0, tau_2 = 0.0,  // b = 0.0,
     
     // Outlier component weight
-    outlier_weight = 0.0;
+    non_outlier_weight = 0.0, outlier_weight = 0.0;
   
   // Vector indicating if the item is an outlier (value of 1) or not (value of 0)
   // arma::uvec outliers,

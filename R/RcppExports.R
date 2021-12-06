@@ -97,7 +97,7 @@ mvtLogLikelihood <- function(x, mu, Sigma, nu) {
     .Call(`_tagmReDraft_mvtLogLikelihood`, x, mu, Sigma, nu)
 }
 
-runSemiSupervisedMDI <- function(R, Y, K, types, labels, fixed) {
-    .Call(`_tagmReDraft_runSemiSupervisedMDI`, R, Y, K, types, labels, fixed)
+runSemiSupervisedMDI <- function(R, thin, Y, K, types, labels, fixed) {
+    .Call(`_tagmReDraft_runSemiSupervisedMDI`, R, thin, Y, K, types, labels, fixed)
 }
 

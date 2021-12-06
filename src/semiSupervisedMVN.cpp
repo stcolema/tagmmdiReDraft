@@ -184,13 +184,13 @@ void semiSupervisedMVN::sampleParameters() {
       // std::cout << "\n\nSampled mean acquired:\n" << sample_mean;
       
       sample_cov = calcSampleCov(component_data, sample_mean, n_k, P);
-      arma_cov = (n_k - 1) * arma::cov(component_data);
+      // arma_cov = (n_k - 1) * arma::cov(component_data);
       
-      if(accu(abs(sample_cov - arma_cov)) > 1e-6) {
-        Rcpp::Rcout << "\n\nSample covariance (mine) disagrees with Armadillo.\n";
-        Rcpp::Rcout <<  "\nDIfference is: " << accu(abs(sample_cov - arma_cov));
-        throw std::invalid_argument("Throw reached.");
-      }
+      // if(accu(abs(sample_cov - arma_cov)) > 1e-6) {
+      //   Rcpp::Rcout << "\n\nSample covariance (mine) disagrees with Armadillo.\n";
+      //   Rcpp::Rcout <<  "\nDIfference is: " << accu(abs(sample_cov - arma_cov));
+      //   throw std::invalid_argument("Throw reached.");
+      // }
       
       // std::cout << "\n\nSampled cov acquired:\n" << sample_cov;
       

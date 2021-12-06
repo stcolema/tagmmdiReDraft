@@ -69,6 +69,7 @@ public:
   virtual ~semiSupervisedMixture() { };
   
   virtual void updateAllocation(arma::vec weights, arma::mat upweigths);
+  virtual void initialiseMixture(arma::vec weights, arma::mat upweigths);
   
   // The virtual functions that will be defined in every subclasses
   virtual void sampleFromPriors() = 0;
