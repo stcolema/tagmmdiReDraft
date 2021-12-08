@@ -25,11 +25,7 @@ public:
     
     // T degrees of freedom
     df = 4.0;
-  
-  // Vector indicating if the item is an outlier (value of 1) or not (value of 0)
-  // arma::uvec outliers,
-  //   non_outliers;
-  
+      
   // The dataset mean
   vec global_mean;
   
@@ -39,7 +35,7 @@ public:
   using outlierComponent::outlierComponent;
   
   // Parametrised class
-  mvt(arma::mat _X);
+  mvt(arma::uvec _fixed, arma::mat _X);
   
   // Destructor
   virtual ~mvt() { };

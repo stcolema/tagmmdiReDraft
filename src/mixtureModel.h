@@ -8,8 +8,10 @@
 // included dependencies
 # include <RcppArmadillo.h>
 # include "density.h"
+# include "outlierComponent.h"
 # include "densityFactory.h"
 # include "outlierComponentFactory.h"
+
 using namespace arma ;
 
 // =============================================================================
@@ -63,10 +65,13 @@ public:
     outliers,
     non_outliers;
   
-  vec concentration, w, ll, likelihood;
+  vec concentration, w, ll, likelihood, outlier_likelihood;
   umat members;
   mat X, X_t, alloc;
   
+  // Create a unique_ptr 
+  // std::unique_ptr<density> density_ptr = std::make_unique<density>();
+  // std::unique_ptr<outlierComponent> outlierComponent_ptr = std::make_unique<outlierComponent>();
   std::unique_ptr<density> density_ptr;
   std::unique_ptr<outlierComponent> outlierComponent_ptr;
   
@@ -83,18 +88,25 @@ public:
   // Destructor
   virtual ~mixtureModel() { };
   
-  virtual void updateAllocation(arma::vec weights, arma::mat upweigths);
+  void updateAllocation(arma::vec weights, arma::mat upweigths);
+  arma::uword sampleOutlier(
+    double non_outlier_likelihood_n,
+    double outlier_likelihood_n
+  );
   
-  // Initialise the density and outlier types
-  virtual void initialiseMixture(arma::uword type);
+  void updateOutlierWeights();
+  
+  // Initialise the density, outlier component and mixture model
+  void initialiseDensity(arma::uword type);
   void initialiseOutlierComponent(arma::uword type);
+  void initialiseMixture(arma::vec weights, arma::mat upweigths);
   
   // The functions collected from the density
-  virtual void sampleFromPriors();
-  virtual void sampleParameters();
-  virtual void calcBIC();
-  virtual arma::vec itemLogLikelihood(arma::vec x);
-  virtual double logLikelihood(arma::vec x, arma::uword k);
+  void sampleFromPriors();
+  void sampleParameters();
+  void calcBIC();
+  arma::vec itemLogLikelihood(arma::vec x);
+  double logLikelihood(arma::vec x, arma::uword k);
   
 };
 

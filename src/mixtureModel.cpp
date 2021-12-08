@@ -1,6 +1,6 @@
 // mixtureModel.cpp
 // =============================================================================
-  // included dependencies
+// included dependencies
 # include <RcppArmadillo.h>
 # include "mixtureModel.h"
 
@@ -65,8 +65,12 @@ mixtureModel::mixtureModel(
   outliers = zeros<uvec>(N);
   
   // Initialise the density
-  initialiseMixture(mixture_type);
+  initialiseDensity(mixture_type);
   n_param = density_ptr->n_param;
+  
+  // Initialise the outlier component (default is empty)
+  initialiseOutlierComponent(outlier_type);
+  
 };
   
 void mixtureModel::updateAllocation(
@@ -80,6 +84,8 @@ void mixtureModel::updateAllocation(
   
   complete_likelihood = 0.0;
   observed_likelihood = 0.0;
+  
+  updateOutlierWeights();
   
   // for (auto& n : unfixed_ind) {
   for (uword n = 0; n < N; n++) {
@@ -107,6 +113,7 @@ void mixtureModel::updateAllocation(
       u = randu<double>( );
       
       labels(n) = sum(u > cumsum(comp_prob));
+      outliers(n) = sampleOutlier(ll(labels(n)), outlier_likelihood(n));
     }
     
     // Update the complete likelihood based on the new labelling
@@ -119,7 +126,7 @@ void mixtureModel::updateAllocation(
   K_occ = uniqueK.n_elem;
 };
   
-void mixtureModel::initialiseMixture(arma::uword type) {
+void mixtureModel::initialiseDensity(arma::uword type) {
   
   densityFactory my_factory;
   
@@ -127,7 +134,7 @@ void mixtureModel::initialiseMixture(arma::uword type) {
   densityFactory::densityType val = static_cast<densityFactory::densityType>(type);
   
   // Create a smart pointer to the correct type of model
-  density_ptr = my_factory.createMixture(val, K, labels, X);
+  density_ptr = my_factory.createDensity(val, K, labels, X);
 };
   
 // Sample from the prior distribution of the density
@@ -158,5 +165,67 @@ void mixtureModel::initialiseOutlierComponent(uword type) {
   outlierComponentFactory::outlierType val = static_cast<outlierComponentFactory::outlierType>(type);
 
   // Create a smart pointer to the correct type of model
-  outlierComponent_ptr = my_factory.createOutlierComponent(val, X);
+  outlierComponent_ptr = my_factory.createOutlierComponent(val, fixed, X);
+  outlier_likelihood = outlierComponent_ptr->outlier_likelihood;
+  
+  // Outlier vectors
+  outliers = outlierComponent_ptr->outliers;
+  non_outliers = 1 - outliers;
+  
 };
+
+
+void mixtureModel::initialiseMixture(
+    arma::vec weights,
+    arma::mat upweigths
+) {
+  
+  uvec uniqueK;
+  vec comp_prob(K);
+  
+  complete_likelihood = 0.0;
+  observed_likelihood = 0.0;
+  
+  // for (auto& n : unfixed_ind) {
+  for (uword n = 0; n < N; n++) {
+    
+    // The mixture-specific log likelihood for each observation in each class
+    ll = itemLogLikelihood(X_t.col(n));
+    
+    // Update with weights
+    comp_prob = ll + log(weights) + log(upweigths.col(n));
+    
+    // Record the likelihood - this is used to calculate the observed likelihood
+    // likelihood(n) = accu(comp_prob);
+    observed_likelihood += accu(comp_prob);
+    
+    if(fixed(n) == 0) {
+      // Handle overflow problems and then normalise to convert to probabilities
+      comp_prob = exp(comp_prob - max(comp_prob));
+      comp_prob = comp_prob / sum(comp_prob);
+      
+      // Save the allocation probabilities
+      alloc.row(n) = comp_prob.t();
+    }
+    
+    // Update the complete likelihood based on the new labelling
+    complete_likelihood += ll(labels(n));
+    
+  }
+  
+  // Number of occupied components (used in BIC calculation)
+  uniqueK = unique(labels);
+  K_occ = uniqueK.n_elem;
+  
+}
+
+arma::uword mixtureModel::sampleOutlier(double non_outlier_likelihood_n,
+                                        double outlier_likelihood_n) {
+  return outlierComponent_ptr->sampleOutlier(non_outlier_likelihood_n, 
+                                      outlier_likelihood_n);
+};
+
+void mixtureModel::updateOutlierWeights() {
+  non_outliers = 1 - outliers;
+  outlierComponent_ptr->updateWeights(non_outliers, outliers);
+}

@@ -11,7 +11,11 @@ using namespace arma ;
 
 
 // Parametrised class
-noOutliers::noOutliers(arma::mat _X) : outlierComponent(_X) {
+noOutliers::noOutliers(arma::uvec _fixed, arma::mat _X) : outlierComponent(_fixed, _X) {
+  
+  // No outliers
+  outliers = zeros<uvec>(N);
+  
   outlier_likelihood.set_size(N);
   outlier_likelihood.zeros();
 };

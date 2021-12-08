@@ -11,8 +11,6 @@ using namespace arma ;
 // =============================================================================
 // virtual density class
 
-
-
 // Parametrised class
 density::density(
   arma::uword _K,

@@ -11,10 +11,12 @@ using namespace arma ;
 // virtual outlierComponent class
 
 // Parametrised class
-outlierComponent::outlierComponent(arma::mat _X) {
+outlierComponent::outlierComponent(arma::uvec _fixed, arma::mat _X) {
   
   X = _X;
   X_t = X.t();
+  
+  outliers = 1 - _fixed;
   
   N = X.n_rows;
   P = X.n_cols;

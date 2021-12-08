@@ -75,6 +75,7 @@ void mvn::sampleMuPrior() {
 void mvn::sampleFromPriors() {
   sampleCovPrior();
   sampleMuPrior();
+  matrixCombinations();
 };
 
 // Update the common matrix manipulations to avoid recalculating N times
@@ -178,6 +179,7 @@ void mvn::sampleParameters(arma::umat members, arma::uvec non_outliers) {
     cov_log_det(k) = log_det(cov.slice(k)).real();
 
   }
+  matrixCombinations();
 };
 
 double mvn::posteriorPredictive(arma::vec x, arma::uvec indices) {

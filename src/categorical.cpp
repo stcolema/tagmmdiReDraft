@@ -23,8 +23,9 @@ categorical::categorical(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   
   Y = conv_to<umat>::from(X);
   
+  // Initialise some of the more awkward parameters
   initialiseParameters();
-  
+
 };
 
 
@@ -54,6 +55,7 @@ void categorical::initialiseParameters() {
   } 
   
   n_param = sum(n_cat) * K;
+  
 }
 
 void categorical::sampleFromPriors() {

@@ -12,7 +12,7 @@ using namespace arma ;
 // empty contructor
 densityFactory::densityFactory(){ };
 
-std::unique_ptr<density> densityFactory::createMixture(
+std::unique_ptr<density> densityFactory::createDensity(
   densityType type,
   arma::uword K,
   arma::uvec labels,

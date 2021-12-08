@@ -23,7 +23,7 @@ public:
   using outlierComponent::outlierComponent;
   
   // Parametrised class
-  noOutliers(arma::mat _X);
+  noOutliers(arma::uvec _fixed, arma::mat _X);
   
   // Destructor
   virtual ~noOutliers() { };

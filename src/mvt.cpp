@@ -11,7 +11,7 @@ using namespace arma ;
 
 
 // Parametrised class
-mvt::mvt(arma::mat _X) : outlierComponent(_X) {
+mvt::mvt(arma::uvec _fixed, arma::mat _X) : outlierComponent(_fixed, _X) {
   
   // Doubles for leading coefficient of outlier distribution likelihood
   double lgamma_df_p = 0.0, lgamma_df = 0.0, log_pi_df = 0.0;
@@ -34,6 +34,9 @@ mvt::mvt(arma::mat _X) : outlierComponent(_X) {
 
   outlier_likelihood.set_size(N);
 
+  // Calculate the log likelihood of each item within the outlier component
+  calculateAllLogLikelihoods();
+  
 };
 
 double mvt::calculateItemLogLikelihood(arma::vec x) {

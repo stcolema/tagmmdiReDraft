@@ -35,7 +35,7 @@ public:
     C = 2
   };
   
-  static std::unique_ptr<density> createMixture(
+  static std::unique_ptr<density> createDensity(
     densityType type,
     arma::uword K,
     arma::uvec labels,

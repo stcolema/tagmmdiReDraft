@@ -33,6 +33,8 @@ public:
     // Hyperparameters for outlier weights
     u = 2.0, v = 10.0, tau_1 = 0.0, tau_2 = 0.0;
     
+  uvec outliers;
+    
   // Assume a global outlier likelihood with constant parameters
   vec outlier_likelihood;
 
@@ -40,7 +42,7 @@ public:
   mat X, X_t;
   
   // Parametrised class
-  outlierComponent(arma::mat _X);
+  outlierComponent(arma::uvec _fixed, arma::mat _X);
   
   // Destructor
   virtual ~outlierComponent() { };
