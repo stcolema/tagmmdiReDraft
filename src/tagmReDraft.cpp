@@ -1298,12 +1298,19 @@ public:
                                                               arma::uvec fixed,
                                                               arma::mat X) {
     switch (type) {
-    // case G: return std::make_unique<gaussianSampler>(K, labels, concentration, X);
-    case MVN: return std::make_unique<semiSupervisedMVN>(K, labels, fixed, X);
+      // case G: return std::make_unique<gaussianSampler>(K, labels, concentration, X);
+    case MVN: {
+      return std::make_unique<semiSupervisedMVN>(K, labels, fixed, X);
+    }
       // case C: return std::make_unique<categoricalSampler>(K, labels, concentration, X);
-    case TMVN: return std::make_unique<semiSupervisedTAGM>(K, labels, fixed, X);
-      // case TG: return std::make_unique<tagmGaussian>(K, labels, concentration, X);
-    default: throw std::invalid_argument( "invalid sampler type." );
+    case TMVN: {
+      return std::make_unique<semiSupervisedTAGM>(K, labels, fixed, X);
+    }
+        // case TG: return std::make_unique<tagmGaussian>(K, labels, concentration, X);
+    default : {
+      Rcpp::Rcerr << "invalid sampler type.\n";
+      throw;
+    }
     }
   }
 };
@@ -1877,43 +1884,13 @@ public:
         // contribute to the component weight, but not to the component parameters
         // and we use ot hand this down to the local mixture, mistakenly using 
         // the same value for N_k for the component parameters and the weights.
-        members_lk = 1 * ((labels.col(l) == k) % non_outliers.col(l));
-        // members_lk = 1 * ((labels.col(l) == k)); // % non_outliers.col(l));
-        
-        // std::cout << "\n\nN_k (before outliers): " << accu(members_lk);
-        
-        // members_lk = members_lk % non_outliers.col(l);
-        
-        // std::cout << "\n\nN_k (after outliers): " << accu(members_lk);
-        
-        // std::cout << "\n\nNon_outliers (MDI):\n" << non_outliers.col(l);
-        // std::cout << "\n\nNon_outliers (Mixture):\n" << mixtures[l]->non_outliers;
-        
-        // if(accu(non_outliers.col(l) != mixtures[l]->non_outliers) > 0) {
-        //   std::cout << "\n\nDataset: " << l << "\nDisagreement non_outliers:\n" << accu(non_outliers.col(l) != mixtures[l]->non_outliers);
-        // }
-        // std::cout << "\n\nDataset: " << l << "\nCluster: " << k << "\nMembers:\n" << accu(members_lk);
-        
-        
-        // members(span::all, span(l, l), span(k, k) = members_lk;
+        members_lk = 1 * (labels.col(l) == k);
         members.slice(l).col(k) = members_lk;
-
-        // std::cout << "\nMembers accessed.";
-
         N_k(k, l) = accu(members_lk);
-
-        // std::cout << "\nN_k updated.";
 
         // The hyperparameters
         shape = 1 + N_k(k, l);
-        
-        // throw std::invalid_argument( "\nMy inverses diverged." );
-        
-        
         rate = calcWeightRate(l, k);
-
-        // std::cout << "\n\nShape:" << shape;
-        // std::cout << "\nRate:" << rate;
 
         // Sample a new weight
         w(k, l) = randg(distr_param(w_shape_prior + shape,
@@ -2002,7 +1979,7 @@ public:
       // than (or equal to) the bottom index. If this occurs we want to keep the 
       // contribution of these products as the identity.
       
-      // Reset vlaues that might have changed in the previous iteration
+      // Reset values that might have changed in the previous iteration
       rTooSmall = false;
       prod_to_phi_shape = 1.0; 
       prod_to_r_less_1= 1.0;
