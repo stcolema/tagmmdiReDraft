@@ -35,7 +35,7 @@ public:
   };
   
   static std::unique_ptr<outlierComponent> createOutlierComponent(
-      outlierType _type, arma::uvec _fixed, arma::mat _X
+      outlierType type, arma::uvec fixed, arma::mat X
   );
 };
 

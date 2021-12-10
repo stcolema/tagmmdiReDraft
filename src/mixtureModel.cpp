@@ -64,9 +64,17 @@ mixtureModel::mixtureModel(
   non_outliers = ones<uvec>(N);
   outliers = zeros<uvec>(N);
   
+  // Rcpp::Rcout << "\nInitialise density within mixture.\n";
+  
   // Initialise the density
   initialiseDensity(mixture_type);
+  
+  // Rcpp::Rcout << "\nAccess density pointer.\n";
+  
   n_param = density_ptr->n_param;
+  
+  
+  // Rcpp::Rcout << "\nInitialise outlier component within mixture.\n";
   
   // Initialise the outlier component (default is empty)
   initialiseOutlierComponent(outlier_type);
@@ -85,6 +93,8 @@ void mixtureModel::updateAllocation(
   complete_likelihood = 0.0;
   observed_likelihood = 0.0;
   
+  // Update the outlier weights - if no outlier component is being modelled, 
+  // this does nothing
   updateOutlierWeights();
   
   // for (auto& n : unfixed_ind) {
@@ -159,17 +169,30 @@ double mixtureModel::logLikelihood(arma::vec x, arma::uword k) {
 };
 
 void mixtureModel::initialiseOutlierComponent(uword type) {
+  
+  // Rcpp::Rcout << "\nIn function to initialise outlier component.\n";
+  
   outlierComponentFactory my_factory;
 
+  // Rcpp::Rcout << "\nCast type.\n";
+  
   // Convert the unsigned integer into a mixture type object
   outlierComponentFactory::outlierType val = static_cast<outlierComponentFactory::outlierType>(type);
 
+  // Rcpp::Rcout << "\nCreate pointer.\n";
+  
   // Create a smart pointer to the correct type of model
   outlierComponent_ptr = my_factory.createOutlierComponent(val, fixed, X);
+  
+  // Rcpp::Rcout << "\nAccess likelihood.\n";
   outlier_likelihood = outlierComponent_ptr->outlier_likelihood;
   
   // Outlier vectors
+  // Rcpp::Rcout << "Access outliers.\n";
+  
   outliers = outlierComponent_ptr->outliers;
+  
+  // Rcpp::Rcout << "Update non-outliers.\n";
   non_outliers = 1 - outliers;
   
 };

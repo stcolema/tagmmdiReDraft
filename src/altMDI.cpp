@@ -1,7 +1,4 @@
 # include <RcppArmadillo.h>
-# include <math.h>
-# include <string>
-# include <iostream>
 
 # include "logLikelihoods.h"
 # include "genericFunctions.h"
@@ -328,7 +325,7 @@ public:
     phi_indicator.set_size(n_combinations, LC2);
     phi_indicator.zeros();
     
-    // std::cout << "\n\nPhi indicator declared.";
+    // Rcpp::Rcout << "\n\nPhi indicator declared.";
     
     // Map between a dataset pair and the column index. This will be a lower
     // triangular matrix of unsigned ints
@@ -368,8 +365,13 @@ public:
     
     // mixtureModelFactory my_factory;
     
+    
+    // Rcpp::Rcout << "\n\nInitialising mixtures.\n";
+    
     // Initialise the collection of mixtures (will need a vector of types too,, currently all are MVN)
     mixtures.reserve(L);
+    
+    // Rcpp::Rcout << "Entering loop.\n";
     
     for(uword l = 0; l < L; l++) {
       
@@ -384,6 +386,9 @@ public:
                                        X(l)
         )
       );
+      
+      // Rcpp::Rcout << "View " << l << ".\n";
+      
       //   my_factory.createMixtureModel(
       //     mixture_types(l),
       //     outlier_types(l),
@@ -397,6 +402,9 @@ public:
       // We have to pass this back up
       non_outliers.col(l) = mixtures[l]->non_outliers;
     }
+    
+    // Rcpp::Rcout << "Mixtures initialised.\n\n";
+    
   };
   
   
@@ -472,18 +480,18 @@ public:
     relevant_inds = find(comb_inds.col(lstar) == comb_inds.col(mstar));
     relevant_combinations = comb_inds.rows(relevant_inds);
     
-    // std::cout << "\n\nPhi indicator matrix (t):\n" << phi_indicator_t_mat;
-    // std::cout << "\n\nRelevant indices:\n" << relevant_inds;
+    // Rcpp::Rcout << "\n\nPhi indicator matrix (t):\n" << phi_indicator_t_mat;
+    // Rcpp::Rcout << "\n\nRelevant indices:\n" << relevant_inds;
     
     // We only need the relevant phi indicators
     relevant_phi_inidicators = phi_indicator_t_mat.cols(relevant_inds);
     
-    // std::cout << "\n\nRelevant indicators pre shedding:\n" << relevant_phi_inidicators;
+    // Rcpp::Rcout << "\n\nRelevant indicators pre shedding:\n" << relevant_phi_inidicators;
     
     // Drop phi_{lstar, mstar} from both the indicator matrix and the phis vector
     relevant_phi_inidicators.shed_row(phi_ind_map(mstar, lstar));
     
-    // std::cout << "\n\nRelevant indicators post shedding:\n" << relevant_phi_inidicators;
+    // Rcpp::Rcout << "\n\nRelevant indicators post shedding:\n" << relevant_phi_inidicators;
     
     relevant_phis = phis;
     relevant_phis.shed_row(phi_ind_map(mstar, lstar));
@@ -503,9 +511,9 @@ public:
     // ready to multiply by the weight products
     phi_products = prod(phi_prod_mat, 0).t();
     
-    // std::cout << "\n\nPhi product matrix:\n" << phi_prod_mat;
-    // std::cout << "\n\nPhi products:\n" << phi_products;
-    // std::cout << "\n\nRelevant combinations:\n" << relevant_combinations;
+    // Rcpp::Rcout << "\n\nPhi product matrix:\n" << phi_prod_mat;
+    // Rcpp::Rcout << "\n\nPhi products:\n" << phi_products;
+    // Rcpp::Rcout << "\n\nRelevant combinations:\n" << relevant_combinations;
     
     for(uword l = 0; l < L; l++) {
       if(l != lstar){
@@ -515,7 +523,7 @@ public:
       }
     }
     
-    // std::cout << "\n\nCalculate phi rate.\n";
+    // Rcpp::Rcout << "\n\nCalculate phi rate.\n";
     
     // The rate for the gammas
     rate = v * accu(weight_products % phi_products);
@@ -653,8 +661,8 @@ public:
   //       shape = samplePhiShape(l, m, rate);
   // 
   // 
-  //       // std::cout << "\n\nShape:" << shape;
-  //       // std::cout << "\nRate:" << rate;
+  //       // Rcpp::Rcout << "\n\nShape:" << shape;
+  //       // Rcpp::Rcout << "\nRate:" << rate;
   // 
   //       phis(phi_ind_map(m, l)) = randg(distr_param(
   //         phi_shape_prior + shape,
@@ -668,7 +676,7 @@ public:
   // Update the context similarity parameters
   void updatePhis() {
     
-    // std::cout << "\n\nPhis before update:\n" << phis;
+    // Rcpp::Rcout << "\n\nPhis before update:\n" << phis;
     uword N_lm = 0;
     double shape = 0.0, rate = 0.0;
     uvec rel_inds_l(N), rel_inds_m(N);
@@ -684,8 +692,8 @@ public:
         // shape = 1 + accu(labels.col(l) == labels.col(m));
         rate = calcPhiRate(l, m);
         
-        // std::cout << "\n\nShape:" << shape;
-        // std::cout << "\nRate:" << rate;
+        // Rcpp::Rcout << "\n\nShape:" << shape;
+        // Rcpp::Rcout << "\nRate:" << rate;
         
         phis(phi_ind_map(m, l)) = randg(distr_param(
           phi_shape_prior + shape,
@@ -695,7 +703,7 @@ public:
       }
     }
     
-    // std::cout << "\n\nPhis after update:\n" << phis;
+    // Rcpp::Rcout << "\n\nPhis after update:\n" << phis;
     
   };
   
@@ -797,7 +805,9 @@ public:
     
     initialiseMixtures();
     sampleFromPriors();
-        
+    
+    // Rcpp::Rcout << "Priors sampled.\n";
+    
     for(uword l = 0; l < L; l++) {
       upweights = calculateUpweights(l);
       
@@ -809,6 +819,8 @@ public:
       
       labels.col(l) = mixtures[l]->labels;
       non_outliers.col(l) = mixtures[l]->non_outliers;
+      
+      // Rcpp::Rcout << l << "th view 0 iteration run.\n\n";
       
     }
     
@@ -853,11 +865,11 @@ public:
       // throw std::invalid_argument( "in MDI allocation." );
       
       
-      // std::cout << "\n\nUpdate allocations in mixture.\n";
+      // Rcpp::Rcout << "\n\nUpdate allocations in mixture.\n";
       //
-      // std::cout << "\n\nUpweights:\n" << upweigths;
-      // std::cout << "\n\nWeights:\n" << w;
-      // std::cout << "\n\nWeights in lth dataset:\n" << w(span(0, K(l) - 1), l);
+      // Rcpp::Rcout << "\n\nUpweights:\n" << upweigths;
+      // Rcpp::Rcout << "\n\nWeights:\n" << w;
+      // Rcpp::Rcout << "\n\nWeights in lth dataset:\n" << w(span(0, K(l) - 1), l);
       
       
       // Update the allocation within the mixture using MDI level weights and phis
@@ -872,7 +884,7 @@ public:
       // labels.col(l) = (*mixtures)[l]->labels;
       // non_outliers.col(l) = (*mixtures)[l]->non_outliers;
       
-      // std::cout << "\n\nPass from mixtures back to MDI level.\n";
+      // Rcpp::Rcout << "\n\nPass from mixtures back to MDI level.\n";
       
       labels.col(l) = mixtures[l]->labels;
       non_outliers.col(l) = mixtures[l]->non_outliers;
@@ -1059,6 +1071,7 @@ Rcpp::List runAltMDI(arma::uword R,
     N = 0;
   arma::field<arma::mat> X(L);
   
+  // Rcpp::Rcout << "\nNumber of saved samples: " << n_saved;
   
   for(uword l = 0; l < L; l++) {
     X(l) = Y(l);
@@ -1069,21 +1082,25 @@ Rcpp::List runAltMDI(arma::uword R,
   
   N = my_mdi.N;
   
+  mat phis_record(n_saved, my_mdi.LC2),
+    likelihood_record(n_saved, L);
+  
+  phis_record.zeros();
+  likelihood_record.zeros();
+  
   ucube class_record(n_saved, N, L),
-  outlier_record(n_saved, N, L),
-  N_k_record(my_mdi.K_max, L, n_saved);
+    outlier_record(n_saved, N, L),
+    N_k_record(my_mdi.K_max, L, n_saved);
   
   class_record.zeros();
   outlier_record.zeros();
-  
-  // std::cout << "\nMeh.";
-  mat phis_record(n_saved, my_mdi.LC2),
-  likelihood_record(n_saved, L);
+  N_k_record.zeros();
   
   cube weight_record(n_saved, my_mdi.K_max, L);
+  weight_record.zeros();
   
   // field<mat> alloc(L);
-  field<cube> alloc(n_saved);
+  field<cube> alloc(L);
   
   for(uword l = 0; l < L; l++) {
     // alloc(l) = zeros<mat>(N, K(l));
@@ -1108,7 +1125,7 @@ Rcpp::List runAltMDI(arma::uword R,
     likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
   }
   
-  // std::cout << "\n\nSave phis.";
+  // Rcpp::Rcout << "\n\nSave phis.";
   phis_record.row(save_ind) = my_mdi.phis.t();
   
   N_k_record.slice(save_ind) = my_mdi.N_k;
@@ -1118,19 +1135,19 @@ Rcpp::List runAltMDI(arma::uword R,
     // Should the current MCMC iteration be saved?
     save_this_iteration = ((r + 1) % thin == 0);
 
-    // std::cout << "\n\nNormalising constant.";
+    // Rcpp::Rcout << "\n\nNormalising constant.";
     my_mdi.updateNormalisingConst();
     
-    // std::cout << "\nStrategic latent variable.";
+    // Rcpp::Rcout << "\nStrategic latent variable.";
     my_mdi.sampleStrategicLatentVariable();
     
-    // std::cout << "\nWeights update.";
+    // Rcpp::Rcout << "\nWeights update.";
     my_mdi.updateWeights();
     
-    // std::cout << "\nPhis update.";
+    // Rcpp::Rcout << "\nPhis update.";
     my_mdi.updatePhis();
     
-    // std::cout << "\nSample mixture parameters.";
+    // Rcpp::Rcout << "\nSample mixture parameters.";
     for(arma::uword l = 0; l < L; l++) {
       my_mdi.mixtures[l]->sampleParameters();
     }
@@ -1142,44 +1159,53 @@ Rcpp::List runAltMDI(arma::uword R,
     my_mdi.updateLabels();
     
     if( save_this_iteration ) {
-      
-      // std::cout << "\nSave objects.";
+      save_ind++;
+
+      // Rcpp::Rcout << "\nSave objects.";
       for(uword l = 0; l < L; l++) {
-        save_ind++;
         
         // arma::urowvec labels_l = my_mdi.labels.col(l).t();
         class_record.slice(l).row(save_ind) = my_mdi.labels.col(l).t();
+        
+        // Rcpp::Rcout << "\nSave weights.";
+        
         weight_record.slice(l).row(save_ind) = my_mdi.w.col(l).t();
         
         // Save the allocation probabilities
         // alloc(l) += my_mdi.mixtures[l]->alloc;
+        // Rcpp::Rcout << "\nSave allocation probabilities.";
+        
         alloc(l).slice(save_ind) = my_mdi.mixtures[l]->alloc;
         
         // Save the record of which items are considered outliers
+        // Rcpp::Rcout << "\nSave outliers.";
         outlier_record.slice(l).row(save_ind) = my_mdi.mixtures[l]->outliers.t();
         
         // Save the complete likelihood
+        // Rcpp::Rcout << "\nSave model likelihood.";
         likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
       }
       
-      // std::cout << "\n\nSave phis.";
+      // Rcpp::Rcout << "\n\nSave phis.";
       phis_record.row(save_ind) = my_mdi.phis.t();
       
       N_k_record.slice(save_ind) = my_mdi.N_k;
     }
     
-    // std::cout << "one iteration done.";
+    // Rcpp::Rcout << r << "th iteration done.\n";
     // throw;
   }
   
-  return(List::create(Named("samples") = class_record,
-                      Named("phis") = phis_record,
-                      Named("weights") = weight_record,
-                      Named("outliers") = outlier_record,
-                      Named("alloc") = alloc,
-                      Named("N_k") = N_k_record,
-                      Named("complete_likelihood") = likelihood_record
-  )
+  return(
+    List::create(
+      Named("samples") = class_record,
+      Named("phis") = phis_record,
+      Named("weights") = weight_record,
+      Named("outliers") = outlier_record,
+      Named("alloc") = alloc,
+      Named("N_k") = N_k_record,
+      Named("complete_likelihood") = likelihood_record
+    )
   );
   
 }

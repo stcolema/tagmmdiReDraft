@@ -49,23 +49,28 @@ public:
   // Destructor
   virtual ~mvn() { };
   
+  // Calculate the empirical hyperparameters 
+  arma::vec empiricalMean();
+  arma::mat empiricalScaleMatrix();
+  void empiricalBayesHyperparameters();
+  
   // Sampling from priors
-  virtual void sampleCovPrior();
-  virtual void sampleMuPrior();
-  virtual void sampleFromPriors();
+  void sampleCovPrior();
+  void sampleMuPrior();
+  void sampleFromPriors();
+  
+  void sampleParameters(arma::umat members, arma::uvec non_outliers);
+  double posteriorPredictive(arma::vec x, arma::uvec indices);
   
   // Update the common matrix manipulations to avoid recalculating N times
-  virtual void matrixCombinations();
+  void matrixCombinations();
   
   // The log likelihood of a item belonging to each cluster
-  virtual arma::vec itemLogLikelihood(arma::vec item);
+  arma::vec itemLogLikelihood(arma::vec item);
   
   // The log likelihood of a item belonging to a specific cluster
-  virtual double logLikelihood(arma::vec item, arma::uword k);
+  double logLikelihood(arma::vec item, arma::uword k);
   
-  virtual void sampleParameters(arma::umat members, arma::uvec non_outliers);
-  
-  double posteriorPredictive(arma::vec x, arma::uvec indices);
   
 };
 

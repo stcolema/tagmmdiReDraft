@@ -10,7 +10,8 @@ using namespace arma ;
 // virtual densityFactory class
 
 // empty contructor
-densityFactory::densityFactory(){ };
+densityFactory::densityFactory() { };
+densityFactory::densityFactory(const densityFactory &L) { };
 
 std::unique_ptr<density> densityFactory::createDensity(
   densityType type,

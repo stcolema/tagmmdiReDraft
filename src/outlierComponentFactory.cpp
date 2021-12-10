@@ -10,19 +10,25 @@ using namespace arma ;
 // virtual outlierComponentFactory class
 
 // empty contructor
-outlierComponentFactory::outlierComponentFactory(){ };
+outlierComponentFactory::outlierComponentFactory() { };
+outlierComponentFactory::outlierComponentFactory(const outlierComponentFactory &L) { };
 
 std::unique_ptr<outlierComponent> outlierComponentFactory::createOutlierComponent(
-    outlierType _type, arma::uvec _fixed, arma::mat _X
+    outlierType type, arma::uvec fixed, arma::mat X
 ) {
-  switch (_type) {
+  // Rcpp::Rcout << "\nMake component.";
+  
+  switch (type) {
   case E: {
-    return std::make_unique<noOutliers>(_fixed, _X);
+    // Rcpp::Rcout << "\nMake empty component.";
+    return std::make_unique<noOutliers>(fixed, X);
   }
   case MVT: {
-    return std::make_unique<mvt>(_fixed, _X);
+    // Rcpp::Rcout << "\nMake MVT component.";
+    return std::make_unique<mvt>(fixed, X);
   }
   default : {
+    // Rcpp::Rcout << "\nThrow an error.";
     Rcpp::Rcerr << "invalid outlier type.\n";
     throw;
   }

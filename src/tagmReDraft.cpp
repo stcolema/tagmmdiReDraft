@@ -4284,7 +4284,7 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
   cube weight_record(n_saved, my_mdi.K_max, L);
   
   // field<mat> alloc(L);
-  field<cube> alloc(n_saved);
+  field<cube> alloc(L);
   
   for(uword l = 0; l < L; l++) {
     // alloc(l) = zeros<mat>(N, K(l));
@@ -4401,9 +4401,10 @@ Rcpp::List runSemiSupervisedMDI(arma::uword R,
     
       if( save_this_iteration ) {
       
+      save_ind++;
+      
       // std::cout << "\nSave objects.";
       for(uword l = 0; l < L; l++) {
-        save_ind++;
         
         // arma::urowvec labels_l = my_mdi.labels.col(l).t();
         class_record.slice(l).row(save_ind) = my_mdi.labels.col(l).t();

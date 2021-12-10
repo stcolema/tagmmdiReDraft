@@ -57,18 +57,16 @@ public:
   
   // Sampling from priors
   void sampleFromPriors();
+  void sampleParameters(arma::umat members, arma::uvec non_outliers);
+  void initialiseParameters();
   
   // The log likelihood of a item belonging to each cluster
-  virtual arma::vec itemLogLikelihood(arma::vec item);
+  arma::vec itemLogLikelihood(arma::vec item);
   
   // The log likelihood of a item belonging to a specific cluster
-  virtual double logLikelihood(arma::vec item, arma::uword k);
-
-  void sampleParameters(arma::umat members, arma::uvec non_outliers);
+  double logLikelihood(arma::vec item, arma::uword k);
+  // double posteriorPredictive(arma::vec x, arma::uvec indices);
   
-  double posteriorPredictive(arma::vec x, arma::uvec indices);
-  
-  void initialiseParameters();
   
 };
 

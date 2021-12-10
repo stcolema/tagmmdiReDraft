@@ -16,30 +16,6 @@ mvn::mvn(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   density(_K, _labels, _X) 
 {
   
-  // Mean vector and covariance matrix and a component weight
-  n_param = P * (1 + (P + 1) * 0.5);
-  
-  // Default values for hyperparameters
-  // Cluster hyperparameters for the Normal-inverse Wishart
-  // Prior shrinkage
-  kappa = 0.01;
-  // Degrees of freedom
-  nu = P + 2;
-  
-  // Mean
-  arma::mat mean_mat = arma::mean(_X, 0).t();
-  xi = mean_mat.col(0);
-  
-  // Empirical Bayes for a diagonal covariance matrix
-  arma::mat scale_param = _X.each_row() - xi.t();
-  arma::vec diag_entries(P);
-
-  arma::mat global_cov_loc = arma::cov(X);
-  double scale_entry = (arma::accu(global_cov_loc.diag()) / P) / std::pow(K, 2.0 / (double) P);
-  
-  diag_entries.fill(scale_entry);
-  scale = arma::diagmat( diag_entries );
-  
   // Set the size of the objects to hold the component specific parameters
   mu.set_size(P, K);
   mu.zeros();
@@ -55,8 +31,56 @@ mvn::mvn(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   cov_inv.set_size(P, P, K);
   cov_inv.zeros();
   
+  // Mean vector and covariance matrix and a component weight
+  n_param = P * (1 + (P + 1) * 0.5);
+  
+  // Default values for hyperparameters
+  // Cluster hyperparameters for the Normal-inverse Wishart
+  // Prior shrinkage
+  kappa = 0.01;
+  // Degrees of freedom
+  nu = P + 2;
+  
+  // Empirical Bayesian hyperparameters for the mean and covariance
+  empiricalBayesHyperparameters();
+  
 };
 
+
+arma::vec mvn::empiricalMean() {
+  arma::vec mu_0;
+  arma::mat mean_mat;
+  mean_mat = arma::mean(X, 0).t();
+  mu_0 = mean_mat.col(0);
+  return mu_0;
+};
+
+arma::mat mvn::empiricalScaleMatrix() {
+  double scale_entry = 0.0;
+  arma::vec diag_entries(P);
+  arma::mat scale_param, global_cov_loc, Psi;
+  
+  
+  // Empirical Bayes for a diagonal covariance matrix
+  scale_param = X.each_row() - xi.t();
+  global_cov_loc = arma::cov(X);
+  
+  // The entries of the diagonal of the empirical scale matrix all have this 
+  // value
+  scale_entry = (arma::accu(global_cov_loc.diag()) / P) / std::pow(K, 2.0 / (double) P);
+  
+  // Fill the vector that corresponds to the diagonal entries of the scale matrix
+  diag_entries.fill(scale_entry);
+  
+  // The empirical scale matrix
+  Psi = arma::diagmat( diag_entries );
+  return Psi;
+};
+
+void mvn::empiricalBayesHyperparameters() {
+  xi = empiricalMean();
+  scale = empiricalScaleMatrix();
+}
 
 void mvn::sampleCovPrior() {
   for(arma::uword k = 0; k < K; k++){

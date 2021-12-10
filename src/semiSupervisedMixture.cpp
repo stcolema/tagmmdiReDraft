@@ -1,4 +1,6 @@
-
+// semiSupervisedMixture.cpp
+// =============================================================================
+// included dependencies
 # include "semiSupervisedMixture.h"
 
 // [[Rcpp::depends(RcppArmadillo)]]
@@ -6,6 +8,8 @@
 using namespace Rcpp ;
 using namespace arma ;
 
+// =============================================================================
+// virtual semiSupervisedMixture class
 
 // Parametrised class
 semiSupervisedMixture::semiSupervisedMixture(

@@ -185,6 +185,10 @@ void semiSupervisedTAGM::updateOutlierWeights(){
   non_outlier_weight = rBeta(tau_1 + v, N + u - tau_1);
   outlier_weight = rBeta(tau_2 + u, N + v - tau_2);
   
+  // Normalise these
+  non_outlier_weight = non_outlier_weight / (non_outlier_weight + outlier_weight);
+  outlier_weight = outlier_weight / (non_outlier_weight + outlier_weight);
+  
   // Rcpp::Rcout  << "\n\nOutlier weight: " << outlier_weight;
   
 };

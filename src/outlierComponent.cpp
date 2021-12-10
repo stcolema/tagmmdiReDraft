@@ -17,15 +17,13 @@ outlierComponent::outlierComponent(arma::uvec _fixed, arma::mat _X) {
   X_t = X.t();
   
   outliers = 1 - _fixed;
+  non_outliers = _fixed;
   
   N = X.n_rows;
   P = X.n_cols;
   
   // Initialise the outlier likelihood vector
   outlier_likelihood = zeros< vec >(N);
-  
-  // Calculate the log-likelihood for each item being an outlier
-  calculateAllLogLikelihoods();
   
 };
 

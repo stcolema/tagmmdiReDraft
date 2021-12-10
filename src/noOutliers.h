@@ -29,7 +29,15 @@ public:
   virtual ~noOutliers() { };
   
   // The likelihood of a given item
+  void calculateAllLogLikelihoods();
   double calculateItemLogLikelihood(arma::vec x);
+  
+  // Update the outlier weights
+  void updateWeights(uvec non_outliers, uvec outliers);
+  
+  // Sample if a given item is an outlier or not
+  arma::uword sampleOutlier(double non_outlier_likelihood_n,
+                            double outlier_likelihood_n);
   
 };
 

@@ -28,12 +28,12 @@ public:
   
   double
     // Outlier component weights
-    non_outlier_weight = 0.0, outlier_weight = 0.0,
+    non_outlier_weight = 1.0, outlier_weight = 0.0,
   
     // Hyperparameters for outlier weights
     u = 2.0, v = 10.0, tau_1 = 0.0, tau_2 = 0.0;
     
-  uvec outliers;
+  uvec outliers, non_outliers;
     
   // Assume a global outlier likelihood with constant parameters
   vec outlier_likelihood;
@@ -48,14 +48,14 @@ public:
   virtual ~outlierComponent() { };
 
   // Calculate the likelihood of each item being an outlier
-  void calculateAllLogLikelihoods();
+  virtual void calculateAllLogLikelihoods();
   virtual double calculateItemLogLikelihood(vec x) = 0;
   
   // Update the outlier weights
   void updateWeights(uvec non_outliers, uvec outliers);
   
   // Sample if a given item is an outlier or not
-  arma::uword sampleOutlier(double non_outlier_likelihood_n,
+  virtual arma::uword sampleOutlier(double non_outlier_likelihood_n,
                             double outlier_likelihood_n);
   
 };
