@@ -15,7 +15,7 @@
 using namespace arma ;
 
 // =============================================================================
-// virtual mixtureModel class
+// mixtureModel class
 
 class mixtureModel {
   
