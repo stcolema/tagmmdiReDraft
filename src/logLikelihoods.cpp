@@ -1,9 +1,14 @@
+// logLikelihoods.cpp
+// =============================================================================
+// included dependencies
 # include <RcppArmadillo.h>
 # include "logLikelihoods.h"
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
 using namespace std ;
+
+// =============================================================================
 
 double gammaLogLikelihood(double x, double shape, double rate){
   return shape * log(rate) - lgamma(shape) + (shape - 1) * log(x) - rate * x;

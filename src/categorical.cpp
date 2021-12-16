@@ -1,24 +1,20 @@
-
-# include "semiSupervisedCategorical.h"
+// categorical.cpp
+// =============================================================================
+// included dependencies
+# include "logLikelihoods.h"
+# include "categorical.h"
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
 using namespace Rcpp ;
 using namespace arma ;
 
+// =============================================================================
+// categorical class
 
-semiSupervisedCategorical::semiSupervisedCategorical(arma::uword _K,
-                          arma::uvec _labels,
-                          arma::uvec _fixed,
-                          arma::mat _X
-) : semiSupervisedMixture(_K,
-_labels,
-_fixed,
-_X
-) {
-  
-  mat call_prob_entry;
-  uvec Y_p(N), categories;
+categorical::categorical(arma::uword _K, arma::uvec _labels, arma::mat _X) : 
+  density(_K, _labels, _X) 
+{
   
   n_cat.set_size(P);
   
@@ -26,6 +22,16 @@ _X
   // class_probabilities.zeros();
   
   Y = conv_to<umat>::from(X);
+  
+  // Initialise some of the more awkward parameters
+  initialiseParameters();
+
+};
+
+
+void categorical::initialiseParameters() {
+  uvec Y_p(N), categories;
+  mat call_prob_entry;
   
   for(uword p = 0; p < P; p++) {
     
@@ -47,33 +53,36 @@ _X
       cat_prior_probability(p)(ii) = accu(Y_p == ii) / N;
     }
   } 
-};
+  
+  n_param = sum(n_cat) * K;
+  
+}
 
-void semiSupervisedCategorical::sampleFromPriors() {
+void categorical::sampleFromPriors() {
   for(uword p = 0; p < P; p++) {
     for(uword ii = 0; ii < n_cat(p); ii++) {
       for(uword k = 0; k < K; k++) {
         class_probabilities(p).row(ii) = arma::randg(
           K,
           arma::distr_param(cat_prior_probability(p)(ii), 1.0)
-            // arma::as_scalar(cat_prior_probability(p)(ii)),
-            // 1.0
-          // ) 
         );
       }
     }
   }
 };
 
-void semiSupervisedCategorical::sampleParameters() {
-  uvec component_indices;
+void categorical::sampleParameters(arma::umat members, arma::uvec non_outliers) {
+  uvec relevant_indices;
   umat component_data;
   uword cat_count = 0;
   double concentration_n = 0.0;
   
   for(uword k = 0; k < K; k++) {
-    component_indices = find(labels == k);
-    component_data = Y.rows(component_indices);
+    
+    // Find the items relevant to sampling the parameters
+    relevant_indices = find((members.col(k) == 1) && (non_outliers == 1));
+    
+    component_data = Y.rows(relevant_indices);
     for(uword p = 0; p < P; p++) {
       
       for(uword ii = 0; ii < n_cat(p); ii++) {
@@ -90,7 +99,7 @@ void semiSupervisedCategorical::sampleParameters() {
   }
 };
 
-double semiSupervisedCategorical::logLikelihood(arma::vec item, arma::uword k) {
+double categorical::logLikelihood(arma::vec item, arma::uword k) {
   
   double ll = 0.0;
   uword x_p = 0;
@@ -103,12 +112,11 @@ double semiSupervisedCategorical::logLikelihood(arma::vec item, arma::uword k) {
   return ll;
 };
 
-arma::vec semiSupervisedCategorical::itemLogLikelihood(arma::vec item) {
+arma::vec categorical::itemLogLikelihood(arma::vec item) {
   vec ll(K);
   
   for(uword k = 0; k < K; k++) {
     ll(k) = logLikelihood(item, k);
   }
   return ll;
-}
-
+};
