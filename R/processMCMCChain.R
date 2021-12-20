@@ -57,10 +57,10 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
   new_output <- mcmc_output
   
   # The model fit
-  new_output$complete_likelihood <- mcmc_output$complete_likelihood[-dropped_indices, ]
+  new_output$complete_likelihood <- mcmc_output$complete_likelihood[-dropped_indices, , drop = F]
 
   # The allocations and allocation probabilities
-  new_output$allocations <- mcmc_output$allocations[-dropped_indices, ,]
+  new_output$allocations <- mcmc_output$allocations[-dropped_indices, , , drop = F]
   
   new_output$allocation_probability <- vector("list", V)
   new_output$allocation_probabilities <- vector("list", V)
@@ -71,7 +71,7 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
     if(is_semisupervised[v]) {
       
       # Drop the allocation probabilities from the warm up period
-      new_output$allocation_probabilities[[v]] <- mcmc_output$allocation_probabilities[[v]][, , -dropped_indices]
+      new_output$allocation_probabilities[[v]] <- mcmc_output$allocation_probabilities[[v]][, , -dropped_indices, drop = F]
       
       # The estimate of the allocation probability matrix, the probability of the 
       # most probable class and the predicted class

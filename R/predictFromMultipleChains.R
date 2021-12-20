@@ -25,7 +25,7 @@
 predictFromMultipleChains <- function(mcmc_outputs,
                                       burn,
                                       point_estimate_method = "median") {
-  
+
   # Process the chains, making point estimates and applying a burn-in
   processed_chains <- processMCMCChains(mcmc_outputs, burn, point_estimate_method)
 
@@ -82,34 +82,35 @@ predictFromMultipleChains <- function(mcmc_outputs,
   merged_outputs$thin <- thin
   merged_outputs$burn <- burn
   merged_outputs$n_chains <- n_chains
-  
+
   merged_outputs$Point_estimate <- point_estimate_method
-  
+
   merged_outputs$N <- N
   merged_outputs$V <- V
   merged_outputs$K <- K
-  
+
   first_chain <- TRUE
   for (v in view_inds) {
-    merged_outputs$allocation_probability[[v]] <- .alloc_prob <-  matrix(0, 
-                                                                         N,
-                                                                         K[v]
-                                                                         )
+    merged_outputs$allocation_probability[[v]] <- .alloc_prob <- matrix(
+      0,
+      N,
+      K[v]
+    )
     for (ii in chain_indices) {
       .curr_chain <- processed_chains[[ii]]
       in_first_chain <- (ii == 1)
 
       if (in_first_chain) {
-        merged_outputs$allocations[[v]] <- .curr_chain$allocations[, , v]
+        merged_outputs$allocations[[v]] <- .curr_chain$allocations[, , v, drop = F]
       } else {
         .prev <- merged_outputs$allocations[[v]]
-        .current <- .curr_chain$allocations[, , v]
+        .current <- .curr_chain$allocations[, , v, drop = F]
         merged_outputs$allocations[[v]] <- rbind(.prev, .current)
       }
 
       if (is_semisupervised[v]) {
         .prev <- .alloc_prob
-        .curr<- .curr_chain$allocation_probability[[v]]
+        .curr <- .curr_chain$allocation_probability[[v]]
 
         .alloc_prob <- .prev + .curr
       }

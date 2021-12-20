@@ -5,16 +5,15 @@
 #' @param burn The number of MCMC samples to drop as part of a burn in.
 #' @returns A named list similar to the output of
 #' ``runMCMCChains`` with some additional entries:
-#' \describe{
+#' 
+#'  * ``allocation_probability``: $(N x K)$ matrix. The point estimate of
+#'  the allocation probabilities for each data point to each class.
 #'
-#'  \item {``allocation_probability``} {$(N x K)$ matrix. The point estimate of
-#'  the allocation probabilities for each data point to each class.}
+#'  * ``prob``: $N$ vector. The point estimate of the probability of being
+#'  allocated to the class with the highest probability.
 #'
-#'  \item {``prob``} {$N$ vector. The point estimate of the probability of being
-#'  allocated to the class with the highest probability.}
-#'
-#'  \item {``pred``} {$N$ vector. The predicted class for each sample.}
-#'  }
+#'  * ``pred``: $N$ vector. The predicted class for each sample.
+#'  
 #'  @importFrom parallel parLapply
 #' @export
 processMCMCChains <- function(mcmc_lst, burn,
