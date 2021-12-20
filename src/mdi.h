@@ -43,7 +43,10 @@ public:
     
     // Prior hyperparameters for MDI phi parameters
     phi_shape_prior = 1.0,
-    phi_rate_prior = 0.2;
+    phi_rate_prior = 0.2,
+    
+    // Model fit
+    complete_likelihood = 0.0;
   
   
   arma::uvec 

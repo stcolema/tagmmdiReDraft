@@ -46,7 +46,7 @@ public:
   
   // The probability of each class within category; it will be a N_cat x K x P
   // array
-  arma::field<arma::mat> class_probabilities;
+  arma::field<arma::mat> category_probabilities;
   
   using density::density;
   

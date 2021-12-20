@@ -7,9 +7,7 @@
 #' @return An N vector of labels.
 #' @export
 generateInitialUnsupervisedLabels <- function(N, alpha, K) {
-  
-  N <- length(labels)
-  
+
   # Breakdown of class proportions
   weights <- sampleStickBreakingPrior(alpha, K)
   components_modelled <- seq(1, K)

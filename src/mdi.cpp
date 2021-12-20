@@ -714,50 +714,15 @@ void mdiModelAlt::updateAllocation() {
   // uvec matching_labels(N);
   mat upweights; // (N, K_max);
   
+  complete_likelihood = 0.0;
+  
   // throw std::invalid_argument( "in MDI allocation." );
   
   for(uword l = 0; l < L; l++) {
     upweights = calculateUpweights(l);
     
-    // upweights.set_size(N, K(l));
-    // upweights.zeros();
-    // 
-    // for(uword m = 0; m < L; m++) {
-    //   
-    //   
-    //   if(m != l){
-    //     Rcpp::Rcout << "\n\nDo we enter this loop when L = 1?\n";
-    //     
-    //     
-    //     for(uword k = 0; k < K(l); k++) {
-    // 
-    //       matching_labels = (labels.col(m) == k);
-    // 
-    //       // Recall that the map assumes l < m; so account for that
-    //       if(l < m) {
-    //         upweights.col(k) = phis(phi_ind_map(m, l)) * conv_to<vec>::from(matching_labels);
-    //       } else {
-    //         upweights.col(k) = phis(phi_ind_map(l, m)) * conv_to<vec>::from(matching_labels);
-    //       }
-    //     }
-    //   }
-    // }
-    // 
-    // upweights++;
-    
-    // throw std::invalid_argument( "in MDI allocation." );
-    
-    
-    // Rcpp::Rcout << "\n\nUpdate allocations in mixture.\n";
-    //
-    // Rcpp::Rcout << "\n\nUpweights:\n" << upweigths;
-    // Rcpp::Rcout << "\n\nWeights:\n" << w;
-    // Rcpp::Rcout << "\n\nWeights in lth dataset:\n" << w(span(0, K(l) - 1), l);
-    
     
     // Update the allocation within the mixture using MDI level weights and phis
-    // mixtures[l]->updateAllocation(w(span(0, K(l) - 1), l), upweigths.t());
-    // (*mixtures)[l]->updateAllocation(w(span(0, K(l) - 1), l), upweigths.t());
     mixtures[l]->updateAllocation(w(span(0, K(l) - 1), l), upweights.t());
     
     // Pass the new labels from the mixture level back to the MDI level.
@@ -771,7 +736,7 @@ void mdiModelAlt::updateAllocation() {
     
     labels.col(l) = mixtures[l]->labels;
     non_outliers.col(l) = mixtures[l]->non_outliers;
-    
+    complete_likelihood += mixtures[l]->complete_likelihood;
     
   }
 };

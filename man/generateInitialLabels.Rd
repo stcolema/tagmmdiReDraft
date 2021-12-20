@@ -4,7 +4,7 @@
 \alias{generateInitialLabels}
 \title{Generate initial labels}
 \usage{
-generateInitialLabels(labels, fixed, K, alpha)
+generateInitialLabels(labels, fixed, K, alpha, labels_as_intended = FALSE)
 }
 \arguments{
 \item{labels}{$N x V$ matrix of initial labels. The actual values passed only

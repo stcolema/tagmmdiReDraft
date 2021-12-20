@@ -48,9 +48,9 @@ checkDataCorrectInput <- function(X) {
     .row_names_not_matching <- !all(row.names(.x) == row_names)
     if (.row_names_not_matching) {
       err <- paste0(
-        "All datasets must have the row orders. Dataset ",
+        "All datasets must have the same order of row names. Dataset ",
         v,
-        " has a different row names to the first dataset, please check this."
+        " has different row names to the first dataset, please check this."
       )
       stop(err)
     }

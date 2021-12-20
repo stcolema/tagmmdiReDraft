@@ -9,6 +9,7 @@
 #' @export
 generateInitialSemiSupervisedLabels <- function(labels, fixed) {
 
+  N <- length(labels)
   N_fixed <- sum(fixed)
   N_unfixed <- N - N_fixed
   

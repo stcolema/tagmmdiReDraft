@@ -15,6 +15,8 @@
 #' bound on the number of clusters in each dataset).
 #' @param alpha The concentration parameter for the stick-breaking prior and the
 #' weights in the model.
+#' @param initial_labels_as_intended Logical indicating if the passed initial 
+#' labels are as intended or should ``generateInitialLabels`` be called.
 #' @return A named list containing the sampled partitions, component weights and
 #' phi parameters, model fit measures and some details on the model call.
 #' @export
@@ -24,8 +26,9 @@ callMDI <- function(X,
                     initial_labels,
                     fixed,
                     types,
-                    K = NULL,
-                    alpha = 1) {
+                    K,
+                    alpha = NULL,
+                    initial_labels_as_intended = FALSE) {
 
   # Check that the R > thin
   checkNumberOfSamples(R, thin)
@@ -49,10 +52,17 @@ callMDI <- function(X,
   density_types <- translateTypes(types)
   outlier_types <- setupOutlierComponents(types)
 
+  if(is.null(alpha))
+    alpha <- rep(1, V)
+  
   # Generate initial labels. Uses the stick-breaking prior if unsupervised,
   # proportions of observed classes is semi-supervised.
-  initial_labels <- generateInitialLabels(initial_labels, fixed, K, alpha)
-
+  initial_labels <- generateInitialLabels(initial_labels, fixed, K, alpha,
+    labels_as_intended = initial_labels_as_intended
+  )
+  # for(v in seq(V))
+  #   checkLabels(initial_labels[, v], K[v])
+  
   # Pull samples from the MDI model
   mcmc_output <- runAltMDI(
     R,
@@ -77,6 +87,7 @@ callMDI <- function(X,
   # Dimensions of data
   mcmc_output$P <- P
   mcmc_output$N <- N
+  mcmc_output$V <- V
 
   # Number of components modelled
   mcmc_output$K <- K

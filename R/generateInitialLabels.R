@@ -10,7 +10,8 @@
 #' @param K The number of components modelled in each  view.
 #' @return An N vector of labels.
 #' @export
-generateInitialLabels <- function(labels, fixed, K, alpha) {
+generateInitialLabels <- function(labels, fixed, K, alpha,
+                                  labels_as_intended = FALSE) {
 
   V <- ncol(fixed)
   N <- nrow(fixed)
@@ -39,21 +40,25 @@ generateInitialLabels <- function(labels, fixed, K, alpha) {
     K_v <- K[v]
     alpha_v <- alpha[v]
     
-    if(is_semisupervised[v]) {
-      # Only need to check semisueprvised labels closely as all of the 
-      # unsupervised labels are generated
+    if(labels_as_intended) {
       checkLabels(labels_v, K_v)
-      labels_v <- generateInitialSemiSupervisedLabels(labels_v, )
-      
-      # Check the labels are all contiguous, i.e. all values in the range 0 to K-1 
-      # are represented 
-      non_contiguous_labels <- max(labels_v) != (length(unique(labels_v)) - 1)
-      
-      if (non_contiguous_labels)
-        stop("initial labels are not all contiguous integers.")
-      
     } else {
-      labels_v <- generateInitialUnsupervisedLabels(N, alpha_v, alpha_v)
+      if(is_semisupervised[v]) {
+        # Only need to check semisueprvised labels closely as all of the 
+        # unsupervised labels are generated
+        checkLabels(labels_v, K_v)
+        labels_v <- generateInitialSemiSupervisedLabels(labels_v, fixed_v)
+        
+        # Check the labels are all contiguous, i.e. all values in the range 0 to K-1 
+        # are represented 
+        non_contiguous_labels <- max(labels_v) != (length(unique(labels_v)))
+        
+        if (non_contiguous_labels)
+          stop("initial labels are not all contiguous integers.")
+        
+      } else {
+        labels_v <- generateInitialUnsupervisedLabels(N, alpha_v, K_v)
+      }
     }
     
     # Check that the initial labels starts at 0, if not remedy this.
@@ -62,9 +67,8 @@ generateInitialLabels <- function(labels, fixed, K, alpha) {
     if (no_zero_label) 
       labels_v <- as.numeric(as.factor(labels_v)) - 1
     
-    
+    # Update the labels matrix with the vector for the current view
     labels[ , v] <- labels_v
-      
   }
   labels
 }

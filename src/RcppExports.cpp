@@ -97,23 +97,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// runSemiSupervisedMDI
-Rcpp::List runSemiSupervisedMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec types, arma::umat labels, arma::umat fixed);
-RcppExport SEXP _tagmReDraft_runSemiSupervisedMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::uword >::type R(RSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type thin(thinSEXP);
-    Rcpp::traits::input_parameter< arma::field<arma::mat> >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type K(KSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type types(typesSEXP);
-    Rcpp::traits::input_parameter< arma::umat >::type labels(labelsSEXP);
-    Rcpp::traits::input_parameter< arma::umat >::type fixed(fixedSEXP);
-    rcpp_result_gen = Rcpp::wrap(runSemiSupervisedMDI(R, thin, Y, K, types, labels, fixed));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_tagmReDraft_runAltMDI", (DL_FUNC) &_tagmReDraft_runAltMDI, 8},
@@ -122,7 +105,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_tagmReDraft_wishartLogLikelihood", (DL_FUNC) &_tagmReDraft_wishartLogLikelihood, 4},
     {"_tagmReDraft_invWishartLogLikelihood", (DL_FUNC) &_tagmReDraft_invWishartLogLikelihood, 4},
     {"_tagmReDraft_mvtLogLikelihood", (DL_FUNC) &_tagmReDraft_mvtLogLikelihood, 4},
-    {"_tagmReDraft_runSemiSupervisedMDI", (DL_FUNC) &_tagmReDraft_runSemiSupervisedMDI, 7},
     {NULL, NULL, 0}
 };
 
