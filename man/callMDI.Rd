@@ -11,8 +11,8 @@ callMDI(
   initial_labels,
   fixed,
   types,
-  K = NULL,
-  alpha = 1,
+  K,
+  alpha = NULL,
   initial_labels_as_intended = FALSE
 )
 }

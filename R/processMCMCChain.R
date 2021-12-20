@@ -7,15 +7,14 @@
 #' estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.
 #' @returns A named list similar to the output of 
 #' ``batchSemiSupervisedMixtureModel`` with some additional entries:
-#' \describe{
-#'  \item {``allocation_probability``} {$(N x K)$ matrix. The point estimate of 
-#'  the allocation probabilities for each data point to each class.}
+#'  * ``allocation_probability``: $(N x K)$ matrix. The point estimate of 
+#'  the allocation probabilities for each data point to each class.
 #'  
-#'  \item {``prob``} {$N$ vector. The point estimate of the probability of being 
-#'  allocated to the class with the highest probability.}
+#'  * ``prob``: $N$ vector. The point estimate of the probability of being 
+#'  allocated to the class with the highest probability.
 #'  
-#'  \item {``pred``} {$N$ vector. The predicted class for each sample.}
-#'  }
+#'  * ``pred``: $N$ vector. The predicted class for each sample.
+#'  
 #' @export
 #' @importFrom stats median
 processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median") {
@@ -30,7 +29,6 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
   types <- mcmc_output$types
   
   # Indices for views
-  print(V)
   view_inds <- seq(1, V)
   
   # MCMC iterations and thinning
@@ -64,6 +62,11 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
   # The allocations and allocation probabilities
   new_output$allocations <- mcmc_output$allocations[-dropped_indices, ,]
   
+  new_output$allocation_probability <- vector("list", V)
+  new_output$allocation_probabilities <- vector("list", V)
+  new_output$prob <- vector("list", V)
+  new_output$pred <- vector("list", V)
+  
   for(v in view_inds) {
     if(is_semisupervised[v]) {
       
@@ -76,8 +79,9 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
         calcAllocProb(new_output, v, 
           method = point_estimate_method
         )
-      new_output$prob <- apply(.alloc_prob, 1, max)
-      new_output$pred <- apply(.alloc_prob, 1, which.max)
+      
+      new_output$prob[[v]] <- apply(.alloc_prob, 1, max)
+      new_output$pred[[v]] <- apply(.alloc_prob, 1, which.max)
     }
   }
   

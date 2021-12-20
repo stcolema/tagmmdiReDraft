@@ -4,11 +4,7 @@
 \alias{plotLikelihoods}
 \title{Plot likelihoods}
 \usage{
-plotLikelihoods(
-  mcmc_outputs,
-  choice = "complete_likelihood",
-  colour_by_chain = TRUE
-)
+plotLikelihoods(mcmc_outputs, colour_by_chain = TRUE)
 }
 \arguments{
 \item{mcmc_outputs}{The output from ``runMCMCChains``.}

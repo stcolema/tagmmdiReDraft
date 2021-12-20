@@ -17,15 +17,13 @@ estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.}
 \value{
 A named list similar to the output of 
 ``batchSemiSupervisedMixtureModel`` with some additional entries:
-\describe{
- \item {``allocation_probability``} {$(N x K)$ matrix. The point estimate of 
- the allocation probabilities for each data point to each class.}
+ * ``allocation_probability``: $(N x K)$ matrix. The point estimate of 
+ the allocation probabilities for each data point to each class.
  
- \item {``prob``} {$N$ vector. The point estimate of the probability of being 
- allocated to the class with the highest probability.}
+ * ``prob``: $N$ vector. The point estimate of the probability of being 
+ allocated to the class with the highest probability.
  
- \item {``pred``} {$N$ vector. The predicted class for each sample.}
- }
+ * ``pred``: $N$ vector. The predicted class for each sample.
 }
 \description{
 Applies a burn in to and finds a point estimate for the output
