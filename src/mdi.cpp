@@ -460,7 +460,7 @@ void mdiModelAlt::updateWeights() {
 double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
   bool rTooSmall = false, priorShapeTooSmall = false;
   
-  uword r = 0, N_lm = 0;
+  uword r = 0, N_vw = 0;
   double shape = 0.0,
     u = 0.0,
     prod_to_phi_shape = 0.0, 
@@ -468,59 +468,61 @@ double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
   
   uvec rel_inds_l(N), rel_inds_m(N);
   
-  vec weights;
+  vec log_weights, weights;
   
   // rel_inds_l = labels.col(l) % non_outliers.col(l);
   // rel_inds_m = labels.col(m) % non_outliers.col(m);
   // 
-  // N_lm = accu(rel_inds_l == rel_inds_m);
+  // N_vw = accu(rel_inds_l == rel_inds_m);
   
-  N_lm = accu(labels.col(l) == labels.col(m));
+  N_vw = accu(labels.col(l) == labels.col(m));
   rate = calcPhiRate(l, m);
-  weights = zeros<vec>(N_lm + 1);
+  weights = zeros<vec>(N_vw + 1);
+  log_weights = calculatePhiShapeMixtureWeights(N_vw, rate);
   
-  if(phi_shape_prior < 2) {
-    priorShapeTooSmall = true;
-    prod_to_phi_shape = 1.0; 
-  }
-  
-  for(uword r = 0; r < (N_lm + 1); r++) {
-    
-    // Some of the products can be ``backwards'', i.e. the top index is less 
-    // than (or equal to) the bottom index. If this occurs we want to keep the 
-    // contribution of these products as the identity.
-    
-    // Reset values that might have changed in the previous iteration
-    rTooSmall = false;
-    prod_to_phi_shape = 1.0; 
-    prod_to_r_less_1= 1.0;
-    
-    if(r < 2) {
-      rTooSmall = true;
-    }
-    
-    if(! rTooSmall) {
-      for(uword i = 0; i < r; i++) {
-        prod_to_r_less_1 *= (N_lm - i);
-      }
-    }
-    
-    if(! priorShapeTooSmall) {
-      for(uword j = 1; j < phi_shape_prior; j++) {
-        prod_to_phi_shape *= (r + j);
-      }
-    }
-    
-    weights(r) = (
-      prod_to_r_less_1 
-      * prod_to_phi_shape 
-      / std::pow(rate + phi_rate_prior, r + 1)
-    );
-    
-    
-  }
+  // if(phi_shape_prior < 2) {
+  //   priorShapeTooSmall = true;
+  //   prod_to_phi_shape = 1.0; 
+  // }
+  // 
+  // for(uword r = 0; r < (N_vw + 1); r++) {
+  //   
+  //   // Some of the products can be ``backwards'', i.e. the top index is less 
+  //   // than (or equal to) the bottom index. If this occurs we want to keep the 
+  //   // contribution of these products as the identity.
+  //   
+  //   // Reset values that might have changed in the previous iteration
+  //   rTooSmall = false;
+  //   prod_to_phi_shape = 1.0; 
+  //   prod_to_r_less_1= 1.0;
+  //   
+  //   if(r < 2) {
+  //     rTooSmall = true;
+  //   }
+  //   
+  //   if(! rTooSmall) {
+  //     for(uword i = 0; i < r; i++) {
+  //       prod_to_r_less_1 *= (N_vw - i);
+  //     }
+  //   }
+  //   
+  //   if(! priorShapeTooSmall) {
+  //     for(uword j = 1; j < phi_shape_prior; j++) {
+  //       prod_to_phi_shape *= (r + j);
+  //     }
+  //   }
+  //   
+  //   weights(r) = (
+  //     prod_to_r_less_1 
+  //     * prod_to_phi_shape 
+  //     / std::pow(rate + phi_rate_prior, r + 1)
+  //   );
+  //   
+  //   
+  // }
   
   // Normalise the weights
+  weights = exp(log_weights - max(log_weights));
   weights = weights / accu(weights);
   
   // Prediction and update
@@ -531,7 +533,36 @@ double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
   return shape; 
 }
 
+arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(arma::uword N_vw, 
+                                                       double rate
+) {
+  
+  double r_factorial = 0.0,
+    r_alpha_gamma_function = 0.0,
+    N_vw_part = 0.0,
+    beta_part = 0.0;
+  
+  vec log_weights(N_vw + 1);
+  log_weights.zeros();
+  
+  for(uword r = 0; r < (N_vw + 1); r++) {
+    for(uword ii = 0; ii < r; ii++) {
+      N_vw_part += std::log(N_vw - ii);
+      r_factorial += std::log(r - ii);
+    }
+    
+    r_alpha_gamma_function = lgamma(r + phi_shape_prior);
+    beta_part = (r + phi_shape_prior) * std::log(rate + phi_rate_prior);
+    log_weights(r) = N_vw_part - r_factorial+ r_alpha_gamma_function + beta_part;
+  }
+  return log_weights;
+};
+
 void mdiModelAlt::updatePhis() {
+  if(L == 1) {
+    return;
+  }
+  
   uword r = 0;
   double shape = 0.0, rate = 0.0;
   for(uword l = 0; l < (L - 1); l++) {
