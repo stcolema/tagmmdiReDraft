@@ -41,8 +41,10 @@ Rcpp::List runAltMDI(arma::uword R,
   
   N = my_mdi.N;
   
-  mat phis_record(n_saved, my_mdi.LC2),
-    likelihood_record(n_saved, L);
+  vec likelihood_record(n_saved);
+  
+  mat phis_record(n_saved, my_mdi.LC2); //,
+    // likelihood_record(n_saved, L);
   
   phis_record.zeros();
   likelihood_record.zeros();
@@ -81,8 +83,10 @@ Rcpp::List runAltMDI(arma::uword R,
     outlier_record.slice(l).row(save_ind) = my_mdi.mixtures[l]->outliers.t();
     
     // Save the complete likelihood
-    likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
+    // likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
   }
+  
+  likelihood_record(save_ind) = my_mdi.complete_likelihood;
   
   // Rcpp::Rcout << "\n\nSave phis.";
   phis_record.row(save_ind) = my_mdi.phis.t();
@@ -154,8 +158,10 @@ Rcpp::List runAltMDI(arma::uword R,
         
         // Save the complete likelihood
         // Rcpp::Rcout << "\nSave model likelihood.";
-        likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
+        // likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
       }
+      
+      likelihood_record(save_ind) = my_mdi.complete_likelihood;
       
       // Rcpp::Rcout << "\n\nSave phis.";
       phis_record.row(save_ind) = my_mdi.phis.t();
