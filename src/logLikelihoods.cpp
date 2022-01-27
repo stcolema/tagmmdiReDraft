@@ -45,7 +45,7 @@ double mvtLogLikelihood(arma::vec x, arma::vec mu, arma::mat Sigma, double nu) {
 
     ll = lgamma(0.5 * (nu + P)) 
       - lgamma(0.5 * nu) 
-      - 0.5 * P * log(nu * PI)
+      - 0.5 * P * log(nu * M_PI)
       - 0.5 * arma::log_det(Sigma).real()
       - ((nu + (double) P) / 2.0) * std::log(1.0 + (1.0 / nu) * exponent);
     
