@@ -63,6 +63,8 @@ callMDI <- function(X,
   # for(v in seq(V))
   #   checkLabels(initial_labels[, v], K[v])
   
+  t_0 <- Sys.time()
+  
   # Pull samples from the MDI model
   mcmc_output <- runAltMDI(
     R,
@@ -75,6 +77,9 @@ callMDI <- function(X,
     fixed
   )
 
+  t_1 <- Sys.time()
+  time_taken <- t_1 - t_0
+  
   # Record details of model run to output
   # MCMC details
   mcmc_output$thin <- thin
@@ -98,5 +103,8 @@ callMDI <- function(X,
   # Indicate if the model was semi-supervised or unsupervised
   mcmc_output$Semisupervised <- apply(fixed, 2, function(x) any(x == 1))
 
+  # Record how long the algorithm took
+  mcmc_output$Time <- time_taken
+  
   mcmc_output
 }
