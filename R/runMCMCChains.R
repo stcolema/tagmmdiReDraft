@@ -1,8 +1,8 @@
 #' @title Run MCMC Chains
-#' @description Run multiple chains of the semi-supervised batch mixture model
-#' of the same type and from the same initial clustering.
-#' @param X Data to cluster. List of matrices with the N items to cluster held
-#' in rows.
+#' @description Run multiple chains of Multiple Dataset Integration (MDI) using
+#' the same inputs in each model run.
+#' @param X Data to cluster. List of $L$ matrices with the $N$ items to cluster 
+#' held in rows.
 #' @param n_chains Integer. Number of MCMC chains to run.
 #' @param initial_labels Initial clustering. $N x L$ matrix.
 #' @param fixed Which items are fixed in their initial label. $N x L$ matrix.
