@@ -15,10 +15,20 @@ checkLabels <- function(labels, K) {
     )
     stop(err_message)
   }
+  
+  nas_present <- any(is.na(labels))
+  
+  if(nas_present) {
+    err_message <- paste(
+      "NAs present in labels. All labels must be integer values between 1 and",
+      "K, the number of components modelled."
+    )
+    stop(err_message)
+  }
 
   integer_labels <- as.integer(labels)
   distance_integers_to_passed <- sum(abs(labels - integer_labels))
-  labels_not_integers <- distance_integers_to_passed > .Machine$double.eps
+  labels_not_integers <- (distance_integers_to_passed > .Machine$double.eps)
 
   if (labels_not_integers) {
     stop("Labels must be integers, not doubles.")

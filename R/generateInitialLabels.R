@@ -44,6 +44,10 @@ generateInitialLabels <- function(labels, fixed, K, alpha,
       checkLabels(labels_v, K_v)
     } else {
       if(is_semisupervised[v]) {
+        
+        # Assign the unobserved labels to an arbitrary class, in this case 1.
+        labels_v[which(fixed_v == 0)] <- 1
+        
         # Only need to check semisueprvised labels closely as all of the 
         # unsupervised labels are generated
         checkLabels(labels_v, K_v)
