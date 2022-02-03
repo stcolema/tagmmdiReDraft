@@ -8,6 +8,7 @@
 // included dependencies
 # include <RcppArmadillo.h>
 # include "density.h"
+# include "gaussian.h"
 # include "mvn.h"
 # include "categorical.h"
 
@@ -30,7 +31,7 @@ public:
   densityFactory(const densityFactory &L);
   
   enum densityType {
-    // G = 0,
+    G = 0,
     MVN = 1,
     C = 2
   };
