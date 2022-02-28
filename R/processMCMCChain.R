@@ -25,6 +25,8 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
   K <- mcmc_output$K
   V <- mcmc_output$V
   
+  multiple_views <- V > 1
+  
   # The type of mixture model used
   types <- mcmc_output$types
   
@@ -55,7 +57,12 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
   dropped_indices <- seq(1, eff_burn)
   
   new_output <- mcmc_output
-  
+
+  if(multiple_views) {
+    # The information sharing parameters
+    new_output$phis <- mcmc_output$phis[-dropped_indices, , drop = F]
+  }
+    
   # The model fit
   new_output$complete_likelihood <- mcmc_output$complete_likelihood[-dropped_indices, , drop = F]
 
