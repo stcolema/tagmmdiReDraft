@@ -24,10 +24,17 @@
 #' @export
 predictFromMultipleChains <- function(mcmc_outputs,
                                       burn,
-                                      point_estimate_method = "median") {
+                                      point_estimate_method = "median",
+                                      chains_already_processed = FALSE) {
 
-  # Process the chains, making point estimates and applying a burn-in
-  processed_chains <- processMCMCChains(mcmc_outputs, burn, point_estimate_method)
+  
+  
+  if(chains_already_processed ) {
+    processed_chains <- mcmc_outputs
+  } else {
+    # Process the chains, making point estimates and applying a burn-in
+    processed_chains <- processMCMCChains(mcmc_outputs, burn, point_estimate_method)
+  }
 
   # The number of chains
   n_chains <- length(processed_chains)
@@ -91,6 +98,8 @@ predictFromMultipleChains <- function(mcmc_outputs,
 
   first_chain <- TRUE
   for (v in view_inds) {
+    current_view_is_semi_supervised <- is_semisupervised[v]
+    
     merged_outputs$allocation_probability[[v]] <- .alloc_prob <- matrix(
       0,
       N,
@@ -101,14 +110,14 @@ predictFromMultipleChains <- function(mcmc_outputs,
       in_first_chain <- (ii == 1)
 
       if (in_first_chain) {
-        merged_outputs$allocations[[v]] <- .curr_chain$allocations[, , v, drop = F]
+        merged_outputs$allocations[[v]] <- .curr_chain$allocations[, , v, drop = TRUE]
       } else {
         .prev <- merged_outputs$allocations[[v]]
-        .current <- .curr_chain$allocations[, , v, drop = F]
+        .current <- .curr_chain$allocations[, , v, drop = TRUE]
         merged_outputs$allocations[[v]] <- rbind(.prev, .current)
       }
 
-      if (is_semisupervised[v]) {
+      if (current_view_is_semi_supervised) {
         .prev <- .alloc_prob
         .curr <- .curr_chain$allocation_probability[[v]]
 
@@ -116,7 +125,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
       }
     }
 
-    if (is_semisupervised[v]) {
+    if (current_view_is_semi_supervised) {
 
       # Normalise the probabilities
       .alloc_prob <- .alloc_prob / n_chains
