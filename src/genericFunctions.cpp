@@ -6,6 +6,48 @@
 using namespace Rcpp ;
 using namespace arma ;
 
+//' @title The Inverse Gamma Distribution
+//' @description Random generation from the inverse Gamma distribution.
+//' @param shape Shape parameter.
+//' @param scale Scale parameter.
+//' @return Sample from invGamma(shape, scale).
+double rInvGamma(double shape, double scale) {
+  double x = arma::randg( distr_param(shape, scale) );
+  return (1 / x);
+}
+
+//' @title The Half-Cauchy Distribution
+//' @description Random generation from the Half-Cauchy distribution.
+//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+//' @param mu Location parameter.
+//' @param scale Scale parameter.
+//' @return Sample from HalfCauchy(mu, scale).
+double rHalfCauchy(double mu, double scale) {
+  double x = 0.0, y = 0.0;
+  x = arma::randn();
+  if(x < 0.0) {
+    x = 0.0;
+  }
+  y = rInvGamma(0.5, 0.5 * std::pow(scale, 2.0));
+  return mu + x * std::sqrt(y);
+}
+
+//' @title The Half-Cauchy Distribution
+//' @description Calculates the pdf of the Half-Cauchy distribution for value x.
+//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+//' @param x Value to calculate the probability density of.
+//' @param mu Location parameter.
+//' @param scale Scale parameter.
+//' @return Sample from HalfCauchy(mu, scale).
+double pHalfCauchy(double x, double mu, double scale) {
+  double denom = 0.0;
+
+  if(x < mu) {
+    return 0;
+  }
+  denom = 1 + std::pow((x - mu) / scale, 2.0);
+  return 2 / (M_PI * scale * denom);
+}
 
 //' @title The Beta Distribution
 //' @description Random generation from the Beta distribution.
