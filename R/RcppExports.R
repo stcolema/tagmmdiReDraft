@@ -5,6 +5,47 @@ runAltMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed
     .Call(`_tagmReDraft_runAltMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed)
 }
 
+#' @title The Inverse Gamma Distribution
+#' @description Random generation from the inverse Gamma distribution.
+#' @param shape Shape parameter.
+#' @param scale Scale parameter.
+#' @return Sample from invGamma(shape, scale).
+NULL
+
+#' @title The Inverse Gamma Distribution
+#' @description Random generation from the inverse Gamma distribution.
+#' @param N Number of samples to draw.
+#' @param shape Shape parameter.
+#' @param scale Scale parameter.
+#' @return Sample from invGamma(shape, scale).
+NULL
+
+#' @title The Half-Cauchy Distribution
+#' @description Random generation from the Half-Cauchy distribution.
+#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+#' @param mu Location parameter.
+#' @param scale Scale parameter.
+#' @return Sample from HalfCauchy(mu, scale).
+NULL
+
+#' @title The Half-Cauchy Distribution
+#' @description Random generation from the Half-Cauchy distribution.
+#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+#' @param N The number of samples to draw
+#' @param mu Location parameter.
+#' @param scale Scale parameter.
+#' @return Sample from HalfCauchy(mu, scale).
+NULL
+
+#' @title The Half-Cauchy Distribution
+#' @description Calculates the pdf of the Half-Cauchy distribution for value x.
+#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+#' @param x Value to calculate the probability density of.
+#' @param mu Location parameter.
+#' @param scale Scale parameter.
+#' @return Sample from HalfCauchy(mu, scale).
+NULL
+
 #' @title The Beta Distribution
 #' @description Random generation from the Beta distribution.
 #' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.

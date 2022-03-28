@@ -15,8 +15,8 @@ translateTypes <- function(types) {
   # Note that TAGM differs from MVN in the outlier component used, not the 
   # density
   type_map <- data.frame(
-    "Input_type" = c("MVN", "TAGM", "C", "G"),
-    "Used_type" = c(1, 1, 2, 0)
+    "Input_type" = c("MVN", "TAGM", "C", "G", "GP"),
+    "Used_type" = c(1, 1, 2, 0, 3)
   )
     
   # iterate over the types checking they are viable types

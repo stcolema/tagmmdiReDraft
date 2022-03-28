@@ -6,7 +6,7 @@
 #' @return NULL
 checkTypes <- function(types) {
   
-  allowed_types <- c("MVN", "TAGM", "C", "G")
+  allowed_types <- c("MVN", "TAGM", "C", "G", "GP")
   not_a_vector <- ! is.vector(types)
   
   if(not_a_vector) {
