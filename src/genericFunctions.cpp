@@ -16,6 +16,17 @@ double rInvGamma(double shape, double scale) {
   return (1 / x);
 }
 
+//' @title The Inverse Gamma Distribution
+//' @description Random generation from the inverse Gamma distribution.
+//' @param N Number of samples to draw.
+//' @param shape Shape parameter.
+//' @param scale Scale parameter.
+//' @return Sample from invGamma(shape, scale).
+arma::vec rInvGamma(uword N, double shape, double scale) {
+  vec x = arma::randg(N, distr_param(shape, scale) );
+  return (1 / x);
+}
+
 //' @title The Half-Cauchy Distribution
 //' @description Random generation from the Half-Cauchy distribution.
 //' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
@@ -30,6 +41,25 @@ double rHalfCauchy(double mu, double scale) {
   }
   y = rInvGamma(0.5, 0.5 * std::pow(scale, 2.0));
   return mu + x * std::sqrt(y);
+}
+
+//' @title The Half-Cauchy Distribution
+//' @description Random generation from the Half-Cauchy distribution.
+//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+//' @param N The number of samples to draw
+//' @param mu Location parameter.
+//' @param scale Scale parameter.
+//' @return Sample from HalfCauchy(mu, scale).
+arma::vec rHalfCauchy(uword N, arma::vec mu, double scale) {
+  vec x(N), y(N);
+  x = arma::randn(N);
+  for(uword n = 0; n < N; n++) {
+    if(x(n) < 0.0) {
+      x(n) = 0.0;
+    }
+  }
+  y = rInvGamma(N, 0.5, 0.5 * std::pow(scale, 2.0));
+  return mu + x * arma::sqrt(y);
 }
 
 //' @title The Half-Cauchy Distribution
