@@ -1,5 +1,4 @@
 
-
 export(calcAllocProb)
 export(callMDI)
 export(generateInitialLabels)
@@ -19,6 +18,7 @@ importFrom(ggplot2,label_both)
 importFrom(parallel,parLapply)
 importFrom(stats,median)
 importFrom(stats,rbeta)
+importFrom(RcppParallel, RcppParallelLibs)
 
 useDynLib(tagmReDraft, .registration=TRUE)
 importFrom(Rcpp, evalCpp)

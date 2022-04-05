@@ -106,6 +106,7 @@ public:
       mat inverse_covariance_matrix);
   vec sampleMeanPosterior(uword k, uword n_k, vec data);
   
+  void sampleKthComponentParameters(uword k, umat members, uvec non_outliers);
   void sampleParameters(arma::umat members, arma::uvec non_outliers);
   
   // The log likelihood of a item belonging to each cluster

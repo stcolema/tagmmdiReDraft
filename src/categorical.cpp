@@ -88,32 +88,70 @@ void categorical::sampleFromPriors() {
   }
 };
 
+void categorical::sampleKthComponentParameters(
+    uword k, 
+    umat members, 
+    uvec non_outliers
+)  {
+  uvec relevant_indices;
+  umat component_data;
+  uword cat_count = 0;
+  double concentration_n = 0.0;
+  
+  // Find the items relevant to sampling the parameters
+  relevant_indices = find((members.col(k) == 1) && (non_outliers == 1));
+  
+  component_data = Y.rows(relevant_indices);
+  for(uword p = 0; p < P; p++) {
+    
+    for(uword ii = 0; ii < n_cat(p); ii++) {
+      cat_count = accu(component_data.col(p) == ii);
+      
+      concentration_n = cat_prior_probability(p)(ii) + cat_count;
+      
+      category_probabilities(p).row(ii) = arma::randg(
+        K, 
+        arma::distr_param(concentration_n, 1.0)
+      ).t();
+    }
+  }
+}
+
 void categorical::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   uvec relevant_indices;
   umat component_data;
   uword cat_count = 0;
   double concentration_n = 0.0;
   
-  for(uword k = 0; k < K; k++) {
-    
-    // Find the items relevant to sampling the parameters
-    relevant_indices = find((members.col(k) == 1) && (non_outliers == 1));
-    
-    component_data = Y.rows(relevant_indices);
-    for(uword p = 0; p < P; p++) {
-      
-      for(uword ii = 0; ii < n_cat(p); ii++) {
-        cat_count = accu(component_data.col(p) == ii);
-        
-        concentration_n = cat_prior_probability(p)(ii) + cat_count;
-        
-        category_probabilities(p).row(ii) = arma::randg(
-          K, 
-          arma::distr_param(concentration_n, 1.0)
-        ).t();
-      }
+  std::for_each(
+    std::execution::par,
+    K_inds.begin(),
+    K_inds.end(),
+    [&](uword k) {
+      sampleKthComponentParameters(k, members, non_outliers);
     }
-  }
+  );
+  
+  // for(uword k = 0; k < K; k++) {
+  //   
+  //   // Find the items relevant to sampling the parameters
+  //   relevant_indices = find((members.col(k) == 1) && (non_outliers == 1));
+  //   
+  //   component_data = Y.rows(relevant_indices);
+  //   for(uword p = 0; p < P; p++) {
+  //     
+  //     for(uword ii = 0; ii < n_cat(p); ii++) {
+  //       cat_count = accu(component_data.col(p) == ii);
+  //       
+  //       concentration_n = cat_prior_probability(p)(ii) + cat_count;
+  //       
+  //       category_probabilities(p).row(ii) = arma::randg(
+  //         K, 
+  //         arma::distr_param(concentration_n, 1.0)
+  //       ).t();
+  //     }
+  //   }
+  // }
 };
 
 double categorical::logLikelihood(arma::vec item, arma::uword k) {

@@ -3,7 +3,7 @@
 // included dependencies
 # include "logLikelihoods.h"
 # include "gp.h"
-
+  
 // [[Rcpp::depends(RcppArmadillo)]]
 
 using namespace Rcpp ;
@@ -104,8 +104,10 @@ void gp::sampleMuPrior() {
 };
 
 void gp::sampleFromPriors() {
+  // Rcpp::Rcout<< "\nSet hypers.";
   sampleHyperParameterPriors();
   calculateKernelSubBlock();
+  // Rcpp::Rcout<< "\nSample mean function from prior.";
   sampleMuPrior();
 };
 
@@ -252,16 +254,48 @@ mat gp::posteriorCovarianceParameter(
     mat covariance_matrix,
     mat inverse_covariance_matrix) {
   mat cov_tilde(P, P);
-  cov_tilde = covariance_matrix;
-  for(uword ii = 0; ii < P; ii++) {
-    for(uword jj = 0; jj < P; jj++) {
-      cov_tilde(ii, jj) -= as_scalar(
-        covariance_matrix.row(ii) 
-      * inverse_covariance_matrix
-      * covariance_matrix.col(jj)
+  cov_tilde.zeros();
+  // // cov_tilde = ;
+  // for(uword ii = 0; ii < P; ii++) {
+  //   for(uword jj = 0; jj < P; jj++) {
+  //     cov_tilde(ii, jj) = as_scalar(
+  //       covariance_matrix(ii, jj)
+  //     - covariance_matrix.row(ii) 
+  //     * inverse_covariance_matrix 
+  //     * covariance_matrix.col(jj)
+  //     );
+  //   }
+  // }
+  // 
+  // auto I = linspace(0, P - 1);
+  std::for_each(std::execution::par,
+                P_inds.begin(),
+                P_inds.end(),
+                [&](uword ii) {
+  // for(uword ii = 0; ii < P; ii++) {
+  // if(ii >= P) {
+  //   Rcpp::Rcout << "\ni: " << ii;
+  //   // throw;
+  // }
+
+    cov_tilde(ii, ii) = as_scalar(
+      covariance_matrix(ii, ii)
+    - covariance_matrix.row(ii) 
+    * inverse_covariance_matrix 
+    * covariance_matrix.col(ii)
+    );
+    
+    for(uword jj = ii + 1; jj < P; jj++) {
+      cov_tilde(ii, jj) = as_scalar(
+         covariance_matrix(ii, jj)
+         - covariance_matrix.row(ii) 
+           * inverse_covariance_matrix 
+           * covariance_matrix.col(jj)
       );
+      cov_tilde(jj, ii) = cov_tilde(ii, jj);
     }
   }
+  );
   return cov_tilde;
 };
 
@@ -306,10 +340,36 @@ vec gp::sampleMeanPosterior(uword k, uword n_k, vec data) {
   
   // Rcpp::Rcout << "\nThe covariance matrix used in the sampling.";
   cov_tilde = posteriorCovarianceParameter(k, n_k, covariance_matrix, inverse_covariance);
-  
+  // 
   // Rcpp::Rcout << "\nSample the mean function.";
+  // Rcpp::Rcout << "\n\nMean hyper:\n" << mu_tilde.size();
+  // Rcpp::Rcout << "\n\nCov hyper:\n" << cov_tilde.n_cols;
   return mvnrnd(mu_tilde, cov_tilde);
 }
+
+void gp::sampleKthComponentParameters(uword k, umat members, uvec non_outliers) {
+  
+  // Find the items relevant to sampling the parameters
+  uvec rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+  
+  // Find how many labels have the value
+  uword n_k = rel_inds.n_elem;
+  
+  if(n_k > 0){
+    
+    // Component data
+    vec component_data = X.rows( rel_inds ).as_row().t() ;
+    
+    // sampleHyperParameters();
+    mu.col(k) = sampleMeanPosterior(k, n_k, component_data);
+  } else {
+    
+    // sampleHyperParameters();
+    
+    // Sample from the prior
+    mu.col(k) = arma::mvnrnd(zero_vec, kernel_sub_block.slice(k));
+  }
+};
 
 void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   
@@ -325,32 +385,88 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   // calculateInverseCovariance(members, non_outliers);
   // sampleHyperParameters();
   
-  
-  for (arma::uword k = 0; k < K; k++) {
-    
-    // Find the items relevant to sampling the parameters
-    rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
-    
-    // Find how many labels have the value
-    n_k = rel_inds.n_elem;
-    
-    if(n_k > 0){
-      
-      // Component data
-      vec component_data = X.rows( rel_inds ).as_row().t() ;
-      
-      // sampleHyperParameters();
-      mu.col(k) = sampleMeanPosterior(k, n_k, component_data);
-    } else {
-      
-      // sampleHyperParameters();
-      
-      // Sample from the prior
-      mu.col(k) = arma::mvnrnd(zero_vec, kernel_sub_block.slice(k));
+  std::for_each(
+    std::execution::par,
+    K_inds.begin(),
+    K_inds.end(),
+    [&](uword k) {
+      sampleKthComponentParameters(k, members, non_outliers);
     }
-    
-  }
+  );
+  
+  // for (arma::uword k = 0; k < K; k++) {
+  //   
+  //   // Find the items relevant to sampling the parameters
+  //   rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+  //   
+  //   // Find how many labels have the value
+  //   n_k = rel_inds.n_elem;
+  //   
+  //   if(n_k > 0){
+  //     
+  //     // Component data
+  //     vec component_data = X.rows( rel_inds ).as_row().t() ;
+  //     
+  //     // sampleHyperParameters();
+  //     mu.col(k) = sampleMeanPosterior(k, n_k, component_data);
+  //   } else {
+  //     
+  //     // sampleHyperParameters();
+  //     
+  //     // Rcpp::Rcout << "\nSampling from prior (again).";
+  //     
+  //     // Sample from the prior
+  //     mu.col(k) = arma::mvnrnd(zero_vec, kernel_sub_block.slice(k));
+  //   }
+  //   
+  // }
 };
+
+// === Hyper-parameters ========================================================
+
+// double gp::hyperParameterKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde) {
+//   double score = 0.0;
+//   vec mean_diff = mu_k - mu_tilde;
+//   
+//   score = log(2 * M_PI) 
+//     + log_det(cov_tilde).real() 
+//     + as_scalar(mean_diff * inv_sympd(cov_tilde) * mean_diff.t());
+//   score *= -0.5;
+//   score += pHalfCauchy(hyper, 0, 5);
+//   
+//   return score;
+// };
+// 
+// void gp::sampleLength(uword k, vec mu_tilde, mat cov_tilde) {
+//   double length_proposal_window = 0.02;
+//   double new_score = 0.0, old_score = 0.0;
+//   double new_length = std::exp(std::log(length(k) + randn() * length_proposal_window));
+//   
+//   new_score = hyperParameterKernel(new_length, mu.col(k), mu_tilde, cov_tilde);
+//   old_score = hyperParameterKernel(length(k), mu.col(k), mu_tilde, cov_tilde);
+//   
+//   bool accept = calculate(old_score, new_score);
+//   if(accept) {
+//     length(k) = new_length;
+//     length_acceptance_count(k)++;
+//   }
+// };
+// 
+// 
+// void gp::sampleAmplitude(uword k, vec mu_tilde, mat cov_tilde) {
+//   double amplitude_proposal_window = 0.02;
+//   double new_score = 0.0, old_score = 0.0;
+//   double new_amplitude = std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
+//   
+//   new_score = hyperParameterKernel(new_amplitude, mu.col(k), mu_tilde, cov_tilde);
+//   old_score = hyperParameterKernel(amplitude(k), mu.col(k), mu_tilde, cov_tilde);
+//   
+//   bool accept = calculate(old_score, new_score);
+//   if(accept) {
+//     amplitude(k) = new_amplitude;
+//     amplitude_acceptance_count(k)++;
+//   }
+// };
 
 // === Log-likelihoods =========================================================
 // The log likelihood of a item belonging to each cluster.

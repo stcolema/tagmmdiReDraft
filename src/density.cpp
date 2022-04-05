@@ -31,6 +31,12 @@ density::density(
   // Class populations
   N_k = zeros<uvec>(K);
   
+  // N_inds.set_size(N);
+  // P_inds.set_size(P);
+  N_inds = linspace< uvec >(0, N - 1, N);
+  P_inds = linspace< uvec >(0, P - 1, P);
+  K_inds = linspace< uvec >(0, K - 1, K);
+  
   // Log likelihood (individual and model)
   ll = zeros<vec>(K);
   likelihood = zeros<vec>(N);

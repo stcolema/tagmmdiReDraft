@@ -141,7 +141,11 @@ double gaussian::logLikelihood(arma::vec item, arma::uword k) {
   return(ll);
 };
 
-void gaussian::sampleParameters(arma::umat members, arma::uvec non_outliers) {
+void gaussian::sampleKthComponentParameters(
+    uword k,
+    umat members,
+    uvec non_outliers
+) {
   
   uword n_k = 0;
   double dist_from_prior = 0.0,
@@ -154,66 +158,149 @@ void gaussian::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   
   mat arma_cov(P, P);
   
-  for (arma::uword k = 0; k < K; k++) {
+  // Find the items relevant to sampling the parameters
+  rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+  
+  // Find how many labels have the value
+  n_k = rel_inds.n_elem;
+  
+  if(n_k > 0){
     
-    // Find the items relevant to sampling the parameters
-    rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+    // The vector that hold the distance of each observation from the mean of
+    // the component data
+    vec dist_from_mean(n_k);
     
-    // Find how many labels have the value
-    n_k = rel_inds.n_elem;
+    // Component data
+    arma::mat component_data = X.rows( rel_inds ) ;
     
-    if(n_k > 0){
+    // Sample mean in the component data
+    sample_mean = mean(component_data).t();
+    
+    
+    mu_n = (xi * kappa + n_k * sample_mean) / (double) (kappa + n_k);
+    
+    for(uword p = 0; p < P; p++) {
+      kappa_n = kappa + n_k;
+      nu_n = nu + n_k;
       
-      // The vector that hold the distance of each observation from the mean of
-      // the component data
-      vec dist_from_mean(n_k);
+      dist_from_mean = arma::pow(component_data.col(p) - sample_mean(p), 2.0);
       
-      // Component data
-      arma::mat component_data = X.rows( rel_inds ) ;
+      // Calculate the distance of the sample mean from the prior
+      dist_from_prior = std::pow(sample_mean(p) - xi(p), 2.0);
       
-      // Sample mean in the component data
-      sample_mean = mean(component_data).t();
+      // Update the scale hyperparameter
+      scale_np = (
+        scale(p) 
+        + accu(dist_from_mean) 
+        + (n_k * kappa / (kappa_n)) * dist_from_prior
+      );
       
+      // Sample the new precision
+      precisions(p, k) = randg(distr_param(0.5 * nu_n, 0.5 * scale_np));
+      std_devs(p, k) = 1.0 / precisions(p, k);
+      log_std_devs(p, k) = std::log(std_devs(p, k));
       
-      mu_n = (xi * kappa + n_k * sample_mean) / (double) (kappa + n_k);
+      // sample the new component mean in this measurement
+      mu(p, k) = (randn() *  std_devs(p, k) / kappa_n) + mu_n(p);
+    }
+    
+    
+    
+  } else{
+    // If no data in this component resample the parameters from the prio distn
+    for(uword p = 0; p < P; p++) {
       
-      for(uword p = 0; p < P; p++) {
-        kappa_n = kappa + n_k;
-        nu_n = nu + n_k;
-        
-        dist_from_mean = arma::pow(component_data.col(p) - sample_mean(p), 2.0);
-        
-        // Calculate the distance of the sample mean from the prior
-        dist_from_prior = std::pow(sample_mean(p) - xi(p), 2.0);
-
-        // Update the scale hyperparameter
-        scale_np = (
-          scale(p) 
-          + accu(dist_from_mean) 
-          + (n_k * kappa / (kappa_n)) * dist_from_prior
-        );
-        
-        // Sample the new precision
-        precisions(p, k) = randg(distr_param(0.5 * nu_n, 0.5 * scale_np));
-        std_devs(p, k) = 1.0 / precisions(p, k);
-        log_std_devs(p, k) = std::log(std_devs(p, k));
-        
-        // sample the new component mean in this measurement
-        mu(p, k) = (randn() *  std_devs(p, k) / kappa_n) + mu_n(p);
-      }
+      precisions(p, k) = randg(distr_param(0.5 * nu, 0.5 * scale(p)));
+      std_devs(p, k) = 1.0 / precisions(p, k);
+      log_std_devs(p, k) = std::log(std_devs(p, k));
       
-      
-      
-    } else{
-      // If no data in this component resample the parameters from the prio distn
-      for(uword p = 0; p < P; p++) {
-        
-        precisions(p, k) = randg(distr_param(0.5 * nu, 0.5 * scale(p)));
-        std_devs(p, k) = 1.0 / precisions(p, k);
-        log_std_devs(p, k) = std::log(std_devs(p, k));
-        
-        mu(p, k) = randn() * (std_devs(p, k) / kappa) + xi(p);
-      }
+      mu(p, k) = randn() * (std_devs(p, k) / kappa) + xi(p);
     }
   }
+};
+
+void gaussian::sampleParameters(arma::umat members, arma::uvec non_outliers) {
+  
+  // uword n_k = 0;
+  // double dist_from_prior = 0.0,
+  //   kappa_n = 0.0, 
+  //   nu_n = 0.0,
+  //   scale_np = 0.0;
+  // 
+  // uvec rel_inds;
+  // arma::vec mu_n(P), sample_mean(P), dist_from_mean;
+  // 
+  // mat arma_cov(P, P);
+
+  std::for_each(
+    std::execution::par,
+    K_inds.begin(),
+    K_inds.end(),
+    [&](uword k) {
+      sampleKthComponentParameters(k, members, non_outliers);
+    }
+  );
+  
+  // for (arma::uword k = 0; k < K; k++) {
+  //   
+  //   // Find the items relevant to sampling the parameters
+  //   rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+  //   
+  //   // Find how many labels have the value
+  //   n_k = rel_inds.n_elem;
+  //   
+  //   if(n_k > 0){
+  //     
+  //     // The vector that hold the distance of each observation from the mean of
+  //     // the component data
+  //     vec dist_from_mean(n_k);
+  //     
+  //     // Component data
+  //     arma::mat component_data = X.rows( rel_inds ) ;
+  //     
+  //     // Sample mean in the component data
+  //     sample_mean = mean(component_data).t();
+  //     
+  //     
+  //     mu_n = (xi * kappa + n_k * sample_mean) / (double) (kappa + n_k);
+  //     
+  //     for(uword p = 0; p < P; p++) {
+  //       kappa_n = kappa + n_k;
+  //       nu_n = nu + n_k;
+  //       
+  //       dist_from_mean = arma::pow(component_data.col(p) - sample_mean(p), 2.0);
+  //       
+  //       // Calculate the distance of the sample mean from the prior
+  //       dist_from_prior = std::pow(sample_mean(p) - xi(p), 2.0);
+  // 
+  //       // Update the scale hyperparameter
+  //       scale_np = (
+  //         scale(p) 
+  //         + accu(dist_from_mean) 
+  //         + (n_k * kappa / (kappa_n)) * dist_from_prior
+  //       );
+  //       
+  //       // Sample the new precision
+  //       precisions(p, k) = randg(distr_param(0.5 * nu_n, 0.5 * scale_np));
+  //       std_devs(p, k) = 1.0 / precisions(p, k);
+  //       log_std_devs(p, k) = std::log(std_devs(p, k));
+  //       
+  //       // sample the new component mean in this measurement
+  //       mu(p, k) = (randn() *  std_devs(p, k) / kappa_n) + mu_n(p);
+  //     }
+  //     
+  //     
+  //     
+  //   } else{
+  //     // If no data in this component resample the parameters from the prio distn
+  //     for(uword p = 0; p < P; p++) {
+  //       
+  //       precisions(p, k) = randg(distr_param(0.5 * nu, 0.5 * scale(p)));
+  //       std_devs(p, k) = 1.0 / precisions(p, k);
+  //       log_std_devs(p, k) = std::log(std_devs(p, k));
+  //       
+  //       mu(p, k) = randn() * (std_devs(p, k) / kappa) + xi(p);
+  //     }
+  //   }
+  // }
 };
