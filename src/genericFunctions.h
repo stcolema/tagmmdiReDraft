@@ -35,7 +35,7 @@ double rHalfCauchy(double mu, double scale) ;
 //' @param mu Location parameter.
 //' @param scale Scale parameter.
 //' @return Sample from HalfCauchy(mu, scale).
-double pHalfCauchy(double x, double mu, double scale) ;
+double pHalfCauchy(double x, double mu, double scale, bool logValue = true);
 
 //' @title The Beta Distribution
 //' @description Random generation from the Beta distribution.
@@ -73,5 +73,24 @@ arma::mat calcSampleCov(arma::mat data,
                         arma::uword N,
                         arma::uword P
 );
+
+//' @title Metropolis acceptance step
+//' @description Given a probaility, randomly accepts by sampling from a uniform 
+//' distribution.
+//' @param acceptance_prob Double between 0 and 1.
+//' @return Boolean indicating acceptance.
+bool metropolisAcceptanceStep(double acceptance_prob);
+
+
+
+//' @title Squared exponential function
+//' @description The squared exponential function as used in a covariance kernel.
+//' @param amplitude The amplitude parameter (double)
+//' @param length The length parameter (double)
+//' @param i Time point (unsigned integer)
+//' @param j Time point (unsigned integer)
+//' @return Boolean indicating acceptance.
+// [[Rcpp::export]]
+double squaredExponentialFunction(double amplitude, double length, arma::uword i, arma::uword j);
 
 #endif /* GENFUN_H */
