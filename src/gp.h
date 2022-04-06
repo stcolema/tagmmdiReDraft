@@ -79,20 +79,20 @@ public:
   
   // Sampling and calculations related to the covarianc function/matrix
   void sampleHyperParameters();
+  mat calculateKthComponentKernelSubBlock(double amplitude, double length);
   void calculateKernelSubBlock();
   // void constructCovarianceMatrix(uword n_k, uword k);
-  mat constructCovarianceMatrix(uword n_k, uword k);
+  mat constructCovarianceMatrix(uword n_k, uword k, mat kernel_sub_block);
   double componentCovarianceDeterminant(uword k, uword n_k);
   arma::mat calculateCovarianceKernel(arma::uvec t_inds);
-  mat invertComponentCovariance(uword k, uword n_k);
+  mat invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block);
+  // mat invertComponentCovariance(uword k, uword n_k);
   double componentCovarianceLogDeterminant(uword k, uword n_k);
   void calculateInverseCovariance(umat members, uvec non_outliers);
   
   // Sample and calulcate objects related to sampling the mean posterior function
   // vec posteriorMeanParameter(uword k, uword n_k, vec data);
   vec posteriorMeanParameter(
-      uword k,
-      uword n_k, 
       vec data,
       mat covariance_matrix,
       mat inverse_covariance_matrix
@@ -100,14 +100,28 @@ public:
   
   // mat posteriorCovarianceParameter(uword k, uword n_k);
   mat posteriorCovarianceParameter(
-      uword k, 
-      uword n_k, 
       mat covariance_matrix,
-      mat inverse_covariance_matrix);
-  vec sampleMeanPosterior(uword k, uword n_k, vec data);
+      mat inverse_covariance_matrix
+  );
+  void sampleMeanPosterior(uword k, uword n_k, vec data);
   
   void sampleKthComponentParameters(uword k, umat members, uvec non_outliers);
   void sampleParameters(arma::umat members, arma::uvec non_outliers);
+  
+  
+  double proposeNewNonNegativeValue(double x, double window);
+  double hyperParameterKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde);
+  // void sampleLength(uword k, vec mu_tilde, mat cov_tilde);
+  void sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
+  // void sampleAmplitude(uword k, vec mu_tilde, mat cov_tilde);
+  void sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
+  void sampleHyperParametersKthComponent(
+      uword k, 
+      uword n_k, 
+      vec mu_tilde, 
+      vec component_data,
+      mat cov_tilde
+  );
   
   // The log likelihood of a item belonging to each cluster
   arma::vec itemLogLikelihood(arma::vec item);
