@@ -9,6 +9,7 @@
 # include <RcppArmadillo.h>
 # include "density.h"
 # include "genericFunctions.h"
+# include "logLikelihoods.h"
 // # include "kernelFactory.h"
 
 using namespace arma ;
@@ -71,6 +72,7 @@ public:
   // Sampling from priors
   // void sampleCovPrior();
   void sampleMuPrior();
+  void sampleKthComponentHyperParameterPrior(uword k);
   void sampleHyperParameterPriors();
   void sampleFromPriors();
   
@@ -103,7 +105,7 @@ public:
       mat covariance_matrix,
       mat inverse_covariance_matrix
   );
-  void sampleMeanPosterior(uword k, uword n_k, vec data);
+  void sampleMeanPosterior(uword k, uword n_k, mat data);
   
   void sampleKthComponentParameters(uword k, umat members, uvec non_outliers);
   void sampleParameters(arma::umat members, arma::uvec non_outliers);
@@ -111,9 +113,7 @@ public:
   
   double proposeNewNonNegativeValue(double x, double window);
   double hyperParameterKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde);
-  // void sampleLength(uword k, vec mu_tilde, mat cov_tilde);
   void sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
-  // void sampleAmplitude(uword k, vec mu_tilde, mat cov_tilde);
   void sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
   void sampleHyperParametersKthComponent(
       uword k, 
@@ -122,6 +122,9 @@ public:
       vec component_data,
       mat cov_tilde
   );
+  
+  double noiseLogKernel(uword n_k, double noise, vec mu, mat data);
+  void sampleNoise(uword k, uword n_k, mat component_data);
   
   // The log likelihood of a item belonging to each cluster
   arma::vec itemLogLikelihood(arma::vec item);

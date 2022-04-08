@@ -1,7 +1,9 @@
 // mdi.cpp
 // =============================================================================
 // included dependencies
+# include <RcppParallel.h>
 # include <RcppArmadillo.h>
+# include <execution>
 # include "mdi.h"
 
 using namespace arma ;
@@ -99,6 +101,9 @@ mdiModelAlt::mdiModelAlt(
   
   // The number of samples in each dataset
   N = N_check(0);
+  
+  N_inds = linspace< uvec >(0, N - 1, N);
+  L_inds = linspace< uvec >(0, L - 1, L);
   
   // The members of each cluster across datasets. Each slice is a binary matrix
   // of the members of the kth class across the datasets.

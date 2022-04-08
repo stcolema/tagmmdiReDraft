@@ -29,6 +29,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// squaredExponentialFunction
+double squaredExponentialFunction(double amplitude, double length, arma::uword i, arma::uword j);
+RcppExport SEXP _tagmReDraft_squaredExponentialFunction(SEXP amplitudeSEXP, SEXP lengthSEXP, SEXP iSEXP, SEXP jSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type amplitude(amplitudeSEXP);
+    Rcpp::traits::input_parameter< double >::type length(lengthSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type i(iSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type j(jSEXP);
+    rcpp_result_gen = Rcpp::wrap(squaredExponentialFunction(amplitude, length, i, j));
+    return rcpp_result_gen;
+END_RCPP
+}
 // gammaLogLikelihood
 double gammaLogLikelihood(double x, double shape, double rate);
 RcppExport SEXP _tagmReDraft_gammaLogLikelihood(SEXP xSEXP, SEXP shapeSEXP, SEXP rateSEXP) {
@@ -97,14 +111,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// pNorm
+double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma);
+RcppExport SEXP _tagmReDraft_pNorm(SEXP xSEXP, SEXP muSEXP, SEXP SigmaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Sigma(SigmaSEXP);
+    rcpp_result_gen = Rcpp::wrap(pNorm(x, mu, Sigma));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_tagmReDraft_runAltMDI", (DL_FUNC) &_tagmReDraft_runAltMDI, 8},
+    {"_tagmReDraft_squaredExponentialFunction", (DL_FUNC) &_tagmReDraft_squaredExponentialFunction, 4},
     {"_tagmReDraft_gammaLogLikelihood", (DL_FUNC) &_tagmReDraft_gammaLogLikelihood, 3},
     {"_tagmReDraft_invGammaLogLikelihood", (DL_FUNC) &_tagmReDraft_invGammaLogLikelihood, 3},
     {"_tagmReDraft_wishartLogLikelihood", (DL_FUNC) &_tagmReDraft_wishartLogLikelihood, 4},
     {"_tagmReDraft_invWishartLogLikelihood", (DL_FUNC) &_tagmReDraft_invWishartLogLikelihood, 4},
     {"_tagmReDraft_mvtLogLikelihood", (DL_FUNC) &_tagmReDraft_mvtLogLikelihood, 4},
+    {"_tagmReDraft_pNorm", (DL_FUNC) &_tagmReDraft_pNorm, 3},
     {NULL, NULL, 0}
 };
 

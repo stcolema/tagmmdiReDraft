@@ -58,7 +58,9 @@ public:
     mixture_types,      // mixture types used
     outlier_types,      // outliers types used 
     K_unfixed,          // Number of components not fixed
-    K_fixed;            // Number of components fixed (i.e. at least one member has an observed label)
+    K_fixed,            // Number of components fixed (i.e. at least one member has an observed label)
+    L_inds,             // indices over views
+    N_inds;             // indices over items
   
   arma::vec phis;
   

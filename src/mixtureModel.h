@@ -68,7 +68,26 @@ public:
     // Used for looping over data indices
     N_inds;
   
-  vec concentration, w, ll, ll_holder, likelihood, outlier_likelihood;
+  vec 
+    // Concentration hyperparameter for ocmponent weights
+    concentration, 
+    
+    // Component weights
+    w,
+    
+    // The log-likelihood of an item in each component
+    ll, 
+    
+    // The contribution of each item to the complete log likelihood
+    complete_likelihood_vec, 
+    
+    // The contribution of each item to the observed log likelihood
+    observed_likelihood_vec, 
+    
+    likelihood, 
+    
+    // Log-likelihood of being non-outlier or outlier
+    outlier_likelihood;
   umat members;
   mat X, X_t, alloc;
   

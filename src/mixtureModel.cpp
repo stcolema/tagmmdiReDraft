@@ -38,7 +38,8 @@ mixtureModel::mixtureModel(
   
   // Log likelihood (individual and model)
   ll = zeros<vec>(K);
-  ll_holder = zeros< vec >(N);
+  complete_likelihood_vec = zeros< vec >(N);
+  observed_likelihood_vec = zeros< vec >(N);
   likelihood = zeros<vec>(N);
   
   // Class members
@@ -89,7 +90,7 @@ mixtureModel::mixtureModel(
 void mixtureModel::updateItemAllocation(uword n, vec weights, mat upweigths) {
   double u = 0.0;
   uvec uniqueK;
-  vec comp_prob(K);
+  vec comp_prob(K), ll(K);
   
   // The mixture-specific log likelihood for each observation in each class
   ll = itemLogLikelihood(X_t.col(n));
@@ -99,8 +100,8 @@ void mixtureModel::updateItemAllocation(uword n, vec weights, mat upweigths) {
   
   // Record the likelihood - this is used to calculate the observed likelihood
   // likelihood(n) = accu(comp_prob);
-  observed_likelihood += accu(comp_prob);
-  
+  // observed_likelihood += accu(comp_prob);
+  observed_likelihood_vec(n) = accu(comp_prob);
   
   if(fixed(n) == 0) {
     // Handle overflow problems and then normalise to convert to probabilities
@@ -119,7 +120,7 @@ void mixtureModel::updateItemAllocation(uword n, vec weights, mat upweigths) {
   
   // Update the complete likelihood based on the new labelling
   // complete_likelihood += ll(labels(n));
-  ll_holder(n) = ll(labels(n));
+  complete_likelihood_vec(n) = ll(labels(n));
   
 };
   
@@ -130,7 +131,7 @@ void mixtureModel::updateAllocation(
   
   double u = 0.0;
   uvec uniqueK;
-  vec comp_prob(K), ll_holder(N);
+  vec comp_prob(K);
   
   complete_likelihood = 0.0;
   observed_likelihood = 0.0;
@@ -184,7 +185,8 @@ void mixtureModel::updateAllocation(
   // }
   // );
   
-  complete_likelihood = accu(ll_holder);
+  observed_likelihood = accu(observed_likelihood_vec);
+  complete_likelihood = accu(complete_likelihood_vec);
   
   // Number of occupied components (used in BIC calculation)
   uniqueK = unique(labels);
