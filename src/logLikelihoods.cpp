@@ -54,11 +54,12 @@ double mvtLogLikelihood(arma::vec x, arma::vec mu, arma::mat Sigma, double nu) {
 
 
 double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma) {
-  if(x.n_rows != mu.n_rows) {
-    Rcpp::Rcout << "\nx:\n" << x << "\n\nmu\n" << mu;
-  }
+  // if(x.n_rows != mu.n_rows) {
+  //   Rcpp::Rcout << "\nx:\n" << x << "\n\nmu\n" << mu;
+  // }
   return -0.5 * (
-     arma::log_det_sympd(Sigma) 
+     log(2 * M_PI) 
+     + arma::log_det_sympd(Sigma) 
      + arma::as_scalar(
          (x - mu).t() * arma::inv_sympd(Sigma) * (x - mu) 
        )
