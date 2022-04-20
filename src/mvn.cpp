@@ -83,10 +83,12 @@ void mvn::empiricalBayesHyperparameters() {
 }
 
 void mvn::sampleCovPrior() {
+  Rcpp::Rcout << "\nScale:\n" << scale;
+  Rcpp::Rcout << "\nDF:\n" << nu;
   for(arma::uword k = 0; k < K; k++){
     cov.slice(k) = arma::iwishrnd(scale, nu);
     cov_inv.slice(k) = arma::inv_sympd(cov.slice(k));
-    cov_log_det(k) = arma::log_det(cov.slice(k)).real();
+    cov_log_det(k) = arma::log_det_sympd(cov.slice(k));
   }
 };
 
@@ -106,7 +108,7 @@ void mvn::sampleFromPriors() {
 void mvn::matrixCombinations() {
   for(arma::uword k = 0; k < K; k++) {
     cov_inv.slice(k) = arma::inv_sympd(cov.slice(k));
-    cov_log_det(k) = arma::log_det(cov.slice(k)).real();
+    cov_log_det(k) = arma::log_det_sympd(cov.slice(k));
   }
 };
 
@@ -271,7 +273,7 @@ void mvn::sampleKthComponentParameters(
 
   // Save the inverse and log determinant of the new covariance matrices
   cov_inv.slice(k) = inv_sympd(cov.slice(k));
-  cov_log_det(k) = log_det(cov.slice(k)).real();
+  cov_log_det(k) = log_det_sympd(cov.slice(k));
 
 };
 
