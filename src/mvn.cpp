@@ -83,14 +83,14 @@ void mvn::empiricalBayesHyperparameters() {
 }
 
 void mvn::sampleCovPrior() {
-  Rcpp::Rcout << "\nScale:\n" << scale;
-  Rcpp::Rcout << "\nDF: " << nu << "\n";
+  // Rcpp::Rcout << "\nScale:\n" << scale;
+  // Rcpp::Rcout << "\nDF: " << nu << "\n";
   for(arma::uword k = 0; k < K; k++){
     cov.slice(k) = arma::iwishrnd(scale, nu);
     cov_inv.slice(k) = arma::inv_sympd(cov.slice(k));
     cov_log_det(k) = arma::log_det_sympd(cov.slice(k));
   }
-  Rcpp::Rcout << "\nCovariances sampled from prior.\n";
+  // Rcpp::Rcout << "\nCovariances sampled from prior.\n";
 };
 
 void mvn::sampleMuPrior() {
@@ -260,6 +260,7 @@ void mvn::sampleKthComponentParameters(
     Rcpp::Rcout << "\nn_k: " << n_k;
     Rcpp::Rcout << "\n\nDistance from prior:\n" << dist_from_prior;
     Rcpp::Rcout << "\n\nScale_n:\n" << scale_n;
+    Rcpp::Rcout << "\n\nDegrees of freedom: " << nu + n_k;
     
     // Sample a new covariance matrix
     cov.slice(k) = iwishrnd(scale_n, nu + n_k);
