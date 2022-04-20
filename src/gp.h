@@ -38,10 +38,24 @@ class gp : virtual public density
   
 public:
   
-  // Parameters and hyperparameters
-  // double kappa, nu;
+  bool logNormPriorUsed = true;
+  uword sampleHypersFrequency = 2, samplingCount = 0;
   
-  uvec t_inds, density_non_outliers;
+  double 
+    // amplitude_proposal_window = 0.02, 
+    // length_proposal_window = 0.02, 
+    // noise_proposal_window = 0.02;
+    amplitude_proposal_window = 75,
+    length_proposal_window = 75, 
+    noise_proposal_window = 75;
+  
+  uvec t_inds, density_non_outliers,
+    
+    // Hold the count of acceptance for hyperparameters
+    noise_acceptance_count,
+    length_acceptance_count,
+    amplitude_acceptance_count;
+  
   vec amplitude, length, noise, cov_log_det, zero_vec;
   umat density_members;
   mat scale, mu, cov_comb_log_det, time_difference_mat, I_p;
@@ -72,7 +86,10 @@ public:
   // Sampling from priors
   // void sampleCovPrior();
   void sampleMuPrior();
-  void sampleKthComponentHyperParameterPrior(uword k);
+  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-3);
+  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-3);
+  double sampleNoisePriorDistribution(double threshold = 1e-3);
+  void sampleKthComponentHyperParameterPrior(uword k, bool logNorm = false);
   void sampleHyperParameterPriors();
   void sampleFromPriors();
   
@@ -100,6 +117,13 @@ public:
       mat inverse_covariance_matrix
   );
   
+  // vec posteriorMeanParameter(
+  //     uword n_k, 
+  //     double noise, 
+  //     mat data, 
+  //     mat inv_cov_mat
+  //   );
+  
   // mat posteriorCovarianceParameter(uword k, uword n_k);
   mat posteriorCovarianceParameter(
       mat covariance_matrix,
@@ -112,9 +136,10 @@ public:
   
   
   double proposeNewNonNegativeValue(double x, double window);
-  double hyperParameterKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde);
+  double hyperParameterLogKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde, bool logNorm = false);
   void sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
   void sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
+  void sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
   void sampleHyperParametersKthComponent(
       uword k, 
       uword n_k, 
@@ -127,7 +152,7 @@ public:
   void sampleNoise(uword k, uword n_k, mat component_data);
   
   // The log likelihood of a item belonging to each cluster
-  arma::vec itemLogLikelihood(arma::vec item);
+  vec itemLogLikelihood(vec item);
   
   // The log likelihood of a item belonging to a specific cluster
   double logLikelihood(arma::vec item, arma::uword k);

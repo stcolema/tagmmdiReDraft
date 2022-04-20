@@ -38,6 +38,15 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   
   I_p = eye(P, P);
   
+  noise_acceptance_count.set_size(K);
+  noise_acceptance_count.zeros();
+  
+  length_acceptance_count.set_size(K);
+  length_acceptance_count.zeros();
+  
+  amplitude_acceptance_count.set_size(K);
+  amplitude_acceptance_count.zeros();
+  
   // Those weird GP objects that can be massive and vary from component to 
   // component, the size being a function of N_k.
   repeated_time_indices.set_size(K);
@@ -71,21 +80,50 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   
 };
 
-void gp::sampleKthComponentHyperParameterPrior(uword k) {
-  amplitude(k) = 1.0; // rHalfCauchy(0, 5);
-  length(k) = 1.0; // rHalfCauchy(0, 5);
-  noise(k) = 1.0; // std::exp(randn< double >());
-  if(noise(k) < 1e-6) {
-    noise(k) = 1e-6;
+double gp::sampleAmplitudePriorDistribution(bool logNorm, double threshold) {
+  double x = 0.0;
+  if(logNorm) {
+    x = std::exp(randn< double >());
+  } else {
+    x = rHalfCauchy(0, 5);
   }
+  if(x < threshold) {
+    x = sampleAmplitudePriorDistribution(logNorm, threshold);
+  }
+  return x;
+};
+
+double gp::sampleLengthPriorDistribution(bool logNorm, double threshold) {
+  double x = 0.0;
+  if(logNorm) {
+    x = std::exp(randn< double >());
+  } else {
+    x = rHalfCauchy(0, 5);
+  }
+  if(x < threshold) {
+    x = sampleLengthPriorDistribution(logNorm, threshold);
+  }
+  return x;
+};
+
+double gp::sampleNoisePriorDistribution(double threshold) {
+  double x = 0.0;
+  x = std::exp(randn< double >());
+  if(x < threshold) {
+    x = sampleNoisePriorDistribution(threshold);
+  }
+  return x;
+};
+
+void gp::sampleKthComponentHyperParameterPrior(uword k, bool logNorm) {
+  amplitude(k) = sampleAmplitudePriorDistribution(logNorm);
+  length(k) = sampleLengthPriorDistribution(logNorm);
+  noise(k) = sampleNoisePriorDistribution();
 };
 
 void gp::sampleHyperParameterPriors() {
   for(uword k = 0; k < K; k++) {
-    sampleKthComponentHyperParameterPrior(k);
-    // if(noise(k) < 1e-6) {
-    //   noise(k) = 1e-6;
-    // }
+    sampleKthComponentHyperParameterPrior(k, logNormPriorUsed);
   }
   // Rcpp::Rcout << "\nAmplitude:\n" << amplitude;
   // Rcpp::Rcout << "\n\nLength:\n" << length;
@@ -129,24 +167,24 @@ void gp::sampleFromPriors() {
 mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length) {
   mat sub_block(P, P);
   sub_block.zeros();
-  // for(uword ii = 0; ii < P; ii++) {
-  std::for_each(
-    std::execution::par,
-    P_inds.begin(),
-    P_inds.end(),
-    [&](uword ii) {
-      sub_block(ii, ii) = amplitude;
-      for(uword jj = ii + 1; jj < P; jj++) {
-        sub_block(ii, jj) = squaredExponentialFunction(
-          amplitude, 
-          length, 
-          ii, 
-          jj
-        );
-        sub_block(jj, ii) = sub_block(ii, jj);
-      }
+  for(uword ii = 0; ii < P; ii++) {
+  // std::for_each(
+  //   std::execution::par,
+  //   P_inds.begin(),
+  //   P_inds.end(),
+  //   [&](uword ii) {
+    sub_block(ii, ii) = amplitude;
+    for(uword jj = ii + 1; jj < P; jj++) {
+      sub_block(ii, jj) = squaredExponentialFunction(
+        amplitude, 
+        length, 
+        ii, 
+        jj
+      );
+      sub_block(jj, ii) = sub_block(ii, jj);
     }
-  );
+  }
+  // );
   return sub_block;
 };
 
@@ -211,8 +249,6 @@ mat gp::constructCovarianceMatrix(uword n_k, uword k, mat kernel_sub_block) {
   mat covariance_matrix(n_k * P, n_k * P);
   covariance_matrix.zeros();
   covariance_matrix = repmat(kernel_sub_block, n_k, n_k);
-  // Rcpp::Rcout << "\nCovariance matrix full:\n" << covariance_matrix;
-  // Rcpp::Rcerr << "\nWe locking down things here.\n";
   return covariance_matrix;
 };
 
@@ -290,6 +326,10 @@ vec gp::posteriorMeanParameter(
     mat inverse_covariance_matrix
 ) {
   vec mu_tilde(P);
+  // mu_tilde = covariance_matrix.rows(P_inds)
+  //   * inverse_covariance_matrix
+  //   * data;
+    
   for(uword p = 0; p < P; p++) {
     mu_tilde(p) = as_scalar(
       covariance_matrix.row(p)
@@ -299,6 +339,13 @@ vec gp::posteriorMeanParameter(
   }
   return mu_tilde;
 };
+
+// vec gp::posteriorMeanParameter(uword n_k, double noise, mat data, mat inv_cov_mat) {
+//   vec mu_tilde(P), sample_mean(P);
+//   sample_mean = mean(data).as_col();
+//   mu_tilde = n_k / noise * inv_cov_mat * sample_mean;
+//   return mu_tilde;
+// };
 
 
 mat gp::posteriorCovarianceParameter(
@@ -319,6 +366,13 @@ mat gp::posteriorCovarianceParameter(
   // }
   // 
   // auto I = linspace(0, P - 1);
+  
+  // cov_tilde = covariance_matrix.submat(P_inds, P_inds) *
+  //   - covariance_matrix.rows(P_inds) 
+  //   * inverse_covariance_matrix 
+  //   * covariance_matrix.cols(P_inds)
+  // );
+  
   
   std::for_each(std::execution::par,
                 P_inds.begin(),
@@ -370,56 +424,48 @@ mat gp::posteriorCovarianceParameter(
 
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   vec mu_tilde(P), data_vec = data.as_row().t() ;
-  mat cov_tilde(P, P);
-  
-  
-  
-  // Rcpp::Rcout << "\n\nConstruct covariance matrix from sub-blocks.";
-  
-  // calculateKernelSubBlock(k);
+  mat
+    cov_tilde(P, P), 
+    covariance_matrix(n_k * P, n_k * P),
+    inverse_covariance(n_k * P, n_k * P),
+    inverse_covariance_comp(n_k * P, n_k * P),
+    I_nkP(n_k * P, n_k * P);
+  I_nkP = eye(n_k * P, n_k * P);
   
   // Objects related to the covariance function
-  // constructCovarianceMatrix(n_k, k);
-  mat covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
+  covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
   
-  // Rcpp::Rcout << "\nInvert the covariance matrix.";
-  // inverse_covariance(k) = invertComponentCovariance(k, n_k);
-  mat inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
-  
-  // Rcpp::Rcout << "\ncalculate the log-determinant.";
-  cov_log_det(k) = componentCovarianceLogDeterminant(k, n_k);
+  inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
   
   // Posterior parameters
-  // Rcpp::Rcout << "\n\nCalculate the mean posterior hyperparameters.";
   mu_tilde = posteriorMeanParameter(data_vec, covariance_matrix, inverse_covariance);
+  // mu_tilde = posteriorMeanParameter(n_k, noise(k), data, inverse_covariance);
   
-  // Rcpp::Rcout << "\nThe covariance matrix used in the sampling.";
   cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
-
-  // if(! cov_tilde.is_sympd()) {
-  //   Rcpp::Rcout << "\nCov is off\n\n" << cov_tilde;
-  //   Rcpp::Rcout << "\n\nAmplitude: " << amplitude(k);
-  //   Rcpp::Rcout << "\nNoise: " << noise(k);
-  //   Rcpp::Rcout << "\nLength: " << length(k);
-  // }
+  // cov_tilde = inverse_covariance;
   
+  // Rcpp::Rcout << "\nSampled the mean function.";
+  // Rcpp::Rcout << "\n\nMean hyper:\n" << mu_tilde;
+  // Rcpp::Rcout << "\n\nCov hyper:\n" << cov_tilde;
+  
+  // Rcpp::Rcout << "\nSampling mean function.\n";
   mu.col(k) = mvnrnd(mu_tilde, cov_tilde);
   
-  // sampleHyperParametersKthComponent(k, mu_tilde, cov_tilde);
-  // sampleHyperParametersKthComponent(k, mu_tilde, cov_tilde);
-  // sampleHyperParametersKthComponent(
-  //   k,
-  //   n_k,
-  //   mu_tilde,
-  //   data_vec,
-  //   cov_tilde
-  // );
   
-  // sampleNoise(k, n_k, data);
+  if((samplingCount % sampleHypersFrequency) == 0) {
+    // Rcpp::Rcout << "\nSampling hyperparameters.\n";
+    sampleHyperParametersKthComponent(
+      k,
+      n_k,
+      mu_tilde,
+      data_vec,
+      cov_tilde
+    );
+    
+    sampleNoise(k, n_k, data);
+  }
   
-  // Rcpp::Rcout << "\nSample the mean function.";
-  // Rcpp::Rcout << "\n\nMean hyper:\n" << mu_tilde.size();
-  // Rcpp::Rcout << "\n\nCov hyper:\n" << cov_tilde.n_cols;
+  
   // return mvnrnd(mu_tilde, cov_tilde);
 };
 
@@ -427,7 +473,7 @@ void gp::sampleKthComponentParameters(uword k, umat members, uvec non_outliers) 
   
   // Find the items relevant to sampling the parameters
   uvec rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
-  vec component_data_vec;
+  // vec component_data_vec;
   mat component_data;
   
   // Find how many labels have the value
@@ -435,8 +481,10 @@ void gp::sampleKthComponentParameters(uword k, umat members, uvec non_outliers) 
   
   if(n_k > 0){
     
+    // Rcpp::Rcout << "\nSampling from posterior.\n";
+    
     component_data.reset();
-    component_data_vec.reset();
+    // component_data_vec.reset();
     
     // Component data
     component_data = X.rows( rel_inds ) ;
@@ -447,7 +495,7 @@ void gp::sampleKthComponentParameters(uword k, umat members, uvec non_outliers) 
   } else {
     
     // Rcpp::Rcout << "\n\nEmpty component!\n";
-    
+    // Rcpp::Rcout << "\nSampling from prior.\n";
     // sampleHyperParameters();
     
     // Sample from the prior
@@ -467,22 +515,22 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   
   calculateKernelSubBlock();
   
-  // Rcpp::Rcout << "\nAmplitude:\n" << amplitude;
-  // Rcpp::Rcout << "\n\nLength:\n" << length;
-  // Rcpp::Rcout << "\n\nNoise:\n" << noise;
-  
+  // Rcpp::Rcout << "\nAmplitude:\n" << amplitude.t();
+  // Rcpp::Rcout << "\n\nLength:\n" << length.t();
+  // Rcpp::Rcout << "\n\nNoise:\n" << noise.t();
+
   // calculateInverseCovariance(members, non_outliers);
   // sampleHyperParameters();
   
-  // for(uword k = 0; k < K; k++) {
-  std::for_each(
-    std::execution::par,
-    K_inds.begin(),
-    K_inds.end(),
-    [&](uword k) {
+  for(uword k = 0; k < K; k++) {
+  // std::for_each(
+  //   std::execution::par,
+  //   K_inds.begin(),
+  //   K_inds.end(),
+  //   [&](uword k) {
       sampleKthComponentParameters(k, members, non_outliers);
     }
-  );
+  // );
   
   // for (arma::uword k = 0; k < K; k++) {
   // 
@@ -511,24 +559,49 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   //   }
   // 
   // }
+  // if(randu() > 0.9) {
+  samplingCount++;
+  // if((samplingCount % 5) == 0) {
+  //   Rcpp::Rcout << "\n\nSampling count: " << samplingCount;
+  //   Rcpp::Rcout << "\nNumber of hyper propsals: " << floor(samplingCount / sampleHypersFrequency);
+  //   Rcpp::Rcout << "\n\nNoise acceptance count:\n" << accu(noise_acceptance_count.t()) / 3.0;
+  //   Rcpp::Rcout << "\n\nLength acceptance count:\n" << accu(length_acceptance_count.t()) / 3.0;
+  //   Rcpp::Rcout << "\n\nAmplitude acceptance count:\n" << accu(amplitude_acceptance_count.t()) / 3.0;
+  //   
+  //   Rcpp::Rcout << "\n\n\nNoise: " << noise.t();
+  //   Rcpp::Rcout << "\n\nLength: " << length.t();
+  //   Rcpp::Rcout << "\n\nAmplitude: " << amplitude.t();
+  // }
+
 };
 
 // === Hyper-parameters ========================================================
 
 // Need to sample the hyperparameter and recalculate the mu tilde / cov tilde
-double gp::hyperParameterKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde) {
+double gp::hyperParameterLogKernel(
+    double hyper, 
+    vec mu_k, 
+    vec mu_tilde, 
+    mat cov_tilde, 
+    bool logNorm
+  ) {
   double score = 0.0;
-  vec mean_diff = mu_k - mu_tilde;
+  // vec mean_diff = mu_k - mu_tilde;
 
   // if(! cov_tilde.is_sympd()) {
   //   Rcpp::Rcout << "\n\nNot positive semi-definite.\n";
   // }
+  score = pNorm(mu_k, mu_tilde, cov_tilde);
+  // score = log(2 * M_PI)
+  //   + log_det_sympd(cov_tilde)
+  //   + as_scalar(mean_diff.t() * inv_sympd(cov_tilde) * mean_diff);
+  // score *= -0.5;
   
-  score = log(2 * M_PI)
-    + log_det(cov_tilde).real()
-    + as_scalar(mean_diff.t() * inv_sympd(cov_tilde) * mean_diff);
-  score *= -0.5;
-  score += pHalfCauchy(hyper, 0, 5);
+  if(logNorm) {
+    score += pNorm(log(hyper), 0, 1);
+  } else {
+    score += pHalfCauchy(hyper, 0, 5);
+  }
 
   return score;
 };
@@ -547,15 +620,15 @@ double gp::hyperParameterKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_ti
 // void gp::sampleLength(uword k, vec mu_tilde, mat cov_tilde) {
 //   bool accept = false;
 //   double 
-//     length_proposal_window = 0.02, 
+//     length_proposal_window = 150, 
 //       acceptance_prob = 0.0, 
 //       new_score = 0.0, 
 //       old_score = 0.0,
 //       new_length = 0.0;
 //   
 //   new_length = std::exp(std::log(length(k) + randn() * length_proposal_window));
-//   new_score = hyperParameterKernel(new_length, mu.col(k), mu_tilde, cov_tilde);
-//   old_score = hyperParameterKernel(length(k), mu.col(k), mu_tilde, cov_tilde);
+//   new_score = hyperParameterLogKernel(new_length, mu.col(k), mu_tilde, cov_tilde);
+//   old_score = hyperParameterLogKernel(length(k), mu.col(k), mu_tilde, cov_tilde);
 // 
 //   acceptance_prob =  std::min(1.0, std::exp(new_score - old_score));
 //   accept = metropolisAcceptanceStep(acceptance_prob);
@@ -570,7 +643,6 @@ double gp::hyperParameterKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_ti
 void gp::sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde) {
   bool accept = false;
   double 
-    length_proposal_window = 75, 
     acceptance_prob = 0.0, 
     new_score = 0.0, 
     old_score = 0.0,
@@ -597,37 +669,38 @@ void gp::sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat 
     new_inv_cov_mat
   );
   
-  new_score = hyperParameterKernel(
+  new_score = hyperParameterLogKernel(
     new_length, 
     mu.col(k), 
     new_mu_tilde, 
-    new_cov_tilde_new
+    new_cov_tilde_new,
+    logNormPriorUsed
   );
   
-  old_score = hyperParameterKernel(
+  old_score = hyperParameterLogKernel(
     length(k), 
     mu.col(k), 
     mu_tilde, 
-    cov_tilde
+    cov_tilde,
+    logNormPriorUsed
   );
   
   acceptance_prob =  std::min(1.0, std::exp(new_score - old_score));
   accept = metropolisAcceptanceStep(acceptance_prob);
   if(accept) {
     length(k) = new_length;
-    // amplitude_acceptance_count(k)++;
+    length_acceptance_count(k)++;
   }
 };
 
 double gp::proposeNewNonNegativeValue(double x, double window) {
   return randg( distr_param( x * window, 1.0 / window) );
-  // return std::exp(std::log(x + randn() * window));
+  // return std::exp(std::log(x) + randn() * window);
 }
 
 void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde) {
   bool accept = false;
   double 
-    amplitude_proposal_window = 75, 
     acceptance_prob = 0.0, 
     new_score = 0.0, 
     old_score = 0.0,
@@ -654,25 +727,105 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
     new_inv_cov_mat
   );
   
-  new_score = hyperParameterKernel(
+  new_score = hyperParameterLogKernel(
     new_amplitude, 
     mu.col(k), 
     new_mu_tilde, 
-    new_cov_tilde_new
+    new_cov_tilde_new,
+    logNormPriorUsed
   );
   
-  old_score = hyperParameterKernel(
+  old_score = hyperParameterLogKernel(
     amplitude(k), 
     mu.col(k), 
     mu_tilde, 
-    cov_tilde
+    cov_tilde,
+    logNormPriorUsed
   );
 
   acceptance_prob =  std::min(1.0, std::exp(new_score - old_score));
   accept = metropolisAcceptanceStep(acceptance_prob);
   if(accept) {
     amplitude(k) = new_amplitude;
-    // amplitude_acceptance_count(k)++;
+    amplitude_acceptance_count(k)++;
+  }
+};
+
+void gp::sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde) {
+  bool accept = false;
+  double 
+    acceptance_prob = 0.0, 
+    new_score = 0.0, 
+    old_score = 0.0,
+    new_amplitude = 0.0,
+    new_length = 0.0;
+  
+  vec new_mu_tilde(P);
+  mat 
+    new_sub_block(P, P), 
+    new_cov_mat(n_k * P, n_k * P),
+    new_inv_cov_mat(n_k * P, n_k * P), 
+    new_cov_tilde(P, P);
+  
+  new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
+  new_length = proposeNewNonNegativeValue(length(k), length_proposal_window);
+  // std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
+  if( (new_amplitude < 1e-6) || (new_length < 1e-6) ) {
+    return;
+  }
+  new_sub_block = calculateKthComponentKernelSubBlock(new_amplitude, new_length);
+  new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
+  
+  if(! new_cov_mat.is_sympd()) {
+    return;
+  }
+  
+  new_inv_cov_mat = invertComponentCovariance(n_k, noise(k), new_sub_block);
+  new_cov_tilde = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
+  new_mu_tilde = posteriorMeanParameter(
+    component_data, 
+    new_cov_mat, 
+    new_inv_cov_mat
+  );
+  
+  new_score = log(2 * M_PI)
+    + log_det_sympd(new_cov_tilde)
+    + as_scalar((mu.col(k) - new_mu_tilde).t() * inv_sympd(new_cov_tilde) * (mu.col(k) - new_mu_tilde));
+  new_score *= -0.5;
+  new_score += pNorm(log(new_amplitude), 0, 1);
+  new_score += pNorm(log(new_length), 0, 1);
+
+  old_score = log(2 * M_PI)
+    + log_det_sympd(cov_tilde)
+    + as_scalar((mu.col(k) - mu_tilde).t() * inv_sympd(cov_tilde) * (mu.col(k) - mu_tilde));
+  old_score *= -0.5;
+  old_score += pNorm(log(amplitude(k)), 0, 1);
+  old_score += pNorm(log(length(k)), 0, 1);
+    
+    
+  // new_score = hyperParameterLogKernel(
+  //   new_amplitude, 
+  //   mu.col(k), 
+  //   new_mu_tilde, 
+  //   new_cov_tilde,
+  //   logNormPriorUsed
+  // );
+  // 
+  // old_score = hyperParameterLogKernel(
+  //   amplitude(k), 
+  //   mu.col(k), 
+  //   mu_tilde, 
+  //   cov_tilde,
+  //   logNormPriorUsed
+  // );
+  
+  acceptance_prob =  std::min(1.0, std::exp(new_score - old_score));
+  accept = metropolisAcceptanceStep(acceptance_prob);
+  if(accept) {
+    amplitude(k) = new_amplitude;
+    length(k) = new_length;
+    amplitude_acceptance_count(k)++;
+    length_acceptance_count(k)++;
   }
 };
 
@@ -699,6 +852,14 @@ void gp::sampleHyperParametersKthComponent(
     cov_tilde
   );
   
+  // sampleCovHypers(
+  //   k,
+  //   n_k,
+  //   mu_tilde,
+  //   component_data,
+  //   cov_tilde
+  // );
+  
   // sampleNoise(k, n_k, component_data);
   
   // if(randu() > 0.8) {
@@ -723,7 +884,6 @@ double gp::noiseLogKernel(uword n_k, double noise, vec mean_vec, mat data) {
 void gp::sampleNoise(uword k, uword n_k, mat component_data) {
   bool accept = false;
   double 
-    noise_proposal_window = 75, 
       acceptance_prob = 0.0, 
       new_score = 0.0, 
       old_score = 0.0,
@@ -742,7 +902,7 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data) {
   accept = metropolisAcceptanceStep(acceptance_prob);
   if(accept) {
     noise(k) = new_noise;
-    // amplitude_acceptance_count(k)++;
+    noise_acceptance_count(k)++;
   }
 };
 
