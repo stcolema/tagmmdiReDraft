@@ -255,12 +255,12 @@ void mvn::sampleKthComponentParameters(
     // Update the scale hyperparameter
     scale_n = scale + sample_cov + ((kappa * n_k) / (double) (kappa + n_k)) * dist_from_prior;
     
-    Rcpp::Rcout << "\n\nSample cov:\n" << sample_cov;
-    Rcpp::Rcout << "\n\nkappa: " << kappa;
-    Rcpp::Rcout << "\nn_k: " << n_k;
-    Rcpp::Rcout << "\n\nDistance from prior:\n" << dist_from_prior;
-    Rcpp::Rcout << "\n\nScale_n:\n" << scale_n;
-    Rcpp::Rcout << "\n\nDegrees of freedom: " << nu + n_k;
+    // Rcpp::Rcout << "\n\nSample cov:\n" << sample_cov;
+    // Rcpp::Rcout << "\n\nkappa: " << kappa;
+    // Rcpp::Rcout << "\nn_k: " << n_k;
+    // Rcpp::Rcout << "\n\nDistance from prior:\n" << dist_from_prior;
+    // Rcpp::Rcout << "\n\nScale_n:\n" << scale_n;
+    // Rcpp::Rcout << "\n\nDegrees of freedom: " << nu + n_k;
     
     // Sample a new covariance matrix
     cov.slice(k) = iwishrnd(scale_n, nu + n_k);
