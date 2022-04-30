@@ -93,6 +93,36 @@ double gp::sampleAmplitudePriorDistribution(bool logNorm, double threshold) {
   return x;
 };
 
+double gp::noisePriorLogDensity(double x, bool logNorm) {
+  double y = 0.0;
+  if(logNorm) {
+    y = pNorm(log(x), 0, 1);
+  } else {
+    y = pHalfCauchy(x, 0, 5, true);
+  }
+  return y;
+}
+
+double gp::ampltiduePriorLogDensity(double x, bool logNorm) {
+  double y = 0.0;
+  if(logNorm) {
+    y = pNorm(log(x), 0, 1);
+  } else {
+    y = pHalfCauchy(x, 0, 5, true);
+  }
+  return y;
+}
+
+double gp::lengthPriorLogDensity(double x, bool logNorm) {
+  double y = 0.0;
+  if(logNorm) {
+    y = pNorm(log(x), 0, 1);
+  } else {
+    y = pHalfCauchy(x, 0, 5, true);
+  }
+  return y;
+}
+
 double gp::sampleLengthPriorDistribution(bool logNorm, double threshold) {
   double x = 0.0;
   if(logNorm) {
@@ -106,9 +136,14 @@ double gp::sampleLengthPriorDistribution(bool logNorm, double threshold) {
   return x;
 };
 
-double gp::sampleNoisePriorDistribution(double threshold) {
+double gp::sampleNoisePriorDistribution(bool logNorm, double threshold) {
   double x = 0.0;
-  x = std::exp(randn< double >());
+  if(logNorm) {
+    x = std::exp(randn< double >());
+  } else {
+    x = rHalfCauchy(0, 5);
+  }
+  // x = std::exp(randn< double >());
   if(x < threshold) {
     x = sampleNoisePriorDistribution(threshold);
   }
@@ -181,6 +216,12 @@ mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length) {
         ii, 
         jj
       );
+      
+      // if(sub_block(ii, jj) < kernel_subblock_threshold) {
+      //   sub_block(ii, jj) = 0.0;
+      //   sub_block(jj, ii) = 0.0;
+      //   break;
+      // }
       sub_block(jj, ii) = sub_block(ii, jj);
     }
   }
@@ -262,7 +303,7 @@ mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block)
   
   I_NkP = eye(n_k * P, n_k * P);
   Q_k = I_p + (n_k / noise) * kernel_sub_block;
-  Z_k = inv(Q_k);
+  Z_k = inv_sympd(Q_k);
   return (1.0 / noise) * I_NkP - (1 / (n_k * noise)) * kron(J, I_p - Z_k);
 };
 
@@ -373,12 +414,17 @@ mat gp::posteriorCovarianceParameter(
   //   * covariance_matrix.cols(P_inds)
   // );
   
+  // cov_tilde = covariance_matrix.submat(P_inds, P_inds) 
+  //   - covariance_matrix.rows(P_inds) 
+  //     * inverse_covariance_matrix 
+  //     * covariance_matrix.cols(P_inds);
   
-  std::for_each(std::execution::par,
-                P_inds.begin(),
-                P_inds.end(),
-                [&](uword ii) {
-  // for(uword ii = 0; ii < P; ii++) {
+  
+  // std::for_each(std::execution::par,
+  //               P_inds.begin(),
+  //               P_inds.end(),
+  //               [&](uword ii) {
+  for(uword ii = 0; ii < P; ii++) {
   // if(ii >= P) {
   //   Rcpp::Rcout << "\ni: " << ii;
   //   // throw;
@@ -386,22 +432,22 @@ mat gp::posteriorCovarianceParameter(
 
     cov_tilde(ii, ii) = as_scalar(
       covariance_matrix(ii, ii)
-    - covariance_matrix.row(ii) 
-    * inverse_covariance_matrix 
+    - covariance_matrix.row(ii)
+    * inverse_covariance_matrix
     * covariance_matrix.col(ii)
     );
-    
+
     for(uword jj = ii + 1; jj < P; jj++) {
       cov_tilde(ii, jj) = as_scalar(
          covariance_matrix(ii, jj)
-         - covariance_matrix.row(ii) 
-           * inverse_covariance_matrix 
+         - covariance_matrix.row(ii)
+           * inverse_covariance_matrix
            * covariance_matrix.col(jj)
       );
       cov_tilde(jj, ii) = cov_tilde(ii, jj);
     }
   }
-  );
+  // );
   
   return cov_tilde;
 };
@@ -423,13 +469,17 @@ mat gp::posteriorCovarianceParameter(
 // };
 
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
-  vec mu_tilde(P), data_vec = data.as_row().t() ;
+
+  bool not_invertible = false;
+  vec mu_tilde(P), data_vec = data.as_row().t(), eigval(P);
   mat
     cov_tilde(P, P), 
     covariance_matrix(n_k * P, n_k * P),
     inverse_covariance(n_k * P, n_k * P),
     inverse_covariance_comp(n_k * P, n_k * P),
-    I_nkP(n_k * P, n_k * P);
+    I_nkP(n_k * P, n_k * P),
+    chol_cov(P, P),
+    stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
   I_nkP = eye(n_k * P, n_k * P);
   
   // Objects related to the covariance function
@@ -442,6 +492,18 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // mu_tilde = posteriorMeanParameter(n_k, noise(k), data, inverse_covariance);
   
   cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+  
+  // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
+  // small constant to the diagonal entries
+  eigval = eig_sym( cov_tilde );
+  not_invertible = min(eigval) < 1e-5;
+  
+    mat small_identity = I_p;
+  if(not_invertible) {
+    small_identity *= 1e-6;
+    cov_tilde += small_identity;
+  }
+  
   // cov_tilde = inverse_covariance;
   
   // Rcpp::Rcout << "\nSampled the mean function.";
@@ -449,7 +511,11 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // Rcpp::Rcout << "\n\nCov hyper:\n" << cov_tilde;
   
   // Rcpp::Rcout << "\nSampling mean function.\n";
-  mu.col(k) = mvnrnd(mu_tilde, cov_tilde);
+  // mu.col(k) = mvnrnd(mu_tilde, cov_tilde);
+  
+  chol_cov = chol(cov_tilde);
+  // mat stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
+  mu.col(k) = mu_tilde + chol_cov * stochasticity;
   
   
   if((samplingCount % sampleHypersFrequency) == 0) {
@@ -640,7 +706,13 @@ double gp::hyperParameterLogKernel(
 
 
 
-void gp::sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde) {
+void gp::sampleLength(
+    uword k, 
+    uword n_k, 
+    vec mu_tilde, 
+    vec component_data, 
+    mat cov_tilde
+) {
   bool accept = false;
   double 
     acceptance_prob = 0.0, 
@@ -661,6 +733,10 @@ void gp::sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat 
   }
   new_sub_block = calculateKthComponentKernelSubBlock(amplitude(k), new_length);
   new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
+  if(rcond(new_cov_mat) < 1e-2) {
+    return;
+  }
+  
   new_inv_cov_mat = invertComponentCovariance(n_k, noise(k),new_sub_block);
   new_cov_tilde_new = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
   new_mu_tilde = posteriorMeanParameter(
@@ -719,6 +795,10 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
   }
   new_sub_block = calculateKthComponentKernelSubBlock(new_amplitude, length(k));
   new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
+  if(rcond(new_cov_mat) < 1e-2) {
+    return;
+  }
+  
   new_inv_cov_mat = invertComponentCovariance(n_k, noise(k),new_sub_block);
   new_cov_tilde_new = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
   new_mu_tilde = posteriorMeanParameter(
@@ -875,7 +955,7 @@ double gp::noiseLogKernel(uword n_k, double noise, vec mean_vec, mat data) {
   for(uword n = 0; n < n_k; n++) {
     score += pNorm(data.row(n).t(), mean_vec, noise * I_p);
   }
-  score += pNorm(log(noise), 0, 1);
+  score += noisePriorLogDensity(noise, logNormPriorUsed); // pNorm(log(noise), 0, 1);
   // score += pHalfCauchy(noise, 0, 5);
   // Rcpp::Rcout << "\nNoise kernel done.\n";
   return score;
@@ -891,7 +971,7 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data) {
 
   new_noise = proposeNewNonNegativeValue(noise(k), noise_proposal_window);
   
-  if(new_noise < 1e-6) {
+  if(new_noise < 1.0e-5) {
     return;
   }
   
