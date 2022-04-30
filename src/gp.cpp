@@ -394,37 +394,12 @@ mat gp::posteriorCovarianceParameter(
     mat inverse_covariance_matrix) {
   mat cov_tilde(P, P);
   cov_tilde.zeros();
-  // // cov_tilde = ;
+
+  std::for_each(std::execution::par,
+                P_inds.begin(),
+                P_inds.end(),
+                [&](uword ii) {
   // for(uword ii = 0; ii < P; ii++) {
-  //   for(uword jj = 0; jj < P; jj++) {
-  //     cov_tilde(ii, jj) = as_scalar(
-  //       covariance_matrix(ii, jj)
-  //     - covariance_matrix.row(ii) 
-  //     * inverse_covariance_matrix 
-  //     * covariance_matrix.col(jj)
-  //     );
-  //   }
-  // }
-  // 
-  // auto I = linspace(0, P - 1);
-  
-  // cov_tilde = covariance_matrix.submat(P_inds, P_inds) *
-  //   - covariance_matrix.rows(P_inds) 
-  //   * inverse_covariance_matrix 
-  //   * covariance_matrix.cols(P_inds)
-  // );
-  
-  // cov_tilde = covariance_matrix.submat(P_inds, P_inds) 
-  //   - covariance_matrix.rows(P_inds) 
-  //     * inverse_covariance_matrix 
-  //     * covariance_matrix.cols(P_inds);
-  
-  
-  // std::for_each(std::execution::par,
-  //               P_inds.begin(),
-  //               P_inds.end(),
-  //               [&](uword ii) {
-  for(uword ii = 0; ii < P; ii++) {
   // if(ii >= P) {
   //   Rcpp::Rcout << "\ni: " << ii;
   //   // throw;
@@ -447,7 +422,7 @@ mat gp::posteriorCovarianceParameter(
       cov_tilde(jj, ii) = cov_tilde(ii, jj);
     }
   }
-  // );
+  );
   
   return cov_tilde;
 };
@@ -588,15 +563,15 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   // calculateInverseCovariance(members, non_outliers);
   // sampleHyperParameters();
   
-  for(uword k = 0; k < K; k++) {
-  // std::for_each(
-  //   std::execution::par,
-  //   K_inds.begin(),
-  //   K_inds.end(),
-  //   [&](uword k) {
+  // for(uword k = 0; k < K; k++) {
+  std::for_each(
+    std::execution::par,
+    K_inds.begin(),
+    K_inds.end(),
+    [&](uword k) {
       sampleKthComponentParameters(k, members, non_outliers);
     }
-  // );
+  );
   
   // for (arma::uword k = 0; k < K; k++) {
   // 
@@ -950,14 +925,16 @@ void gp::sampleHyperParametersKthComponent(
 };
 
 double gp::noiseLogKernel(uword n_k, double noise, vec mean_vec, mat data) {
-  double score = 0.0;
+  double score = 0.0, prior_contribution = 0.0;
   // Rcpp::Rcout << "\nNoise kernel.\n";
   for(uword n = 0; n < n_k; n++) {
     score += pNorm(data.row(n).t(), mean_vec, noise * I_p);
   }
-  score += noisePriorLogDensity(noise, logNormPriorUsed); // pNorm(log(noise), 0, 1);
+  prior_contribution += noisePriorLogDensity(noise, logNormPriorUsed); 
+  
+  score += prior_contribution;
+  // score += pNorm(log(noise), 0, 1);
   // score += pHalfCauchy(noise, 0, 5);
-  // Rcpp::Rcout << "\nNoise kernel done.\n";
   return score;
 };
 
