@@ -14,10 +14,11 @@ setupOutlierComponents <- function(types) {
   # iterate over the types checking they are viable types
   for(v in view_indices) {
     type <- types[v]
-    tagm_used <- type == "TAGM"
+    tagm_used <- (type == "TAGM" || type == "TAGPM")
     if(tagm_used)
       outlier_types[v] <- 1
   }
+  
   
   outlier_types
   
