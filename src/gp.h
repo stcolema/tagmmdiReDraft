@@ -41,7 +41,10 @@ public:
   bool logNormPriorUsed = true;
   uword sampleHypersFrequency = 2, samplingCount = 0;
   
-  double 
+  double
+    
+    kernel_subblock_threshold = 1e-5,
+    
     // amplitude_proposal_window = 0.02, 
     // length_proposal_window = 0.02, 
     // noise_proposal_window = 0.02;
@@ -86,9 +89,15 @@ public:
   // Sampling from priors
   // void sampleCovPrior();
   void sampleMuPrior();
+
+  double noisePriorLogDensity(double x, bool logNorm = false);
+  double ampltiduePriorLogDensity(double x, bool logNorm = false);
+  double lengthPriorLogDensity(double x, bool logNorm = false);
+  
   double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-3);
   double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-3);
-  double sampleNoisePriorDistribution(double threshold = 1e-3);
+  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 1e-3);
+  
   void sampleKthComponentHyperParameterPrior(uword k, bool logNorm = false);
   void sampleHyperParameterPriors();
   void sampleFromPriors();
