@@ -6,7 +6,7 @@
 #' @return NULL
 checkTypes <- function(types) {
   
-  allowed_types <- c("MVN", "TAGM", "C", "G", "GP")
+  allowed_types <- c("MVN", "TAGM", "C", "G", "GP", "TAGPM")
   not_a_vector <- ! is.vector(types)
   
   if(not_a_vector) {
@@ -21,7 +21,7 @@ checkTypes <- function(types) {
     type <- types[v]
     wrong_type <- ! type %in% allowed_types
     if(wrong_type)
-      stop("Type not recognised. Please use 'MVN', 'TAGM', 'G' or 'C'.")
+      stop("Type not recognised. Please use 'MVN', 'TAGM', 'G', 'GP', 'TAGPM' or 'C'.")
     
   }
   
