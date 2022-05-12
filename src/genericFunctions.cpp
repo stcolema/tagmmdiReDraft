@@ -176,3 +176,7 @@ double squaredExponentialFunction(double amplitude, double length, uword i, uwor
   // } 
   return amplitude * std::exp(- std::pow(j - i, 2.0) / (2.0 * length));
 };
+
+bool doubleApproxEqual(double x, double y, double precision) {
+  return std::abs(x - y) < precision;
+};

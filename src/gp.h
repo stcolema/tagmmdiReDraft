@@ -138,6 +138,16 @@ public:
   uvec relevantIndices(uword ii, uword P);
   mat firstCovProduct(mat A, mat B, uword N);
   double blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P);
+  double blockVectorMultiplication(
+      rowvec a, 
+      mat B, 
+      double lambda,
+      uword ii, 
+      uword jj, 
+      uword N, 
+      uword P
+  );
+  double findLambda(mat B, uword N, bool testLambdas = false);
   
   // mat posteriorCovarianceParameter(uword k, uword n_k);
   mat posteriorCovarianceParameter(

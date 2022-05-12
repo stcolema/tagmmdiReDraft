@@ -93,4 +93,7 @@ bool metropolisAcceptanceStep(double acceptance_prob);
 // [[Rcpp::export]]
 double squaredExponentialFunction(double amplitude, double length, arma::uword i, arma::uword j);
 
+bool doubleApproxEqual(double x, double y, double precision = 0.000002);
+
 #endif /* GENFUN_H */
+

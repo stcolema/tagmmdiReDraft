@@ -510,11 +510,63 @@ double gp::blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword 
   b_used = B.submat(unique_inds, col_0);
   
   return N * accu(a_used % b_used) + lambda_comp;
-}
+};
+
+double gp::blockVectorMultiplication(rowvec a, 
+                                     mat B, 
+                                     double lambda,
+                                     uword ii, 
+                                     uword jj, 
+                                     uword N, 
+                                     uword P) {
+  double lambda_comp = a[jj] * lambda;
+  uvec unique_inds(P), col_0 = zeros<uvec>(1);
+  vec a_used(P), b_used(P);
+  
+  unique_inds = regspace< uvec >(0, 1, P - 1);
+  a_used = a.elem(unique_inds);
+  b_used = B.submat(unique_inds, col_0);
+  
+  return N * as_scalar(a_used * b_used) + lambda_comp;
+};
+
+
+double gp::findLambda(mat B, uword N, bool testLambdas) {
+  bool common_lambda = false;
+  double lambda = 0.0;
+  vec lambdas(P);
+  uvec lambda_block_inds(P), lambda_test(P);
+  mat lambda_block(P, P), diagonal_block(P, P);
+  
+  if(N == 1) {
+    return 0.0;
+  }
+  
+  lambda = B(0, 0) - B(P, 0);
+    
+  if(testLambdas) {
+    lambda_block_inds = P_inds;
+    lambda_block = B.submat(lambda_block_inds, lambda_block_inds);
+    diagonal_block = B.submat(P + lambda_block_inds, lambda_block_inds);
+    lambdas = lambda_block.diag() - diagonal_block.diag();
+    lambda = lambdas(0);
+    
+    lambda_test.zeros();
+    for(auto& l : lambdas) {
+      lambda_test = 1 * doubleApproxEqual(l, lambda);
+    }
+    common_lambda = all(lambda_test == 1);
+    
+    if(! common_lambda) {
+      Rcpp::Rcout << "\nLambda is NOT constant.";
+    }
+  }
+  return lambda;
+};
 
 arma::mat gp::firstCovProduct(mat A, mat B, uword N) {
   uword jj_bound = 0;
-  double new_entry = 0.0;
+  double new_entry = 0.0, lambda = 0.0;
   uvec 
     N_inds(N),
     P_inds(P), 
@@ -534,6 +586,8 @@ arma::mat gp::firstCovProduct(mat A, mat B, uword N) {
   new_mat.zeros();
   
   current_elements.zeros();
+  
+  lambda = findLambda(B, N, false);
   
   N_inds = regspace< uvec >(0, N - 1);
   P_inds = regspace< uvec >(0, P - 1);
@@ -556,7 +610,15 @@ arma::mat gp::firstCovProduct(mat A, mat B, uword N) {
       first_col_inds = rel_cols_inds;
       fourth_col_inds = regspace< uvec >(P - jj - 1, P, N * P - 1);
       
-      new_entry = blockVectorMultiplication(A.row(ii), B.cols(rel_cols_inds), ii, jj, N, P);
+      new_entry = blockVectorMultiplication(
+        A.row(ii), 
+        B.cols(rel_cols_inds), 
+        lambda,
+        ii, 
+        jj, 
+        N, 
+        P
+      );
       
       new_mat.submat(first_element, first_col_inds).fill(new_entry);
       if(ii != jj) {
@@ -689,7 +751,8 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // Rcpp::Rcout << "\nCompare methods.\n";
   // Rcpp::Rcout << "t1: " << t1 << "\nt2: " << t2;
 
-  cov_tilde = rel_cov_mat.cols(P_inds) - first_product * rel_cov_mat.t();
+  cov_tilde = rel_cov_mat.cols(P_inds) 
+    - N * (first_product.cols(P_inds) * rel_cov_mat.cols(P_inds).t());
 
   // bool same_cov = approx_equal(cov_tilde, cov_tilde2, "abs", 0.002);
   // if(! same_cov) {
