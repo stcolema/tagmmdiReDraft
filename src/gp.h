@@ -133,6 +133,12 @@ public:
   //     mat inv_cov_mat
   //   );
   
+  mat constructCovMatrixUsingSymmetricBlockProperties(mat C, mat C_inv, uword n_k);
+  
+  uvec relevantIndices(uword ii, uword P);
+  mat firstCovProduct(mat A, mat B, uword N);
+  double blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P);
+  
   // mat posteriorCovarianceParameter(uword k, uword n_k);
   mat posteriorCovarianceParameter(
       mat covariance_matrix,

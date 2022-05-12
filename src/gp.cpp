@@ -3,7 +3,7 @@
 // included dependencies
 # include "logLikelihoods.h"
 # include "gp.h"
-  
+
 // [[Rcpp::depends(RcppArmadillo)]]
 
 using namespace Rcpp ;
@@ -367,17 +367,17 @@ vec gp::posteriorMeanParameter(
     mat inverse_covariance_matrix
 ) {
   vec mu_tilde(P);
-  // mu_tilde = covariance_matrix.rows(P_inds)
-  //   * inverse_covariance_matrix
-  //   * data;
-    
-  for(uword p = 0; p < P; p++) {
-    mu_tilde(p) = as_scalar(
-      covariance_matrix.row(p)
+  mu_tilde = covariance_matrix.rows(P_inds)
     * inverse_covariance_matrix
-    * data
-    );
-  }
+    * data;
+    
+  // for(uword p = 0; p < P; p++) {
+  //   mu_tilde(p) = as_scalar(
+  //     covariance_matrix.row(p)
+  //   * inverse_covariance_matrix
+  //   * data
+  //   );
+  // }
   return mu_tilde;
 };
 
@@ -388,41 +388,229 @@ vec gp::posteriorMeanParameter(
 //   return mu_tilde;
 // };
 
+uvec gp::relevantIndices(uword ii, uword P) {
+  uvec inds_1, inds_2, inds(P);
+  
+  inds_1 = regspace< uvec >(ii, -1, 0);
+  inds = inds_1;
+  if(ii < P) {
+    inds_2 = regspace< uvec >(1, 1, P - ii - 1);
+    inds = join_cols(inds_1, inds_2);
+  }
+  return inds;
+}
+
+// double gp::blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P) {
+//   double lambda = 0.0, lambda_comp = 0.0;
+//   uvec lambda_block_inds(N), unique_inds(P), col_0 = zeros<uvec>(1);
+//   vec a_used(P), b_used(P);
+//   mat lambda_block(N, N);
+//   
+//   if(N > 1) {
+//     // lambda_block_inds = regspace< uvec >(jj * N, (jj + 1) * N - 1); // seq((jj - 1) * N + 1, jj * N, 1)
+//     lambda_block_inds = regspace< uvec >(jj, P, (N * P  - 1) + jj); // seq((jj - 1) * N + 1, jj * N, 1)
+//     lambda_block = B.rows(lambda_block_inds);
+//     lambda = lambda_block(0, 0) - lambda_block(1, 0);
+//     lambda_block.diag() -= lambda;
+//     B.rows(lambda_block_inds) = lambda_block;
+//     // lambda_comp = a(jj * N) * lambda;
+//     lambda_comp = a(jj) * lambda;
+//   }
+//   
+//   // unique_inds = regspace< uvec >(0, N, (N * P) - 1);
+//   unique_inds = P_inds;
+//   a_used = a.elem(unique_inds);
+//   b_used = B.submat(unique_inds, col_0);
+//   
+//   return N * accu(a_used % b_used) + lambda_comp;
+// }
+// 
+// arma::mat gp::firstProduct(mat A, mat B, uword n_k) {
+//   uword jj_bound = 0;
+//   double new_entry = 0.0;
+//   uvec 
+//     N_inds(n_k),
+//     P_inds(P), 
+//     current_elements(4),
+//     first_element(1),
+//     second_element(1),
+//     third_element(1),
+//     fourth_element(1),
+//     j_inds,
+//     rel_cols_inds(n_k),
+//     first_col_inds(n_k),
+//     second_col_inds(n_k),
+//     third_col_inds(n_k),
+//     fourth_col_inds(n_k);
+//   
+//   mat new_mat(P, n_k * P);
+//   new_mat.zeros();
+//   
+//   current_elements.zeros();
+//   
+//   N_inds = regspace< uvec >(0, n_k - 1);
+//   P_inds = regspace< uvec >(0, P - 1);
+//   
+//   for(auto & ii : P_inds) {
+//     first_element.fill(ii);
+//     fourth_element.fill(P - ii - 1);
+//     
+//     jj_bound = std::min(ii + 1, (uword) (ceil(P / 2)));
+//     for(uword jj = 0; jj <  jj_bound; jj++) {
+//       second_element.fill(jj);
+//       third_element.fill(P - jj - 1);
+//       
+//       rel_cols_inds = regspace< uvec >(jj, P, n_k * (P - 1) + jj);
+//       first_col_inds = rel_cols_inds;
+//       second_col_inds = regspace< uvec >(ii, P, n_k * (P - 1) + ii);
+//       third_col_inds = regspace< uvec >(P - ii - 1, P, n_k * P - 1);
+//       fourth_col_inds = regspace< uvec >(P - jj - 1, P, n_k * P - 1);
+//         
+//       // rel_cols_inds = regspace< uvec >(n_k * jj, (n_k * (jj + 1)) - 1);
+//       // first_col_inds = rel_cols_inds;
+//       // second_col_inds = regspace< uvec >(n_k * ii, (n_k * (ii + 1)) - 1);
+//       // third_col_inds = regspace< uvec >(n_k * (P - ii - 1), n_k * (P - ii) - 1);
+//       // fourth_col_inds = regspace< uvec >(n_k * (P - jj - 1), n_k * (P - jj) - 1);
+//       
+//       new_entry = blockVectorMultiplication(
+//         A.row(ii),
+//         B.cols(rel_cols_inds), 
+//         ii, 
+//         jj, 
+//         n_k, 
+//         P
+//       );
+// 
+//       new_mat.submat(first_element, first_col_inds).fill(new_entry);
+//       new_mat.submat(second_element, second_col_inds).fill(new_entry);
+//       new_mat.submat(third_element, third_col_inds).fill(new_entry);
+//       new_mat.submat(fourth_element, fourth_col_inds).fill(new_entry);
+//     }
+//   }
+//   return new_mat;
+// };
+
+double gp::blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P) {
+  double lambda = 0.0, lambda_comp = 0.0;
+  uvec lambda_block_inds(N), unique_inds(P), col_0 = zeros<uvec>(1);
+  vec a_used(P), b_used(P);
+  mat lambda_block(N, N);
+  
+  if(N > 1) {
+    lambda_block_inds = regspace< uvec >(jj, P, N * P  - 1);
+    lambda_block = B.rows(lambda_block_inds);
+    lambda = lambda_block(0, 0) - lambda_block(1, 0);
+    lambda_block.diag() -= lambda;
+    B.rows(lambda_block_inds) = lambda_block;
+    lambda_comp = a(jj) * lambda;
+  }
+  
+  unique_inds = regspace< uvec >(0, 1, P - 1);
+  a_used = a.elem(unique_inds);
+  b_used = B.submat(unique_inds, col_0);
+  
+  return N * accu(a_used % b_used) + lambda_comp;
+}
+
+arma::mat gp::firstCovProduct(mat A, mat B, uword N) {
+  uword jj_bound = 0;
+  double new_entry = 0.0;
+  uvec 
+    N_inds(N),
+    P_inds(P), 
+    current_elements(4),
+    first_element(1),
+    second_element(1),
+    third_element(1),
+    fourth_element(1),
+    j_inds,
+    rel_cols_inds(N),
+    first_col_inds(N),
+    second_col_inds(N),
+    third_col_inds(N),
+    fourth_col_inds(N);
+  
+  mat new_mat(P, N * P);
+  new_mat.zeros();
+  
+  current_elements.zeros();
+  
+  N_inds = regspace< uvec >(0, N - 1);
+  P_inds = regspace< uvec >(0, P - 1);
+  
+  for(uword ii = 0; ii < P; ii++) {
+    
+    first_element.fill(ii);
+    fourth_element.fill(P - ii - 1);
+    
+    second_col_inds = regspace< uvec >(ii, P, N * P - 1);
+    third_col_inds = regspace< uvec >(P - ii - 1, P, N * P - 1);
+    
+    jj_bound = std::min(ii + 1, P - ii);
+    for(uword jj = 0; jj < jj_bound; jj++) {
+      
+      second_element.fill(jj);
+      third_element.fill(P - jj - 1);
+      
+      rel_cols_inds = regspace< uvec >(jj, P, P * N - 1);
+      first_col_inds = rel_cols_inds;
+      fourth_col_inds = regspace< uvec >(P - jj - 1, P, N * P - 1);
+      
+      new_entry = blockVectorMultiplication(A.row(ii), B.cols(rel_cols_inds), ii, jj, N, P);
+      
+      new_mat.submat(first_element, first_col_inds).fill(new_entry);
+      if(ii != jj) {
+        new_mat.submat(second_element, second_col_inds).fill(new_entry);
+      }
+      if((ii + jj) != (P - 1)) {
+        new_mat.submat(third_element, third_col_inds).fill(new_entry);
+        new_mat.submat(fourth_element, fourth_col_inds).fill(new_entry);
+      }
+    }
+  }
+  return new_mat;
+};
+
 
 mat gp::posteriorCovarianceParameter(
     mat covariance_matrix,
     mat inverse_covariance_matrix) {
   mat cov_tilde(P, P);
   cov_tilde.zeros();
-
-  std::for_each(std::execution::par,
-                P_inds.begin(),
-                P_inds.end(),
-                [&](uword ii) {
-  // for(uword ii = 0; ii < P; ii++) {
-  // if(ii >= P) {
-  //   Rcpp::Rcout << "\ni: " << ii;
-  //   // throw;
-  // }
-
-    cov_tilde(ii, ii) = as_scalar(
-      covariance_matrix(ii, ii)
-    - covariance_matrix.row(ii)
+  
+  cov_tilde = covariance_matrix.submat(P_inds, P_inds)
+    - covariance_matrix.rows(P_inds)
     * inverse_covariance_matrix
-    * covariance_matrix.col(ii)
-    );
+    * covariance_matrix.cols(P_inds);
 
-    for(uword jj = ii + 1; jj < P; jj++) {
-      cov_tilde(ii, jj) = as_scalar(
-         covariance_matrix(ii, jj)
-         - covariance_matrix.row(ii)
-           * inverse_covariance_matrix
-           * covariance_matrix.col(jj)
-      );
-      cov_tilde(jj, ii) = cov_tilde(ii, jj);
-    }
-  }
-  );
+  // std::for_each(std::execution::par,
+  //               P_inds.begin(),
+  //               P_inds.end(),
+  //               [&](uword ii) {
+  // // for(uword ii = 0; ii < P; ii++) {
+  // // if(ii >= P) {
+  // //   Rcpp::Rcout << "\ni: " << ii;
+  // //   // throw;
+  // // }
+  // 
+  //   cov_tilde(ii, ii) = as_scalar(
+  //     covariance_matrix(ii, ii)
+  //   - covariance_matrix.row(ii)
+  //   * inverse_covariance_matrix
+  //   * covariance_matrix.col(ii)
+  //   );
+  // 
+  //   for(uword jj = ii + 1; jj < P; jj++) {
+  //     cov_tilde(ii, jj) = as_scalar(
+  //        covariance_matrix(ii, jj)
+  //        - covariance_matrix.row(ii)
+  //          * inverse_covariance_matrix
+  //          * covariance_matrix.col(jj)
+  //     );
+  //     cov_tilde(jj, ii) = cov_tilde(ii, jj);
+  //   }
+  // }
+  // );
   
   return cov_tilde;
 };
@@ -454,26 +642,68 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     inverse_covariance_comp(n_k * P, n_k * P),
     I_nkP(n_k * P, n_k * P),
     chol_cov(P, P),
-    stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
+    stochasticity = mvnrnd(zeros<vec>(P), eye(P, P)),
+    first_product(P, n_k * P),
+    rel_cov_mat(P, n_k * P);
   I_nkP = eye(n_k * P, n_k * P);
+  
+  uvec inverse_block_indices_single = regspace< uvec >(0, P, n_k * P - 1);
+  umat inverse_block_indices(n_k, P);
+  for(uword p = 0; p < P; p++) {
+    inverse_block_indices.col(p) = inverse_block_indices_single + p;
+  }
+  uvec all_block_indices =  vectorise(inverse_block_indices);
   
   // Objects related to the covariance function
   covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
+  rel_cov_mat = covariance_matrix.rows(P_inds);
   
   inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
   
+  // double t0= clock();
+  // double t2=t0;  
+  first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
+  // t2 = clock()-t0;
+  
+  // mat alt_first_product = rel_cov_mat * inverse_covariance;
+
+  mu_tilde = first_product * data_vec;
+  
   // Posterior parameters
-  mu_tilde = posteriorMeanParameter(data_vec, covariance_matrix, inverse_covariance);
+  // mu_tilde = posteriorMeanParameter(data_vec, covariance_matrix, inverse_covariance);
   // mu_tilde = posteriorMeanParameter(n_k, noise(k), data, inverse_covariance);
   
-  cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+  // Rcpp::Rcout << "\nFirst method.\n";
+  // 
+  // t0= clock();
+  // double t1=t0;  
+  // cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+  // t1 = clock()-t0;
+  // t1=((float)t1)/CLOCKS_PER_SEC;
+  
+  // t0= clock();
+  // mat alt_cov_tilde = rel_cov_mat.cols(P_inds) - first_product * rel_cov_mat.t();
+  // t2 += clock()-t0;
+  // t2=((float)t2)/CLOCKS_PER_SEC;
+  
+  // Rcpp::Rcout << "\nCompare methods.\n";
+  // Rcpp::Rcout << "t1: " << t1 << "\nt2: " << t2;
+
+  cov_tilde = rel_cov_mat.cols(P_inds) - first_product * rel_cov_mat.t();
+
+  // bool same_cov = approx_equal(cov_tilde, cov_tilde2, "abs", 0.002);
+  // if(! same_cov) {
+  //   Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
+  //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
+  //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
+  // }
   
   // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
   // small constant to the diagonal entries
   eigval = eig_sym( cov_tilde );
   not_invertible = min(eigval) < 1e-5;
   
-    mat small_identity = I_p;
+  mat small_identity = I_p;
   if(not_invertible) {
     small_identity *= 1e-6;
     cov_tilde += small_identity;
@@ -563,15 +793,15 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   // calculateInverseCovariance(members, non_outliers);
   // sampleHyperParameters();
   
-  // for(uword k = 0; k < K; k++) {
-  std::for_each(
-    std::execution::par,
-    K_inds.begin(),
-    K_inds.end(),
-    [&](uword k) {
+  for(uword k = 0; k < K; k++) {
+  // std::for_each(
+  //   std::execution::par,
+  //   K_inds.begin(),
+  //   K_inds.end(),
+  //   [&](uword k) {
       sampleKthComponentParameters(k, members, non_outliers);
     }
-  );
+  // );
   
   // for (arma::uword k = 0; k < K; k++) {
   // 
