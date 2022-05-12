@@ -527,7 +527,7 @@ double gp::blockVectorMultiplication(rowvec a,
   a_used = a.elem(unique_inds);
   b_used = B.submat(unique_inds, col_0);
   
-  return N * as_scalar(a_used * b_used) + lambda_comp;
+  return N * accu(a_used % b_used) + lambda_comp;
 };
 
 
@@ -587,7 +587,7 @@ arma::mat gp::firstCovProduct(mat A, mat B, uword N) {
   
   current_elements.zeros();
   
-  lambda = findLambda(B, N, false);
+  // lambda = findLambda(B, N, false);
   
   N_inds = regspace< uvec >(0, N - 1);
   P_inds = regspace< uvec >(0, P - 1);
@@ -613,7 +613,7 @@ arma::mat gp::firstCovProduct(mat A, mat B, uword N) {
       new_entry = blockVectorMultiplication(
         A.row(ii), 
         B.cols(rel_cols_inds), 
-        lambda,
+        // lambda,
         ii, 
         jj, 
         N, 
@@ -706,15 +706,16 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     chol_cov(P, P),
     stochasticity = mvnrnd(zeros<vec>(P), eye(P, P)),
     first_product(P, n_k * P),
-    rel_cov_mat(P, n_k * P);
+    rel_cov_mat(P, n_k * P),
+    final_prod(P, P);
   I_nkP = eye(n_k * P, n_k * P);
   
-  uvec inverse_block_indices_single = regspace< uvec >(0, P, n_k * P - 1);
-  umat inverse_block_indices(n_k, P);
-  for(uword p = 0; p < P; p++) {
-    inverse_block_indices.col(p) = inverse_block_indices_single + p;
-  }
-  uvec all_block_indices =  vectorise(inverse_block_indices);
+  // uvec inverse_block_indices_single = regspace< uvec >(0, P, n_k * P - 1);
+  // umat inverse_block_indices(n_k, P);
+  // for(uword p = 0; p < P; p++) {
+  //   inverse_block_indices.col(p) = inverse_block_indices_single + p;
+  // }
+  // uvec all_block_indices =  vectorise(inverse_block_indices);
   
   // Objects related to the covariance function
   covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
@@ -727,7 +728,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
   // t2 = clock()-t0;
   
-  // mat alt_first_product = rel_cov_mat * inverse_covariance;
+  mat alt_first_product = rel_cov_mat * inverse_covariance;
 
   mu_tilde = first_product * data_vec;
   
@@ -751,10 +752,16 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // Rcpp::Rcout << "\nCompare methods.\n";
   // Rcpp::Rcout << "t1: " << t1 << "\nt2: " << t2;
 
-  cov_tilde = rel_cov_mat.cols(P_inds) 
-    - N * (first_product.cols(P_inds) * rel_cov_mat.cols(P_inds).t());
+  // first_product
+  final_prod = n_k * (first_product.cols(P_inds) * rel_cov_mat.cols(P_inds).t());
+  // bool check2ndProduct = approx_equal(final_prod, first_product * rel_cov_mat.t(), "reldiff", 0.05);
+  // if(! check2ndProduct) {
+  //   Rcpp::Rcout << "\nDisagreement.";
+  // }
+  
+  cov_tilde = rel_cov_mat.cols(P_inds) - final_prod; // first_product * rel_cov_mat.t();
 
-  // bool same_cov = approx_equal(cov_tilde, cov_tilde2, "abs", 0.002);
+  // bool same_cov = approx_equal(cov_tilde, cov_tilde2, "absdiff", 0.002);
   // if(! same_cov) {
   //   Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
   //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
@@ -768,7 +775,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   mat small_identity = I_p;
   if(not_invertible) {
-    small_identity *= 1e-6;
+    small_identity *= 1e-5;
     cov_tilde += small_identity;
   }
   
