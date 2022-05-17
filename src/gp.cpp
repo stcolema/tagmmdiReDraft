@@ -863,15 +863,15 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   // calculateInverseCovariance(members, non_outliers);
   // sampleHyperParameters();
   
-  for(uword k = 0; k < K; k++) {
-  // std::for_each(
-  //   std::execution::par,
-  //   K_inds.begin(),
-  //   K_inds.end(),
-  //   [&](uword k) {
+  // for(uword k = 0; k < K; k++) {
+  std::for_each(
+    std::execution::par,
+    K_inds.begin(),
+    K_inds.end(),
+    [&](uword k) {
       sampleKthComponentParameters(k, members, non_outliers);
     }
-  // );
+  );
   
   // for (arma::uword k = 0; k < K; k++) {
   // 
