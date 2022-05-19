@@ -143,7 +143,8 @@ void mixtureModel::updateAllocation(
   // for (auto& n : unfixed_ind) {
   std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
     updateItemAllocation(n, weights, upweigths);
-  });
+  }
+  );
   
   //   if(n >= N) {
   //     Rcpp::Rcout << "\n\nn: " << n;

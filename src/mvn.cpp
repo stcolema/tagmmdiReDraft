@@ -206,6 +206,7 @@ void mvn::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   //   
   // }
   
+  // for(uword k = 0; k < K; k++) {
   std::for_each(
     std::execution::par,
     K_inds.begin(),

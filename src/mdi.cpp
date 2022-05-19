@@ -420,7 +420,13 @@ void mdiModelAlt::updateWeights() {
   double shape = 0.0, rate = 0.0;
   uvec members_lk(N);
   
-  for(uword l = 0; l < L; l++) {
+  
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+  // for(uword l = 0; l < L; l++) {
     
     for(uword k = 0; k < K(l); k++) {
       
@@ -459,7 +465,7 @@ void mdiModelAlt::updateWeights() {
     // }
     
   }
-  
+  );
 };
 
 double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
@@ -570,7 +576,14 @@ void mdiModelAlt::updatePhis() {
   
   uword r = 0;
   double shape = 0.0, rate = 0.0;
-  for(uword l = 0; l < (L - 1); l++) {
+  
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+      
+  // for(uword l = 0; l < (L - 1); l++) {
     for(uword m = l + 1; m < L; m++) {
       
       // Find the parameters based on the likelihood
@@ -588,7 +601,8 @@ void mdiModelAlt::updatePhis() {
       );
     }
   }
-}
+  );
+};
 
 // // Update the context similarity parameters
 // void updatePhis() {
@@ -731,7 +745,13 @@ void mdiModelAlt::initialiseMDI() {
   
   // Rcpp::Rcout << "Priors sampled.\n";
   
-  for(uword l = 0; l < L; l++) {
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+  
+  // for(uword l = 0; l < L; l++) {
     upweights = calculateUpweights(l);
     
     
@@ -746,19 +766,26 @@ void mdiModelAlt::initialiseMDI() {
     // Rcpp::Rcout << l << "th view 0 iteration run.\n\n";
     
   }
+  );
   
 };
 
 void mdiModelAlt::updateAllocation() {
   
   // uvec matching_labels(N);
+  vec complete_likelihood_vec(L);
   mat upweights; // (N, K_max);
   
   complete_likelihood = 0.0;
   
   // throw std::invalid_argument( "in MDI allocation." );
   
-  for(uword l = 0; l < L; l++) {
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+  // for(uword l = 0; l < L; l++) {
     upweights = calculateUpweights(l);
     
     
@@ -776,9 +803,12 @@ void mdiModelAlt::updateAllocation() {
     
     labels.col(l) = mixtures[l]->labels;
     non_outliers.col(l) = mixtures[l]->non_outliers;
-    complete_likelihood += mixtures[l]->complete_likelihood;
-    
-  }
+    // complete_likelihood += mixtures[l]->complete_likelihood;
+    complete_likelihood_vec(l) = mixtures[l]->complete_likelihood;
+    }
+  );
+  
+  complete_likelihood = accu(complete_likelihood_vec);
 };
 
 
