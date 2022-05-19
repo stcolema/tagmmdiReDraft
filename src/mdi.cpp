@@ -681,7 +681,11 @@ void mdiModelAlt::sampleFromLocalPriors() {
 };
 
 void mdiModelAlt::sampleFromGlobalPriors() {
-  phis = randg(LC2, distr_param(2.0 , 1.0 / 2));
+  if(L > 1) {
+    phis = randg(LC2, distr_param(2.0 , 1.0 / 2));
+  } else {
+    phis.ones();
+  }
   
   for(uword l = 0; l < L; l++) {
     for(uword k = 0; k < K(l); k++) {
