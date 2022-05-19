@@ -72,7 +72,8 @@ public:
     umat members, 
     uvec non_outliers
   ) = 0;
-  virtual void sampleParameters(arma::umat members, arma::uvec non_outliers) = 0;
+  
+  virtual void sampleParameters(arma::umat members, arma::uvec non_outliers);
   virtual arma::vec itemLogLikelihood(arma::vec x) = 0;
   virtual double logLikelihood(arma::vec x, arma::uword k) = 0;
 

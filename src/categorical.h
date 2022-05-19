@@ -58,7 +58,7 @@ public:
   // Sampling from priors
   void sampleFromPriors();
   void sampleKthComponentParameters(uword k, umat members, uvec non_outliers);
-  void sampleParameters(arma::umat members, arma::uvec non_outliers);
+  // void sampleParameters(arma::umat members, arma::uvec non_outliers);
   void initialiseParameters();
   
   // The log likelihood of a item belonging to each cluster
