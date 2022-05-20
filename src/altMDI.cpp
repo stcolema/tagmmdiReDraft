@@ -41,8 +41,10 @@ Rcpp::List runAltMDI(arma::uword R,
   
   N = my_mdi.N;
   
-  mat phis_record(n_saved, my_mdi.LC2),
-    likelihood_record(n_saved, L);
+  vec likelihood_record(n_saved);
+  
+  mat phis_record(n_saved, my_mdi.LC2); //,
+    // likelihood_record(n_saved, L);
   
   phis_record.zeros();
   likelihood_record.zeros();
@@ -81,8 +83,10 @@ Rcpp::List runAltMDI(arma::uword R,
     outlier_record.slice(l).row(save_ind) = my_mdi.mixtures[l]->outliers.t();
     
     // Save the complete likelihood
-    likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
+    // likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
   }
+  
+  likelihood_record(save_ind) = my_mdi.complete_likelihood;
   
   // Rcpp::Rcout << "\n\nSave phis.";
   phis_record.row(save_ind) = my_mdi.phis.t();
@@ -93,23 +97,35 @@ Rcpp::List runAltMDI(arma::uword R,
     
     // Should the current MCMC iteration be saved?
     save_this_iteration = ((r + 1) % thin == 0);
-
+    
+    // Rcpp::Rcout << "\nUpdate normalising constant.";
+    
     // Rcpp::Rcout << "\n\nNormalising constant.";
     my_mdi.updateNormalisingConst();
+    
+    // Rcpp::Rcout << "\nSample strategic latent variable.";
     
     // Rcpp::Rcout << "\nStrategic latent variable.";
     my_mdi.sampleStrategicLatentVariable();
     
+    // Rcpp::Rcout << "\nSample component weights.";
+    
     // Rcpp::Rcout << "\nWeights update.";
     my_mdi.updateWeights();
+    
+    // Rcpp::Rcout << "\nSample phis.";
     
     // Rcpp::Rcout << "\nPhis update.";
     my_mdi.updatePhis();
     
     // Rcpp::Rcout << "\nSample mixture parameters.";
+    
+    // Rcpp::Rcout << "\nSample mixture parameters.";
     for(uword l = 0; l < L; l++) {
       my_mdi.mixtures[l]->sampleParameters();
     }
+    
+    // Rcpp::Rcout << "\nUpdate allocation.";
     
     my_mdi.updateAllocation();
     
@@ -142,8 +158,10 @@ Rcpp::List runAltMDI(arma::uword R,
         
         // Save the complete likelihood
         // Rcpp::Rcout << "\nSave model likelihood.";
-        likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
+        // likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
       }
+      
+      likelihood_record(save_ind) = my_mdi.complete_likelihood;
       
       // Rcpp::Rcout << "\n\nSave phis.";
       phis_record.row(save_ind) = my_mdi.phis.t();
@@ -157,11 +175,11 @@ Rcpp::List runAltMDI(arma::uword R,
   
   return(
     List::create(
-      Named("samples") = class_record,
+      Named("allocations") = class_record,
       Named("phis") = phis_record,
       Named("weights") = weight_record,
       Named("outliers") = outlier_record,
-      Named("alloc") = alloc,
+      Named("allocation_probabilities") = alloc,
       Named("N_k") = N_k_record,
       Named("complete_likelihood") = likelihood_record
     )

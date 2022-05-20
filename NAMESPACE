@@ -1,3 +1,41 @@
+
 useDynLib(tagmReDraft, .registration=TRUE)
-importFrom(Rcpp, evalCpp)
 exportPattern("^[[:alpha:]]+")
+
+# Export statements
+export(calcAllocProb)
+export(callMDI)
+export(callMixtureModel)
+export(generateInitialLabels)
+export(generateInitialSemiSupervisedLabels)
+export(generateInitialUnsupervisedLabels)
+export(getLikelihood)
+export(plotLikelihoods)
+export(predictFromMultipleChains)
+export(prepDataForggHeatmap)
+export(prepSimilarityMatricesForGGplot)
+export(prepareMSObject)
+export(processMCMCChain)
+export(processMCMCChains)
+export(runMCMCChains)
+
+# Import statements
+importFrom(Rcpp,evalCpp)
+importFrom(Rcpp,sourceCpp)
+importFrom(RcppParallel, RcppParallelLibs)
+
+importFrom(ggplot2,aes_string)
+importFrom(ggplot2,facet_wrap)
+importFrom(ggplot2,geom_line)
+importFrom(ggplot2,ggplot)
+importFrom(ggplot2,label_both)
+
+importFrom(parallel,parLapply)
+
+importFrom(stats,median)
+importFrom(stats,rbeta)
+
+importFrom(stringr,str_extract)
+
+importFrom(tidyr,pivot_longer)
+

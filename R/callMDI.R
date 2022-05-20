@@ -1,154 +1,110 @@
+#' @title Call MDI
+#' @description Runs a MCMC chain of the integrative clustering method,
+#' Multiple Dataset Integration (MDI), to L datasets. It is recommended that
+#' L < 5.
+#' @param X Data to cluster. List of matrices with the N items to cluster held
+#' in rows.
+#' @param initial_labels Initial clustering. $N x L$ matrix.
+#' @param fixed Which items are fixed in their initial label. $N x L$ matrix.
+#' @param R The number of iterations in the sampler.
+#' @param thin The factor by which the samples generated are thinned, e.g. if
+#' ``thin=50`` only every 50th sample is kept.
+#' @param type Character vector indicating density type to use. 'MVN'
+#' (multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).
+#' @param K_max Vector indicating the number of components to include (the upper
+#' bound on the number of clusters in each dataset).
+#' @param alpha The concentration parameter for the stick-breaking prior and the
+#' weights in the model.
+#' @param initial_labels_as_intended Logical indicating if the passed initial 
+#' labels are as intended or should ``generateInitialLabels`` be called.
+#' @return A named list containing the sampled partitions, component weights and
+#' phi parameters, model fit measures and some details on the model call.
+#' @export
+callMDI <- function(X,
+                    R,
+                    thin,
+                    initial_labels,
+                    fixed,
+                    types,
+                    K,
+                    alpha = NULL,
+                    initial_labels_as_intended = FALSE) {
 
+  # Check that the R > thin
+  checkNumberOfSamples(R, thin)
 
-callMDI <- function(X, K, types, labels, R, thin, n_chains,
-                    fixed = NULL,
-                    verbose = TRUE) {
+  # Check inputs and translate to C++ inputs
+  checkDataCorrectInput(X)
+
+  # The number of items modelled
+  N <- nrow(X[[1]])
+
+  # The number of views modelled
+  V <- length(X)
+
+  # The number of measurements in each view
+  P <- lapply(X, ncol)
+
+  # Check that the matrix indicating observed labels is correctly formatted.
+  checkFixedInput(fixed, N, V)
+
+  # Translate user input into appropriate types for C++ function
+  density_types <- translateTypes(types)
+  outlier_types <- setupOutlierComponents(types)
+
+  if(is.null(alpha))
+    alpha <- rep(1, V)
   
-  # What types are acceptable
-  acceptable_types <- c(1, 3)
+  # Generate initial labels. Uses the stick-breaking prior if unsupervised,
+  # proportions of observed classes is semi-supervised.
+  initial_labels <- generateInitialLabels(initial_labels, fixed, K, alpha,
+    labels_as_intended = initial_labels_as_intended
+  )
+  # for(v in seq(V))
+  #   checkLabels(initial_labels[, v], K[v])
   
-  X_is_not_a_list <- !is.list(X)
-  if (X_is_not_a_list) {
-    stop("X must be a list of matrices.")
-  }
+  t_0 <- Sys.time()
   
-  L <- length(X)
+  # Pull samples from the MDI model
+  mcmc_output <- runAltMDI(
+    R,
+    thin,
+    X,
+    K,
+    density_types,
+    outlier_types,
+    initial_labels,
+    fixed
+  )
 
-  for (l in seq(L)) {
-    .x <- X[[l]]
-    .x_is_not_a_matrix <- !is.matrix(.x)
-
-    if (.x_is_not_a_matrix) {
-      err <- paste0(
-        "All entries of X must be matrices. Entry ",
-        l,
-        " is not a matrix."
-      )
-      stop(err)
-    }
-  }
-
-  # Now we are sure that the datasets are matrices, take some information from
-  # them.
-  N <- nrow(X)
-  row_names <- row.names(X)
-
-  for (l in seq(L)) {
-    .x_is_not_correct_dimension <- !(nrow(.x) == N)
-    if (.x_is_not_correct_dimension) {
-      err <- paste0(
-        "All datasets must have the same number of rows. Dataset ",
-        l,
-        " has a different number of rows to the first dataset."
-      )
-      stop(err)
-    }
-
-    .row_names_not_matching <- !all(row.names(.x) == row_names)
-    if (.row_names_not_matching) {
-      err <- paste0(
-        "All datasets must have the row orders. Dataset ",
-        l,
-        " has a different row names to the first dataset, please check this."
-      )
-      stop(err)
-    }
-  }
-
-  # Check if we are running an unsupervised model.
-  unsupervised <- is.null(fixed)
-  if (unsupervised) {
-    fixed <- matrix(0, nrow = N, ncol = L)
-  }
-
-
-  if (length(K) != L)
-    stop("K must be a vector of equal length to X.")
-
-  if (length(types) != L)
-    stop("types must be a vector of equal length to X.")
-
-  if (ncol(labels) != L)
-    stop("The initial labels must have a column for each entry of X.")
-
-  if (ncol(fixed) != L) {
-    stop(
-      paste0(
-        "fixed, the matrix indicating which labels are observed, must",
-        "have a column for each entry of X."
-      )
-    )
-  }
-
-  if (ncol(labels) != N) {
-    stop("labels must have the same number of rows as each dataset.")
-  }
-
-  if (ncol(fixed) != N) {
-    stop("fixed must have the same number of rows as each dataset.")
-  }
-
-  labels_not_all_integers <- any((labels %% 1) != 0)
-  if (labels_not_all_integers) {
-    stop("Not all initial labels are integers. Please check this.")
-  }
-
-  fixed_not_all_binary <- !all(fixed %in% c(0, 1))
-  if (fixed_not_all_binary) {
-    stop("All entries of fixed matrix must be 0 or 1.")
-  }
-
-  number_iterations_saved <- floor(R / thin)
-  if ((number_iterations_saved < 20) & verbose) {
-    warning("Number of saved iterations (before applying a burn in) is less than 20.")
-  }
-
-  n_initial_components <- apply(2, labels, function(x) length(unique(x)))
-  highest_labels <- apply(2, labels, max)
-
-  for (l in seq(L)) {
-    too_many_components <- (n_initial_components(l) > K(l))
-
-    if (too_many_components) {
-      stop("There are more unique labels in the initial allocations than components modelled.")
-    }
-
-    components_are_mislabelled <- (highest_labels(l) > K(l))
-    if (components_are_mislabelled) {
-      err <- paste0(
-        "The initial labels appear to be wrong. Please check that ",
-        "the initial labels are a contiguous sequence. Currently there are less ",
-        "unique labels than requested to be modelled (appropriately), but the ",
-        "largest value used to represent a component is greater than the ",
-        "the number of components modelled in dataset ",
-        l,
-        "."
-      )
-    }
-    stop(err)
-  }
+  t_1 <- Sys.time()
+  time_taken <- t_1 - t_0
   
-  wrong_types_given <- ! all(types %in% acceptable_types)
-  if( wrong_types_given ) {
-    err <- paste0("types hold values in ", 
-      wrong_types_given, 
-      ". This has the association, 1 = MVT, 3 = TAGM."
-    )
-    stop(err)
-  }
+  # Record details of model run to output
+  # MCMC details
+  mcmc_output$thin <- thin
+  mcmc_output$R <- R
+  mcmc_output$burn <- 0
+
+  # Density choice
+  mcmc_output$types <- types
+
+  # Dimensions of data
+  mcmc_output$P <- P
+  mcmc_output$N <- N
+  mcmc_output$V <- V
+
+  # Number of components modelled
+  mcmc_output$K <- K
+
+  # Record hyperparameter choice
+  mcmc_output$alpha <- alpha
+
+  # Indicate if the model was semi-supervised or unsupervised
+  mcmc_output$Semisupervised <- apply(fixed, 2, function(x) any(x == 1))
+
+  # Record how long the algorithm took
+  mcmc_output$Time <- time_taken
   
-  # Create an object to save the output to. This is used to call ``lapply``.
-  mdi_output <- vector("list", n_chains)
-
-  # Use lapply to parallelise the chains.
-  mdi_output <- lapply(mdi_output, function(x) {
-
-    # Call MDI
-    runSemiSupervisedMDI(R, X, K, types, initial_labels - 1, fixed)
-  })
-
-  # Add the entry indicating if the model was unsupervised or not
-  mdi_output$Unsupervised <- unsupervised
-  
-  mdi_output
+  mcmc_output
 }

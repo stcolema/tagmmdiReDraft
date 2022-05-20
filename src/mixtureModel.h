@@ -63,9 +63,31 @@ public:
     
     // Outlier vectors (not really used here, declared so can be accessed in MDI class)
     outliers,
-    non_outliers;
+    non_outliers,
+    
+    // Used for looping over data indices
+    N_inds;
   
-  vec concentration, w, ll, likelihood, outlier_likelihood;
+  vec 
+    // Concentration hyperparameter for ocmponent weights
+    concentration, 
+    
+    // Component weights
+    w,
+    
+    // The log-likelihood of an item in each component
+    ll, 
+    
+    // The contribution of each item to the complete log likelihood
+    complete_likelihood_vec, 
+    
+    // The contribution of each item to the observed log likelihood
+    observed_likelihood_vec, 
+    
+    likelihood, 
+    
+    // Log-likelihood of being non-outlier or outlier
+    outlier_likelihood;
   umat members;
   mat X, X_t, alloc;
   
@@ -89,6 +111,8 @@ public:
   virtual ~mixtureModel() { };
   
   void updateAllocation(arma::vec weights, arma::mat upweigths);
+  void updateItemAllocation(uword n, vec weights, mat upweigths);
+  
   arma::uword sampleOutlier(
     double non_outlier_likelihood_n,
     double outlier_likelihood_n

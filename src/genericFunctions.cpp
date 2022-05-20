@@ -6,6 +6,94 @@
 using namespace Rcpp ;
 using namespace arma ;
 
+//' @title The Inverse Gamma Distribution
+//' @description Random generation from the inverse Gamma distribution.
+//' @param shape Shape parameter.
+//' @param scale Scale parameter.
+//' @return Sample from invGamma(shape, scale).
+double rInvGamma(double shape, double scale) {
+  double x = arma::randg( distr_param(shape, scale) );
+  return (1 / x);
+}
+
+//' @title The Inverse Gamma Distribution
+//' @description Random generation from the inverse Gamma distribution.
+//' @param N Number of samples to draw.
+//' @param shape Shape parameter.
+//' @param scale Scale parameter.
+//' @return Sample from invGamma(shape, scale).
+arma::vec rInvGamma(uword N, double shape, double scale) {
+  vec x = arma::randg(N, distr_param(shape, scale) );
+  return (1 / x);
+}
+
+//' @title The Half-Cauchy Distribution
+//' @description Random generation from the Half-Cauchy distribution.
+//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+//' @param mu Location parameter.
+//' @param scale Scale parameter.
+//' @return Sample from HalfCauchy(mu, scale).
+double rHalfCauchy(double mu, double scale) {
+  double x = 0.0, y = 0.0;
+  x = randn();
+  while(x <= 0.0) {
+    x = randn();
+  }
+  y = rInvGamma(0.5, 0.5 * std::pow(scale, 2.0));
+  return mu + x * std::sqrt(y);
+}
+
+//' @title The Half-Cauchy Distribution
+//' @description Random generation from the Half-Cauchy distribution.
+//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+//' @param N The number of samples to draw
+//' @param mu Location parameter.
+//' @param scale Scale parameter.
+//' @return Sample from HalfCauchy(mu, scale).
+arma::vec rHalfCauchy(uword N, arma::vec mu, double scale) {
+  vec x(N), y(N);
+  x = arma::randn(N);
+  for(uword n = 0; n < N; n++) {
+    if(x(n) < 0.0) {
+      x(n) = 0.0;
+    }
+  }
+  y = rInvGamma(N, 0.5, 0.5 * std::pow(scale, 2.0));
+  return mu + x * arma::sqrt(y);
+}
+
+//' @title The Half-Cauchy Distribution
+//' @description Calculates the pdf of the Half-Cauchy distribution for value x.
+//' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+//' @param x Value to calculate the probability density of.
+//' @param mu Location parameter.
+//' @param scale Scale parameter.
+//' @return Sample from HalfCauchy(mu, scale).
+double pHalfCauchy(double x, double mu, double scale, bool logValue) {
+  double denom = 0.0;
+
+  if(x < mu) {
+    Rcpp::Rcerr << "\nIn Half-Cauchy p.d.f, the considered value is less than the threshold.";
+    return 0;
+  }
+  denom = 1 + std::pow((x - mu) / scale, 2.0);
+  if(logValue) {
+    // denom = 2.0 * std::log((x - mu) / scale);
+    return log(2) - log(M_PI) - log(scale) - log(denom);
+  } else {
+    return 2 / (M_PI * scale * denom);
+  }
+}
+
+double pHalfCauchy(double x, double mu, double scale) {
+  double denom = 0.0;
+  
+  if(x < mu) {
+    return 0;
+  }
+  denom = 2.0 * std::log((x - mu) / scale);
+  return log(2) - log(M_PI) - log(scale) - denom;
+}
 
 //' @title The Beta Distribution
 //' @description Random generation from the Beta distribution.
@@ -64,3 +152,31 @@ arma::mat calcSampleCov(arma::mat data,
   }
   return sample_covariance;
 }
+
+//' @title Metropolis acceptance step
+//' @description Given a probaility, randomly accepts by sampling from a uniform 
+//' distribution.
+//' @param acceptance_prob Double between 0 and 1.
+//' @return Boolean indicating acceptance.
+bool metropolisAcceptanceStep(double acceptance_prob) {
+  double u = arma::randu();
+  return (u < acceptance_prob);
+};
+
+//' @title Squared exponential function
+//' @description The squared exponential function as used in a covariance kernel.
+//' @param amplitude The amplitude parameter (double)
+//' @param length The length parameter (double)
+//' @param i Time point (unsigned integer)
+//' @param j Time point (unsigned integer)
+//' @return Boolean indicating acceptance.
+double squaredExponentialFunction(double amplitude, double length, uword i, uword j) {
+  // if(i > j) {
+  //   return amplitude * std::exp(- std::pow(i - j, 2.0) / length);
+  // } 
+  return amplitude * std::exp(- std::pow(j - i, 2.0) / (2.0 * length));
+};
+
+bool doubleApproxEqual(double x, double y, double precision) {
+  return std::abs(x - y) < precision;
+};

@@ -69,4 +69,25 @@ double invWishartLogLikelihood(arma::mat X, arma::mat Psi, double nu, arma::uwor
 // [[Rcpp::export]]
 double mvtLogLikelihood(arma::vec x, arma::vec mu, arma::mat Sigma, double nu);
 
+//' @title Multivariate Normal log-likelihood
+//' @description The log-likelihood function for a point in the multivariate 
+//' Normal (MVN) distribution.
+//' @param x - vector; the sample to calculate the log likelihood of.
+//' @param mu - vector; the mean parameter of the MVN distribution.
+//' @param Sigma - matrix; the covariance matrix of the MVN distribution..
+//' @return the normalised log-likelihood of x in a MVN distribution with 
+//' parameters mu, Sigma.
+// [[Rcpp::export]]
+double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma);
+
+//' @title Gaussian log-likelihood
+//' @description The log-likelihood function for a point in the univariate 
+//' Gaussian distribution.
+//' @param x - double; the sample to calculate the log likelihood of.
+//' @param mu - double; the mean parameter of the Gaussian distribution.
+//' @param sigma_2 - double; the standard deviation of the Gaussian distribution.
+//' @return the normalised log-likelihood of x in a Gaussian distribution with 
+//' parameters mu, sigma_2.
+double pNorm(double x, double mu, double sigma_2);
+
 #endif /* LOGLIKELIHOOD_H */

@@ -83,11 +83,14 @@ void mvn::empiricalBayesHyperparameters() {
 }
 
 void mvn::sampleCovPrior() {
+  // Rcpp::Rcout << "\nScale:\n" << scale;
+  // Rcpp::Rcout << "\nDF: " << nu << "\n";
   for(arma::uword k = 0; k < K; k++){
     cov.slice(k) = arma::iwishrnd(scale, nu);
     cov_inv.slice(k) = arma::inv_sympd(cov.slice(k));
-    cov_log_det(k) = arma::log_det(cov.slice(k)).real();
+    cov_log_det(k) = arma::log_det_sympd(cov.slice(k));
   }
+  // Rcpp::Rcout << "\nCovariances sampled from prior.\n";
 };
 
 void mvn::sampleMuPrior() {
@@ -106,7 +109,7 @@ void mvn::sampleFromPriors() {
 void mvn::matrixCombinations() {
   for(arma::uword k = 0; k < K; k++) {
     cov_inv.slice(k) = arma::inv_sympd(cov.slice(k));
-    cov_log_det(k) = arma::log_det(cov.slice(k)).real();
+    cov_log_det(k) = arma::log_det_sympd(cov.slice(k));
   }
 };
 
@@ -146,8 +149,82 @@ double mvn::logLikelihood(arma::vec item, arma::uword k) {
   
   return(ll);
 };
-
 void mvn::sampleParameters(arma::umat members, arma::uvec non_outliers) {
+  
+  // arma::uword n_k = 0;
+  // uvec rel_inds;
+  // arma::vec mu_n(P), sample_mean(P);
+  // arma::mat sample_cov(P, P), dist_from_prior(P, P), scale_n(P, P);
+  // mat arma_cov(P, P);
+  // 
+  // for (arma::uword k = 0; k < K; k++) {
+  //   
+  //   // Find the items relevant to sampling the parameters
+  //   rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+  //   
+  //   // Find how many labels have the value
+  //   n_k = rel_inds.n_elem;
+  //   
+  //   if(n_k > 0){
+  //     
+  //     // Component data
+  //     arma::mat component_data = X.rows( rel_inds ) ;
+  //     
+  //     // Sample mean in the component data
+  //     sample_mean = mean(component_data).t();
+  //     
+  //     // Sample covariance times its degree of freedom
+  //     sample_cov = calcSampleCov(component_data, sample_mean, n_k, P);
+  //     // arma_cov = (n_k - 1) * arma::cov(component_data);
+  //     
+  //     // Calculate the distance of the sample mean from the prior
+  //     dist_from_prior = (sample_mean - xi) * (sample_mean - xi).t();
+  //     
+  //     // Update the scale hyperparameter
+  //     scale_n = scale + sample_cov + ((kappa * n_k) / (double) (kappa + n_k)) * dist_from_prior;
+  //     
+  //     // Sample a new covariance matrix
+  //     cov.slice(k) = iwishrnd(scale_n, nu + n_k);
+  //     
+  //     // The weighted average of the prior mean and sample mean
+  //     mu_n = (kappa * xi + n_k * sample_mean) / (double)(kappa + n_k);
+  //     
+  //     // Sample a new mean vector
+  //     mu.col(k) = mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k), 1);
+  //     
+  //   } else{
+  //     
+  //     // If no members in the component, draw from the prior distribution
+  //     cov.slice(k) = iwishrnd(scale, nu);
+  //     mu.col(k) = mvnrnd(xi, (1.0 / (double) kappa) * cov.slice(k), 1);
+  //     
+  //   }
+  //   
+  //   // Save the inverse and log determinant of the new covariance matrices
+  //   cov_inv.slice(k) = inv_sympd(cov.slice(k));
+  //   cov_log_det(k) = log_det(cov.slice(k)).real();
+  //   
+  // }
+  
+  // for(uword k = 0; k < K; k++) {
+  std::for_each(
+    std::execution::par,
+    K_inds.begin(),
+    K_inds.end(),
+    [&](uword k) {
+      sampleKthComponentParameters(k, members, non_outliers);
+    }
+  );
+  
+  matrixCombinations();
+};
+
+
+void mvn::sampleKthComponentParameters(
+    uword k, 
+    umat members, 
+    uvec non_outliers
+  ) {
   
   arma::uword n_k = 0;
   uvec rel_inds;
@@ -155,55 +232,58 @@ void mvn::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   arma::mat sample_cov(P, P), dist_from_prior(P, P), scale_n(P, P);
   mat arma_cov(P, P);
   
-  for (arma::uword k = 0; k < K; k++) {
+  // Find the items relevant to sampling the parameters
+  rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+  
+  // Find how many labels have the value
+  n_k = rel_inds.n_elem;
+  
+  if(n_k > 0){
     
-    // Find the items relevant to sampling the parameters
-    rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+    // Component data
+    arma::mat component_data = X.rows( rel_inds ) ;
+  
+    // Sample mean in the component data
+    sample_mean = mean(component_data).t();
     
-    // Find how many labels have the value
-    n_k = rel_inds.n_elem;
+    // Sample covariance times its degree of freedom
+    sample_cov = calcSampleCov(component_data, sample_mean, n_k, P);
+    // arma_cov = (n_k - 1) * arma::cov(component_data);
     
-    if(n_k > 0){
-      
-      // Component data
-      arma::mat component_data = X.rows( rel_inds ) ;
+    // Calculate the distance of the sample mean from the prior
+    dist_from_prior = (sample_mean - xi) * (sample_mean - xi).t();
     
-      // Sample mean in the component data
-      sample_mean = mean(component_data).t();
-      
-      // Sample covariance times its degree of freedom
-      sample_cov = calcSampleCov(component_data, sample_mean, n_k, P);
-      // arma_cov = (n_k - 1) * arma::cov(component_data);
-      
-      // Calculate the distance of the sample mean from the prior
-      dist_from_prior = (sample_mean - xi) * (sample_mean - xi).t();
-      
-      // Update the scale hyperparameter
-      scale_n = scale + sample_cov + ((kappa * n_k) / (double) (kappa + n_k)) * dist_from_prior;
-      
-      // Sample a new covariance matrix
-      cov.slice(k) = iwishrnd(scale_n, nu + n_k);
-      
-      // The weighted average of the prior mean and sample mean
-      mu_n = (kappa * xi + n_k * sample_mean) / (double)(kappa + n_k);
-      
-      // Sample a new mean vector
-      mu.col(k) = mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k), 1);
-      
-    } else{
-      
-      // If no members in the component, draw from the prior distribution
-      cov.slice(k) = iwishrnd(scale, nu);
-      mu.col(k) = mvnrnd(xi, (1.0 / (double) kappa) * cov.slice(k), 1);
-      
-    }
-
-    // Save the inverse and log determinant of the new covariance matrices
-    cov_inv.slice(k) = inv_sympd(cov.slice(k));
-    cov_log_det(k) = log_det(cov.slice(k)).real();
-
+    // Update the scale hyperparameter
+    scale_n = scale + sample_cov + ((kappa * n_k) / (double) (kappa + n_k)) * dist_from_prior;
+    
+    // Rcpp::Rcout << "\n\nSample cov:\n" << sample_cov;
+    // Rcpp::Rcout << "\n\nkappa: " << kappa;
+    // Rcpp::Rcout << "\nn_k: " << n_k;
+    // Rcpp::Rcout << "\n\nDistance from prior:\n" << dist_from_prior;
+    // Rcpp::Rcout << "\n\nScale_n:\n" << scale_n;
+    // Rcpp::Rcout << "\n\nDegrees of freedom: " << nu + n_k;
+    
+    // Sample a new covariance matrix
+    cov.slice(k) = iwishrnd(scale_n, nu + n_k);
+    
+    // The weighted average of the prior mean and sample mean
+    mu_n = (kappa * xi + n_k * sample_mean) / (double)(kappa + n_k);
+    
+    // Sample a new mean vector
+    mu.col(k) = mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k), 1);
+    
+  } else{
+    
+    // If no members in the component, draw from the prior distribution
+    cov.slice(k) = iwishrnd(scale, nu);
+    mu.col(k) = mvnrnd(xi, (1.0 / (double) kappa) * cov.slice(k), 1);
+    
   }
-  matrixCombinations();
+
+  // Save the inverse and log determinant of the new covariance matrices
+  cov_inv.slice(k) = inv_sympd(cov.slice(k));
+  cov_log_det(k) = log_det_sympd(cov.slice(k));
+
 };
 
 double mvn::posteriorPredictive(arma::vec x, arma::uvec indices) {

@@ -20,9 +20,10 @@ std::unique_ptr<density> densityFactory::createDensity(
   arma::mat X
 ) {
   switch (type) {
-    // case G: return std::make_unique<gaussianSampler>(K, labels, concentration, X);
+    case G: return std::make_unique<gaussian>(K, labels, X);
     case MVN: return std::make_unique<mvn>(K, labels, X);
     case C: return std::make_unique<categorical>(K, labels, X);
+    case GP: return std::make_unique<gp>(K, labels, X);
   default : {
       Rcpp::Rcerr << "invalid density type.\n";
       throw;

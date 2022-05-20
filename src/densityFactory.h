@@ -8,8 +8,10 @@
 // included dependencies
 # include <RcppArmadillo.h>
 # include "density.h"
+# include "gaussian.h"
 # include "mvn.h"
 # include "categorical.h"
+# include "gp.h"
 
 using namespace arma ;
 
@@ -30,9 +32,10 @@ public:
   densityFactory(const densityFactory &L);
   
   enum densityType {
-    // G = 0,
+    G = 0,
     MVN = 1,
-    C = 2
+    C = 2,
+    GP = 3
   };
   
   static std::unique_ptr<density> createDensity(

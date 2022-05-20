@@ -1,7 +1,9 @@
 // mdi.cpp
 // =============================================================================
 // included dependencies
+# include <RcppParallel.h>
 # include <RcppArmadillo.h>
+# include <execution>
 # include "mdi.h"
 
 using namespace arma ;
@@ -99,6 +101,9 @@ mdiModelAlt::mdiModelAlt(
   
   // The number of samples in each dataset
   N = N_check(0);
+  
+  N_inds = linspace< uvec >(0, N - 1, N);
+  L_inds = linspace< uvec >(0, L - 1, L);
   
   // The members of each cluster across datasets. Each slice is a binary matrix
   // of the members of the kth class across the datasets.
@@ -415,7 +420,13 @@ void mdiModelAlt::updateWeights() {
   double shape = 0.0, rate = 0.0;
   uvec members_lk(N);
   
-  for(uword l = 0; l < L; l++) {
+  
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+  // for(uword l = 0; l < L; l++) {
     
     for(uword k = 0; k < K(l); k++) {
       
@@ -454,13 +465,13 @@ void mdiModelAlt::updateWeights() {
     // }
     
   }
-  
+  );
 };
 
 double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
   bool rTooSmall = false, priorShapeTooSmall = false;
   
-  uword r = 0, N_lm = 0;
+  uword r = 0, N_vw = 0;
   double shape = 0.0,
     u = 0.0,
     prod_to_phi_shape = 0.0, 
@@ -468,59 +479,61 @@ double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
   
   uvec rel_inds_l(N), rel_inds_m(N);
   
-  vec weights;
+  vec log_weights, weights;
   
   // rel_inds_l = labels.col(l) % non_outliers.col(l);
   // rel_inds_m = labels.col(m) % non_outliers.col(m);
   // 
-  // N_lm = accu(rel_inds_l == rel_inds_m);
+  // N_vw = accu(rel_inds_l == rel_inds_m);
   
-  N_lm = accu(labels.col(l) == labels.col(m));
+  N_vw = accu(labels.col(l) == labels.col(m));
   rate = calcPhiRate(l, m);
-  weights = zeros<vec>(N_lm + 1);
+  weights = zeros<vec>(N_vw + 1);
+  log_weights = calculatePhiShapeMixtureWeights(N_vw, rate);
   
-  if(phi_shape_prior < 2) {
-    priorShapeTooSmall = true;
-    prod_to_phi_shape = 1.0; 
-  }
-  
-  for(uword r = 0; r < (N_lm + 1); r++) {
-    
-    // Some of the products can be ``backwards'', i.e. the top index is less 
-    // than (or equal to) the bottom index. If this occurs we want to keep the 
-    // contribution of these products as the identity.
-    
-    // Reset values that might have changed in the previous iteration
-    rTooSmall = false;
-    prod_to_phi_shape = 1.0; 
-    prod_to_r_less_1= 1.0;
-    
-    if(r < 2) {
-      rTooSmall = true;
-    }
-    
-    if(! rTooSmall) {
-      for(uword i = 0; i < r; i++) {
-        prod_to_r_less_1 *= (N_lm - i);
-      }
-    }
-    
-    if(! priorShapeTooSmall) {
-      for(uword j = 1; j < phi_shape_prior; j++) {
-        prod_to_phi_shape *= (r + j);
-      }
-    }
-    
-    weights(r) = (
-      prod_to_r_less_1 
-      * prod_to_phi_shape 
-      / std::pow(rate + phi_rate_prior, r + 1)
-    );
-    
-    
-  }
+  // if(phi_shape_prior < 2) {
+  //   priorShapeTooSmall = true;
+  //   prod_to_phi_shape = 1.0; 
+  // }
+  // 
+  // for(uword r = 0; r < (N_vw + 1); r++) {
+  //   
+  //   // Some of the products can be ``backwards'', i.e. the top index is less 
+  //   // than (or equal to) the bottom index. If this occurs we want to keep the 
+  //   // contribution of these products as the identity.
+  //   
+  //   // Reset values that might have changed in the previous iteration
+  //   rTooSmall = false;
+  //   prod_to_phi_shape = 1.0; 
+  //   prod_to_r_less_1= 1.0;
+  //   
+  //   if(r < 2) {
+  //     rTooSmall = true;
+  //   }
+  //   
+  //   if(! rTooSmall) {
+  //     for(uword i = 0; i < r; i++) {
+  //       prod_to_r_less_1 *= (N_vw - i);
+  //     }
+  //   }
+  //   
+  //   if(! priorShapeTooSmall) {
+  //     for(uword j = 1; j < phi_shape_prior; j++) {
+  //       prod_to_phi_shape *= (r + j);
+  //     }
+  //   }
+  //   
+  //   weights(r) = (
+  //     prod_to_r_less_1 
+  //     * prod_to_phi_shape 
+  //     / std::pow(rate + phi_rate_prior, r + 1)
+  //   );
+  //   
+  //   
+  // }
   
   // Normalise the weights
+  weights = exp(log_weights - max(log_weights));
   weights = weights / accu(weights);
   
   // Prediction and update
@@ -531,10 +544,46 @@ double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
   return shape; 
 }
 
+arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(arma::uword N_vw, 
+                                                       double rate
+) {
+  
+  double r_factorial = 0.0,
+    r_alpha_gamma_function = 0.0,
+    N_vw_part = 0.0,
+    beta_part = 0.0;
+  
+  vec log_weights(N_vw + 1);
+  log_weights.zeros();
+  
+  for(uword r = 0; r < (N_vw + 1); r++) {
+    for(uword ii = 0; ii < r; ii++) {
+      N_vw_part += std::log(N_vw - ii);
+      r_factorial += std::log(r - ii);
+    }
+    
+    r_alpha_gamma_function = lgamma(r + phi_shape_prior);
+    beta_part = (r + phi_shape_prior) * std::log(rate + phi_rate_prior);
+    log_weights(r) = N_vw_part - r_factorial+ r_alpha_gamma_function + beta_part;
+  }
+  return log_weights;
+};
+
 void mdiModelAlt::updatePhis() {
+  if(L == 1) {
+    return;
+  }
+  
   uword r = 0;
   double shape = 0.0, rate = 0.0;
-  for(uword l = 0; l < (L - 1); l++) {
+  
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+      
+  // for(uword l = 0; l < (L - 1); l++) {
     for(uword m = l + 1; m < L; m++) {
       
       // Find the parameters based on the likelihood
@@ -552,7 +601,8 @@ void mdiModelAlt::updatePhis() {
       );
     }
   }
-}
+  );
+};
 
 // // Update the context similarity parameters
 // void updatePhis() {
@@ -645,7 +695,11 @@ void mdiModelAlt::sampleFromLocalPriors() {
 };
 
 void mdiModelAlt::sampleFromGlobalPriors() {
-  phis = randg(LC2, distr_param(2.0 , 1.0 / 2));
+  if(L > 1) {
+    phis = randg(LC2, distr_param(2.0 , 1.0 / 2));
+  } else {
+    phis.ones();
+  }
   
   for(uword l = 0; l < L; l++) {
     for(uword k = 0; k < K(l); k++) {
@@ -691,7 +745,13 @@ void mdiModelAlt::initialiseMDI() {
   
   // Rcpp::Rcout << "Priors sampled.\n";
   
-  for(uword l = 0; l < L; l++) {
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+  
+  // for(uword l = 0; l < L; l++) {
     upweights = calculateUpweights(l);
     
     
@@ -706,58 +766,30 @@ void mdiModelAlt::initialiseMDI() {
     // Rcpp::Rcout << l << "th view 0 iteration run.\n\n";
     
   }
+  );
   
 };
 
 void mdiModelAlt::updateAllocation() {
   
   // uvec matching_labels(N);
+  vec complete_likelihood_vec(L);
   mat upweights; // (N, K_max);
+  
+  complete_likelihood = 0.0;
   
   // throw std::invalid_argument( "in MDI allocation." );
   
-  for(uword l = 0; l < L; l++) {
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+  // for(uword l = 0; l < L; l++) {
     upweights = calculateUpweights(l);
-    
-    // upweights.set_size(N, K(l));
-    // upweights.zeros();
-    // 
-    // for(uword m = 0; m < L; m++) {
-    //   
-    //   
-    //   if(m != l){
-    //     Rcpp::Rcout << "\n\nDo we enter this loop when L = 1?\n";
-    //     
-    //     
-    //     for(uword k = 0; k < K(l); k++) {
-    // 
-    //       matching_labels = (labels.col(m) == k);
-    // 
-    //       // Recall that the map assumes l < m; so account for that
-    //       if(l < m) {
-    //         upweights.col(k) = phis(phi_ind_map(m, l)) * conv_to<vec>::from(matching_labels);
-    //       } else {
-    //         upweights.col(k) = phis(phi_ind_map(l, m)) * conv_to<vec>::from(matching_labels);
-    //       }
-    //     }
-    //   }
-    // }
-    // 
-    // upweights++;
-    
-    // throw std::invalid_argument( "in MDI allocation." );
-    
-    
-    // Rcpp::Rcout << "\n\nUpdate allocations in mixture.\n";
-    //
-    // Rcpp::Rcout << "\n\nUpweights:\n" << upweigths;
-    // Rcpp::Rcout << "\n\nWeights:\n" << w;
-    // Rcpp::Rcout << "\n\nWeights in lth dataset:\n" << w(span(0, K(l) - 1), l);
     
     
     // Update the allocation within the mixture using MDI level weights and phis
-    // mixtures[l]->updateAllocation(w(span(0, K(l) - 1), l), upweigths.t());
-    // (*mixtures)[l]->updateAllocation(w(span(0, K(l) - 1), l), upweigths.t());
     mixtures[l]->updateAllocation(w(span(0, K(l) - 1), l), upweights.t());
     
     // Pass the new labels from the mixture level back to the MDI level.
@@ -771,9 +803,12 @@ void mdiModelAlt::updateAllocation() {
     
     labels.col(l) = mixtures[l]->labels;
     non_outliers.col(l) = mixtures[l]->non_outliers;
-    
-    
-  }
+    // complete_likelihood += mixtures[l]->complete_likelihood;
+    complete_likelihood_vec(l) = mixtures[l]->complete_likelihood;
+    }
+  );
+  
+  complete_likelihood = accu(complete_likelihood_vec);
 };
 
 
