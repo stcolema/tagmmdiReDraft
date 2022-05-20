@@ -18,8 +18,8 @@ runMCMCChains(
 )
 }
 \arguments{
-\item{X}{Data to cluster. List of matrices with the N items to cluster held
-in rows.}
+\item{X}{Data to cluster. List of $L$ matrices with the $N$ items to cluster 
+held in rows.}
 
 \item{n_chains}{Integer. Number of MCMC chains to run.}
 
@@ -50,6 +50,6 @@ phi parameters, model fit measures and some details on the model call.
  @importFrom parallel parLapply
 }
 \description{
-Run multiple chains of the semi-supervised batch mixture model
-of the same type and from the same initial clustering.
+Run multiple chains of Multiple Dataset Integration (MDI) using
+the same inputs in each model run.
 }

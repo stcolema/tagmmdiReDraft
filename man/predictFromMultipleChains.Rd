@@ -4,7 +4,12 @@
 \alias{predictFromMultipleChains}
 \title{Predict from multiple MCMC chains}
 \usage{
-predictFromMultipleChains(mcmc_outputs, burn, point_estimate_method = "median")
+predictFromMultipleChains(
+  mcmc_outputs,
+  burn,
+  point_estimate_method = "median",
+  chains_already_processed = FALSE
+)
 }
 \arguments{
 \item{mcmc_outputs}{Output from ``runMCMCChains``}
