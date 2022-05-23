@@ -104,13 +104,7 @@ mdiModelAlt::mdiModelAlt(
   
   N_inds = linspace< uvec >(0, N - 1, N);
   L_inds = linspace< uvec >(0, L - 1, L);
-  
-  if(L > 1) {
-    L_minus_1_inds = linspace< uvec >(0, L - 2, L - 1);
-  } else {
-    L_minus_1_inds = zeros< uvec >(1);
-  }
-  
+
   // The members of each cluster across datasets. Each slice is a binary matrix
   // of the members of the kth class across the datasets.
   members.set_size(N, K_max, L);
@@ -583,13 +577,13 @@ void mdiModelAlt::updatePhis() {
   uword r = 0;
   double shape = 0.0, rate = 0.0;
   
-  std::for_each(
-    std::execution::par,
-    L_minus_1_inds.begin(),
-    L_minus_1_inds.end(),
-    [&](uword l) {
+  //std::for_each(
+  //  std::execution::par,
+  //  L_minus_1_inds.begin(),
+  //  L_minus_1_inds.end(),
+  //  [&](uword l) {
       
-  // for(uword l = 0; l < (L - 1); l++) {
+  for(uword l = 0; l < (L - 1); l++) {
     for(uword m = l + 1; m < L; m++) {
       
       // Find the parameters based on the likelihood
@@ -607,7 +601,7 @@ void mdiModelAlt::updatePhis() {
       );
     }
   }
-  );
+  //  );
 };
 
 // // Update the context similarity parameters
