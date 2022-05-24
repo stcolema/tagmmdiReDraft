@@ -695,7 +695,7 @@ mat gp::posteriorCovarianceParameter(
 
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
 
-  bool not_invertible = false;
+  bool not_invertible = false, not_symmetric = false;
   vec mu_tilde(P), data_vec = data.as_row().t(), eigval(P);
   mat
     cov_tilde(P, P), 
@@ -769,12 +769,21 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
   // }
   
-  Rcpp::Rcout << "\n\n\nFirst prod:\n" << first_product;
-  Rcpp::Rcout << "\n\nFinal prod:\n" << final_prod;
-  Rcpp::Rcout << "\n\nFinal cov:\n" << cov_tilde;
+  // Rcpp::Rcout << "\n\n\nFirst prod:\n" << first_product.cols(P_inds);
+  // Rcpp::Rcout << "\n\nFinal prod:\n" << final_prod.cols(P_inds);
+  // Rcpp::Rcout << "\n\nFinal cov:\n" << cov_tilde.cols(P_inds);
   
   // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
   // small constant to the diagonal entries
+  
+  not_symmetric = cov_tilde.is_symmetric();
+  if(not_symmetric) {
+    mat new_cov(P, P), u_cov = trimatu(cov_tilde, 1);
+    new_cov = u_cov + u_cov.t();
+    new_cov.diag() = cov_tilde.diag();
+    cov_tilde = new_cov;
+  }
+  
   eigval = eig_sym( cov_tilde );
   not_invertible = min(eigval) < 1e-5;
   
