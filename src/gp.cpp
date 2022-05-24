@@ -728,7 +728,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
   // t2 = clock()-t0;
   
-  mat alt_first_product = rel_cov_mat * inverse_covariance;
+  // mat alt_first_product = rel_cov_mat * inverse_covariance;
 
   mu_tilde = first_product * data_vec;
   
@@ -754,6 +754,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
 
   // first_product
   final_prod = n_k * (first_product.cols(P_inds) * rel_cov_mat.cols(P_inds).t());
+  
   // bool check2ndProduct = approx_equal(final_prod, first_product * rel_cov_mat.t(), "reldiff", 0.05);
   // if(! check2ndProduct) {
   //   Rcpp::Rcout << "\nDisagreement.";
@@ -767,6 +768,10 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
   //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
   // }
+  
+  Rcpp::Rcout << "\n\n\nFirst prod:\n" << first_product;
+  Rcpp::Rcout << "\n\nFinal prod:\n" << final_prod;
+  Rcpp::Rcout << "\n\nFinal cov:\n" << cov_tilde;
   
   // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
   // small constant to the diagonal entries
