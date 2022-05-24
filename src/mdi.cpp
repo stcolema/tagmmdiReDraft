@@ -458,14 +458,14 @@ void mdiModelAlt::updateWeights() {
     }
     
     mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
-    
-    // // If we only have one dataset, flip back to normalised weights
-    // if(L == 1) {
-    //   w = w / accu(w) ;
-    // }
-    
   }
   );
+  
+  // // If we only have one dataset, flip back to normalised weights
+  // if(L == 1) {
+  //   w = w / accu(w) ;
+  // }
+  
 };
 
 double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
@@ -745,13 +745,13 @@ void mdiModelAlt::initialiseMDI() {
   
   // Rcpp::Rcout << "Priors sampled.\n";
   
-  std::for_each(
-    std::execution::par,
-    L_inds.begin(),
-    L_inds.end(),
-    [&](uword l) {
+  // std::for_each(
+  //   std::execution::par,
+  //   L_inds.begin(),
+  //   L_inds.end(),
+  //   [&](uword l) {
   
-  // for(uword l = 0; l < L; l++) {
+  for(uword l = 0; l < L; l++) {
     upweights = calculateUpweights(l);
     
     
@@ -766,7 +766,7 @@ void mdiModelAlt::initialiseMDI() {
     // Rcpp::Rcout << l << "th view 0 iteration run.\n\n";
     
   }
-  );
+  // );
   
 };
 
