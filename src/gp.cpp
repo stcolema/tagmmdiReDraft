@@ -725,22 +725,22 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   mu_tilde = first_product * data_vec;
   cov_tilde = rel_cov_mat.cols(P_inds) - final_prod; // first_product * rel_cov_mat.t();
 
-  mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
-  
-  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
-  if(! same_cov) {
-    Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
-  //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
-  //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
-  }
+  // mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+  // 
+  // bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
+  // if(! same_cov) {
+  //   Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
+  // //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
+  // //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
+  // }
   
   // Rcpp::Rcout << "\n\n\nFirst prod:\n" << first_product.cols(P_inds);
   // Rcpp::Rcout << "\n\nFinal prod:\n" << final_prod.cols(P_inds);
   // Rcpp::Rcout << "\n\nFinal cov:\n" << cov_tilde.cols(P_inds);
   
-  // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
-  // small constant to the diagonal entries
-  
+  // We can have that the covariance matrix becomes asymetric; this appears to 
+  // be a floating point error, so we hardcode that the matrix is symmetric #
+  // based on the uuper right traingle of the calculated covariance martix
   not_symmetric = ! cov_tilde.is_symmetric();
   if(not_symmetric) {
     mat new_cov(P, P), u_cov = trimatu(cov_tilde, 1);
@@ -749,6 +749,8 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     cov_tilde = new_cov;
   }
   
+  // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
+  // small constant to the diagonal entries
   eigval = eig_sym( cov_tilde );
   not_invertible = min(eigval) < 1e-5;
   
