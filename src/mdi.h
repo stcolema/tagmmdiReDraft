@@ -62,7 +62,7 @@ public:
     L_inds,             // indices over views
     N_inds;             // indices over items
   
-  arma::vec phis;
+  arma::vec phis, complete_likelihood_vec;
   
   arma::umat 
     
@@ -122,6 +122,7 @@ public:
   
   // Update the cluster weights
   void updateWeights();
+  void updateWeightsViewL(uword l);
   
   // === Phis ==================================================================
   
@@ -150,6 +151,7 @@ public:
   
   // Update the current allocations
   void updateAllocation();
+  void updateAllocationViewL(uword l);
   
   // === Initialisation functions ==============================================
   
