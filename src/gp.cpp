@@ -727,7 +727,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
 
   mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
   
-  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.002);
+  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
   if(! same_cov) {
     Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
   //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
