@@ -597,12 +597,12 @@ void mdiModelAlt::updatePhis() {
       // Rcpp::Rcout << "\nRate:" << rate;
       
       
-      if(((phi_shape_prior + shape) < 1e-8 )  || (1.0 / (phi_rate_prior + rate)) < 1e-8) {
-        Rcpp::Rcout << "\nMDI phi hyperparameters very small.\n";
-        Rcpp::Rcout << "\nMDI phi shape: " << phi_shape_prior + shape;
-        Rcpp::Rcout << "\nMDI phi rate: " << phi_rate_prior + rate;
-        Rcpp::Rcout << "\nMDI phi rate reciprocal: " << 1.0 / ( phi_rate_prior + rate );
-      }
+      // if(((phi_shape_prior + shape) < 1e-8 )  || (1.0 / (phi_rate_prior + rate)) < 1e-8) {
+      //   Rcpp::Rcout << "\nMDI phi hyperparameters very small.\n";
+      //   Rcpp::Rcout << "\nMDI phi shape: " << phi_shape_prior + shape;
+      //   Rcpp::Rcout << "\nMDI phi rate: " << phi_rate_prior + rate;
+      //   Rcpp::Rcout << "\nMDI phi rate reciprocal: " << 1.0 / ( phi_rate_prior + rate );
+      // }
       
       phis(phi_ind_map(m, l)) = randg(distr_param(
         phi_shape_prior + shape,
@@ -685,9 +685,9 @@ void mdiModelAlt::updateNormalisingConst() {
 };
 
 void mdiModelAlt::sampleStrategicLatentVariable() {
-  if((1 / Z) < 1e-8) {
-    Rcpp::Rcout << "\n\nNormalising constant very large: " << Z;
-  }
+  // if((1 / Z) < 1e-8) {
+  //   Rcpp::Rcout << "\n\nNormalising constant very large: " << Z;
+  // }
   
   v = randg(distr_param(N, 1.0 / Z));
 }
