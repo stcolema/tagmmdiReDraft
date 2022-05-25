@@ -77,8 +77,8 @@ arma::mat gaussian::empiricalScaleVector() {
 };
 
 void gaussian::empiricalBayesHyperparameters() {
-  xi = empiricalMean();
-  scale = empiricalScaleVector();
+  xi = zeros< vec >(P); // empiricalMean();
+  scale = ones< vec >(P); // empiricalScaleVector();
 }
 
 void gaussian::sampleStdDevPrior() {
@@ -212,6 +212,13 @@ void gaussian::sampleKthComponentParameters(
         + accu(dist_from_mean) 
         + (n_k * kappa / (kappa_n)) * dist_from_prior
       );
+      
+      if( (0.5 * nu_n < 1e-6) || (1.0 / (0.5 * scale_np) < 1e-6) ) { 
+        Rcpp::Rcout << "\nGaussian standarddeviation parameters below safe threshold.\n";
+        Rcpp::Rcout << "\nnu: " << nu_n;
+        Rcpp::Rcout << "\nscale_np: " << scale_np;
+        Rcpp::Rcout << "\nReciprocal of scale_np: " << 1.0 / scale_np;
+      }
       
       // Sample the new precision
       precisions(p, k) = randg(distr_param(0.5 * nu_n, 1.0 / (0.5 * scale_np)));

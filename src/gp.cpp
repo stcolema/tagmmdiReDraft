@@ -710,64 +710,29 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     final_prod(P, P);
   I_nkP = eye(n_k * P, n_k * P);
   
-  // uvec inverse_block_indices_single = regspace< uvec >(0, P, n_k * P - 1);
-  // umat inverse_block_indices(n_k, P);
-  // for(uword p = 0; p < P; p++) {
-  //   inverse_block_indices.col(p) = inverse_block_indices_single + p;
-  // }
-  // uvec all_block_indices =  vectorise(inverse_block_indices);
-  
   // Objects related to the covariance function
   covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
   rel_cov_mat = covariance_matrix.rows(P_inds);
   
   inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
   
-  // double t0= clock();
-  // double t2=t0;  
+  // The product of the covariance matrix and the inverse as used in sampling 
+  // parameters.
   first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
-  // t2 = clock()-t0;
-  
-  // mat alt_first_product = rel_cov_mat * inverse_covariance;
-
-  mu_tilde = first_product * data_vec;
-  
-  // Posterior parameters
-  // mu_tilde = posteriorMeanParameter(data_vec, covariance_matrix, inverse_covariance);
-  // mu_tilde = posteriorMeanParameter(n_k, noise(k), data, inverse_covariance);
-  
-  // Rcpp::Rcout << "\nFirst method.\n";
-  // 
-  // t0= clock();
-  // double t1=t0;  
-  // cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
-  // t1 = clock()-t0;
-  // t1=((float)t1)/CLOCKS_PER_SEC;
-  
-  // t0= clock();
-  // mat alt_cov_tilde = rel_cov_mat.cols(P_inds) - first_product * rel_cov_mat.t();
-  // t2 += clock()-t0;
-  // t2=((float)t2)/CLOCKS_PER_SEC;
-  
-  // Rcpp::Rcout << "\nCompare methods.\n";
-  // Rcpp::Rcout << "t1: " << t1 << "\nt2: " << t2;
-
-  // first_product
   final_prod = n_k * (first_product.cols(P_inds) * rel_cov_mat.cols(P_inds).t());
   
-  // bool check2ndProduct = approx_equal(final_prod, first_product * rel_cov_mat.t(), "reldiff", 0.05);
-  // if(! check2ndProduct) {
-  //   Rcpp::Rcout << "\nDisagreement.";
-  // }
-  
+  // Mean and covariance hyperparameter
+  mu_tilde = first_product * data_vec;
   cov_tilde = rel_cov_mat.cols(P_inds) - final_prod; // first_product * rel_cov_mat.t();
 
-  // bool same_cov = approx_equal(cov_tilde, cov_tilde2, "absdiff", 0.002);
-  // if(! same_cov) {
-  //   Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
+  mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+  
+  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.002);
+  if(! same_cov) {
+    Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
   //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
   //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
-  // }
+  }
   
   // Rcpp::Rcout << "\n\n\nFirst prod:\n" << first_product.cols(P_inds);
   // Rcpp::Rcout << "\n\nFinal prod:\n" << final_prod.cols(P_inds);
@@ -776,7 +741,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
   // small constant to the diagonal entries
   
-  not_symmetric = cov_tilde.is_symmetric();
+  not_symmetric = ! cov_tilde.is_symmetric();
   if(not_symmetric) {
     mat new_cov(P, P), u_cov = trimatu(cov_tilde, 1);
     new_cov = u_cov + u_cov.t();
@@ -838,8 +803,7 @@ void gp::sampleKthComponentParameters(uword k, umat members, uvec non_outliers) 
     
     // Rcpp::Rcout << "\nSampling from posterior.\n";
     
-    component_data.reset();
-    // component_data_vec.reset();
+    component_data.set_size(n_k);
     
     // Component data
     component_data = X.rows( rel_inds ) ;

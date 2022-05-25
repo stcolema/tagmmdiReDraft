@@ -443,6 +443,13 @@ void mdiModelAlt::updateWeights() {
       shape = 1 + N_k(k, l);
       rate = calcWeightRate(l, k);
       
+      if(((w_shape_prior + shape) < 1e-8 )  || (1.0 / (w_rate_prior + rate)) < 1e-8) {
+        Rcpp::Rcout << "\nMDI weight hyperparameters very small.\n";
+        Rcpp::Rcout << "\nMDI weight shape: " << w_shape_prior + shape;
+        Rcpp::Rcout << "\nMDI weight rate: " << w_rate_prior + rate;
+        Rcpp::Rcout << "\nMDI weight rate reciprocal: " << 1.0 / ( w_rate_prior + rate );
+      }
+      
       // Sample a new weight
       w(k, l) = randg(
         distr_param(
@@ -594,6 +601,14 @@ void mdiModelAlt::updatePhis() {
       // Rcpp::Rcout << "\n\nShape:" << shape;
       // Rcpp::Rcout << "\nRate:" << rate;
       
+      
+      if(((phi_shape_prior + shape) < 1e-8 )  || (1.0 / (phi_rate_prior + rate)) < 1e-8) {
+        Rcpp::Rcout << "\nMDI phi hyperparameters very small.\n";
+        Rcpp::Rcout << "\nMDI phi shape: " << phi_shape_prior + shape;
+        Rcpp::Rcout << "\nMDI phi rate: " << phi_rate_prior + rate;
+        Rcpp::Rcout << "\nMDI phi rate reciprocal: " << 1.0 / ( phi_rate_prior + rate );
+      }
+      
       phis(phi_ind_map(m, l)) = randg(distr_param(
         phi_shape_prior + shape,
         1.0 / (phi_rate_prior + rate)
@@ -675,6 +690,10 @@ void mdiModelAlt::updateNormalisingConst() {
 };
 
 void mdiModelAlt::sampleStrategicLatentVariable() {
+  if((1 / Z) < 1e-8) {
+    Rcpp::Rcout << "\n\nNormalising constant very large: " << Z;
+  }
+  
   v = randg(distr_param(N, 1.0 / Z));
 }
 
