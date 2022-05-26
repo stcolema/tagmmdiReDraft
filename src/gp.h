@@ -94,9 +94,9 @@ public:
   double ampltiduePriorLogDensity(double x, bool logNorm = false);
   double lengthPriorLogDensity(double x, bool logNorm = false);
   
-  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 0.25);
-  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 0.25);
-  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 0.25);
+  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-2);
+  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-2);
+  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 1e-2);
   
   void sampleKthComponentHyperParameterPrior(uword k, bool logNorm = false);
   void sampleHyperParameterPriors();
@@ -110,13 +110,13 @@ public:
   mat calculateKthComponentKernelSubBlock(double amplitude, double length);
   void calculateKernelSubBlock();
   // void constructCovarianceMatrix(uword n_k, uword k);
-  mat constructCovarianceMatrix(uword n_k, uword k, mat kernel_sub_block);
-  double componentCovarianceDeterminant(uword k, uword n_k);
-  arma::mat calculateCovarianceKernel(arma::uvec t_inds);
+  mat constructCovarianceMatrix(uword n_k, mat kernel_sub_block);
+  // double componentCovarianceDeterminant(uword k, uword n_k);
+  // arma::mat calculateCovarianceKernel(arma::uvec t_inds);
   mat invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block);
   // mat invertComponentCovariance(uword k, uword n_k);
-  double componentCovarianceLogDeterminant(uword k, uword n_k);
-  void calculateInverseCovariance(umat members, uvec non_outliers);
+  // double componentCovarianceLogDeterminant(uword k, uword n_k);
+  // void calculateInverseCovariance(umat members, uvec non_outliers);
   
   // Sample and calulcate objects related to sampling the mean posterior function
   // vec posteriorMeanParameter(uword k, uword n_k, vec data);

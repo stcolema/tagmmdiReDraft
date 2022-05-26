@@ -145,7 +145,7 @@ double gp::sampleNoisePriorDistribution(bool logNorm, double threshold) {
   }
   // x = std::exp(randn< double >());
   if(x < threshold) {
-    x = sampleNoisePriorDistribution(threshold);
+    x = sampleNoisePriorDistribution(logNorm, threshold);
   }
   return x;
 };
@@ -153,16 +153,16 @@ double gp::sampleNoisePriorDistribution(bool logNorm, double threshold) {
 void gp::sampleKthComponentHyperParameterPrior(uword k, bool logNorm) {
   amplitude(k) = sampleAmplitudePriorDistribution(logNorm);
   length(k) = sampleLengthPriorDistribution(logNorm);
-  noise(k) = sampleNoisePriorDistribution();
+  noise(k) = sampleNoisePriorDistribution(logNorm);
 };
 
 void gp::sampleHyperParameterPriors() {
   for(uword k = 0; k < K; k++) {
     sampleKthComponentHyperParameterPrior(k, logNormPriorUsed);
   }
-  // Rcpp::Rcout << "\nAmplitude:\n" << amplitude;
-  // Rcpp::Rcout << "\n\nLength:\n" << length;
-  // Rcpp::Rcout << "\n\nNoise:\n" << noise;
+  Rcpp::Rcout << "\nAmplitude:\n" << amplitude.t();
+  Rcpp::Rcout << "\n\nLength:\n" << length.t();
+  Rcpp::Rcout << "\n\nNoise:\n" << noise.t();
 };
 
 // arma::mat gp::calculateCovarianceKernel(arma::uvec t_inds) {
@@ -286,7 +286,7 @@ void gp::calculateKernelSubBlock() {
 //   // }
 // };
 
-mat gp::constructCovarianceMatrix(uword n_k, uword k, mat kernel_sub_block) {
+mat gp::constructCovarianceMatrix(uword n_k, mat kernel_sub_block) {
   mat covariance_matrix(n_k * P, n_k * P);
   covariance_matrix.zeros();
   covariance_matrix = repmat(kernel_sub_block, n_k, n_k);
@@ -307,15 +307,7 @@ mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
   Z = smallerInversion(n_k, noise, kernel_sub_block);
   B = I_p - Z;
   
-  output = kernel_sub_block - (kernel_sub_block * B);
-  // for(uword ii = 0; ii < P; ii++) {
-  //   output.diag() += kernel_sub_block(0, 0);
-  //   for(uword jj = 0; jj < ii; jj++) {
-  //     output(ii, jj) = kernel_sub_block(ii - jj, 0);
-  //   }
-  // }
-  // output -= cross_product;
-  output *= (1.0 / noise);
+  output = (1.0 / noise) * (kernel_sub_block - (kernel_sub_block * B));
   return output;
 };
 
@@ -330,8 +322,8 @@ mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block)
 
   I_NkP = eye(n_k * P, n_k * P);
   Q_k = I_p + (n_k / noise) * kernel_sub_block;
-  Z_k = smallerInversion(n_k, noise, kernel_sub_block);
-  // Z_k = inv_sympd(Q_k);
+  // Z_k = smallerInversion(n_k, noise, kernel_sub_block);
+  Z_k = inv_sympd(Q_k);
   return (1.0 / noise) * I_NkP - (1.0 / (n_k * noise)) * kron(J, I_p - Z_k);
 };
 // 
@@ -713,11 +705,11 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     cov_tilde(P, P), 
     covariance_matrix(n_k * P, n_k * P),
     inverse_covariance(n_k * P, n_k * P),
-    inverse_covariance_comp(n_k * P, n_k * P),
+    // inverse_covariance_comp(n_k * P, n_k * P),
     // I_nkP(n_k * P, n_k * P),
+    rel_cov_mat(P, P),
     first_product(P, P),
     first_product_repeated(P, n_k * P),
-    rel_cov_mat(P, P),
     final_product(P, P);
   
   // I_nkP = eye(n_k * P, n_k * P);
@@ -735,14 +727,14 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // Mean and covariance hyperparameter
   mu_tilde = first_product_repeated * data_vec;
-  cov_tilde = rel_cov_mat - final_product; // first_product * rel_cov_mat.t();
+  cov_tilde = rel_cov_mat - final_product;
   
 
-  covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
+  covariance_matrix = constructCovarianceMatrix(n_k, kernel_sub_block.slice(k));
   inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
   mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
 
-  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
+  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.01);
   if(! same_cov) {
     Rcpp::Rcout << "\n\nDifferent covariances being acquired.\n";
     Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.submat(0, 0, 3, 3);
