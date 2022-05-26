@@ -293,6 +293,33 @@ mat gp::constructCovarianceMatrix(uword n_k, uword k, mat kernel_sub_block) {
   return covariance_matrix;
 };
 
+mat gp::smallerInversion(uword n_k, double noise, mat kernel_sub_block) {
+  mat Q(P, P), Z(P, P);
+  Q = I_p + noise * n_k * kernel_sub_block;
+  Z = inv_sympd(Q);
+  return Z;
+}
+
+mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
+  
+  mat B(P, P), Z(P, P), cross_product(P, P), output(P, P);
+  output.zeros();
+  Z = smallerInversion(n_k, noise, kernel_sub_block);
+  B = I_p - Z;
+  
+  cross_product = kernel_sub_block * B;
+  for(uword ii = 0; ii < P; ii++) {
+    output.diag() += kernel_sub_block(0, 0);
+    for(uword jj = 0; jj < ii; jj++) {
+      output(ii, jj) = kernel_sub_block(ii - jj, 0);
+    }
+  }
+  output -= cross_product;
+  output *= noise;
+  return output;
+};
+
+
 mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block) {
   
   uvec rel_inds;
@@ -564,74 +591,74 @@ double gp::findLambda(mat B, uword N, bool testLambdas) {
   return lambda;
 };
 
-arma::mat gp::firstCovProduct(mat A, mat B, uword N) {
-  uword jj_bound = 0;
-  double new_entry = 0.0, lambda = 0.0;
-  uvec 
-    N_inds(N),
-    P_inds(P), 
-    current_elements(4),
-    first_element(1),
-    second_element(1),
-    third_element(1),
-    fourth_element(1),
-    j_inds,
-    rel_cols_inds(N),
-    first_col_inds(N),
-    second_col_inds(N),
-    third_col_inds(N),
-    fourth_col_inds(N);
-  
-  mat new_mat(P, N * P);
-  new_mat.zeros();
-  
-  current_elements.zeros();
-  
-  // lambda = findLambda(B, N, false);
-  
-  N_inds = regspace< uvec >(0, N - 1);
-  P_inds = regspace< uvec >(0, P - 1);
-  
-  for(uword ii = 0; ii < P; ii++) {
-    
-    first_element.fill(ii);
-    fourth_element.fill(P - ii - 1);
-    
-    second_col_inds = regspace< uvec >(ii, P, N * P - 1);
-    third_col_inds = regspace< uvec >(P - ii - 1, P, N * P - 1);
-    
-    jj_bound = std::min(ii + 1, P - ii);
-    for(uword jj = 0; jj < jj_bound; jj++) {
-      
-      second_element.fill(jj);
-      third_element.fill(P - jj - 1);
-      
-      rel_cols_inds = regspace< uvec >(jj, P, P * N - 1);
-      first_col_inds = rel_cols_inds;
-      fourth_col_inds = regspace< uvec >(P - jj - 1, P, N * P - 1);
-      
-      new_entry = blockVectorMultiplication(
-        A.row(ii), 
-        B.cols(rel_cols_inds), 
-        // lambda,
-        ii, 
-        jj, 
-        N, 
-        P
-      );
-      
-      new_mat.submat(first_element, first_col_inds).fill(new_entry);
-      if(ii != jj) {
-        new_mat.submat(second_element, second_col_inds).fill(new_entry);
-      }
-      if((ii + jj) != (P - 1)) {
-        new_mat.submat(third_element, third_col_inds).fill(new_entry);
-        new_mat.submat(fourth_element, fourth_col_inds).fill(new_entry);
-      }
-    }
-  }
-  return new_mat;
-};
+// arma::mat gp::firstCovProduct(mat A, mat B, uword N) {
+//   uword jj_bound = 0;
+//   double new_entry = 0.0, lambda = 0.0;
+//   uvec 
+//     N_inds(N),
+//     P_inds(P), 
+//     current_elements(4),
+//     first_element(1),
+//     second_element(1),
+//     third_element(1),
+//     fourth_element(1),
+//     j_inds,
+//     rel_cols_inds(N),
+//     first_col_inds(N),
+//     second_col_inds(N),
+//     third_col_inds(N),
+//     fourth_col_inds(N);
+//   
+//   mat new_mat(P, N * P);
+//   new_mat.zeros();
+//   
+//   current_elements.zeros();
+//   
+//   // lambda = findLambda(B, N, false);
+//   
+//   N_inds = regspace< uvec >(0, N - 1);
+//   P_inds = regspace< uvec >(0, P - 1);
+//   
+//   for(uword ii = 0; ii < P; ii++) {
+//     
+//     first_element.fill(ii);
+//     fourth_element.fill(P - ii - 1);
+//     
+//     second_col_inds = regspace< uvec >(ii, P, N * P - 1);
+//     third_col_inds = regspace< uvec >(P - ii - 1, P, N * P - 1);
+//     
+//     jj_bound = std::min(ii + 1, P - ii);
+//     for(uword jj = 0; jj < jj_bound; jj++) {
+//       
+//       second_element.fill(jj);
+//       third_element.fill(P - jj - 1);
+//       
+//       rel_cols_inds = regspace< uvec >(jj, P, P * N - 1);
+//       first_col_inds = rel_cols_inds;
+//       fourth_col_inds = regspace< uvec >(P - jj - 1, P, N * P - 1);
+//       
+//       new_entry = blockVectorMultiplication(
+//         A.row(ii), 
+//         B.cols(rel_cols_inds), 
+//         // lambda,
+//         ii, 
+//         jj, 
+//         N, 
+//         P
+//       );
+//       
+//       new_mat.submat(first_element, first_col_inds).fill(new_entry);
+//       if(ii != jj) {
+//         new_mat.submat(second_element, second_col_inds).fill(new_entry);
+//       }
+//       if((ii + jj) != (P - 1)) {
+//         new_mat.submat(third_element, third_col_inds).fill(new_entry);
+//         new_mat.submat(fourth_element, fourth_col_inds).fill(new_entry);
+//       }
+//     }
+//   }
+//   return new_mat;
+// };
 
 
 mat gp::posteriorCovarianceParameter(
@@ -718,21 +745,24 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
-  first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
+  
+  first_product = firstCovProduct(n_k, noise(k), kernel_sub_block.slice(k));
+  
+  // first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
   final_prod = n_k * (first_product.cols(P_inds) * rel_cov_mat.cols(P_inds).t());
   
   // Mean and covariance hyperparameter
   mu_tilde = first_product * data_vec;
   cov_tilde = rel_cov_mat.cols(P_inds) - final_prod; // first_product * rel_cov_mat.t();
 
-  // mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
-  // 
-  // bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
-  // if(! same_cov) {
-  //   Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
-  // //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
-  // //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
-  // }
+  mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+
+  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
+  if(! same_cov) {
+    Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
+  //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
+  //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
+  }
   
   // Rcpp::Rcout << "\n\n\nFirst prod:\n" << first_product.cols(P_inds);
   // Rcpp::Rcout << "\n\nFinal prod:\n" << final_prod.cols(P_inds);

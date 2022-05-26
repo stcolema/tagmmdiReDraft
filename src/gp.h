@@ -136,7 +136,9 @@ public:
   mat constructCovMatrixUsingSymmetricBlockProperties(mat C, mat C_inv, uword n_k);
   
   uvec relevantIndices(uword ii, uword P);
-  mat firstCovProduct(mat A, mat B, uword N);
+  mat smallerInversion(uword n_k, double noise, mat kernel_sub_block);
+  mat firstCovProduct(uword n_k, double noise, mat kernel_sub_block);
+  // mat firstCovProduct(mat A, mat B, uword N);
   double blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P);
   double blockVectorMultiplication(
       rowvec a, 
