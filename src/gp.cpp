@@ -752,7 +752,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   cov_tilde = covCheck(cov_tilde, false, true);
   Rcpp::Rcout << "\nSample mean function.";
   
-  mu.col(k) = mvnrnd(mu_tilde, cov_tilde); // sampleMeanFunction(mu_tilde, cov_tilde);
+  mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   
   if((samplingCount % sampleHypersFrequency) == 0) {
     // Rcpp::Rcout << "\nSampling hyperparameters.\n";
@@ -943,8 +943,13 @@ double gp::hyperParameterLogKernel(
 
 mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
   
-  bool not_symmetric = false, not_invertible = false;
+  bool not_symmetric = false, not_invertible = false, not_sympd = false;
   vec eigval(P);
+  
+  not_sympd = ! C.is_sympd();
+  if(not_sympd) {
+    Rcpp::Rcout << "\nNot symmetric positive definite.\n";
+  }
   
   // We can have that the covariance matrix becomes asymetric; this appears to 
   // be a floating point error, so we hardcode that the matrix is symmetric #
@@ -952,6 +957,7 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
   if(checkSymmetry) {
     not_symmetric = ! C.is_symmetric();
     if(not_symmetric) {
+      Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper rigth trianguler matrix.\n";
       mat new_cov(P, P), u_cov = trimatu(C, 1);
       new_cov = u_cov + u_cov.t();
       new_cov.diag() = C.diag();
@@ -967,6 +973,7 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
     
     mat small_identity = I_p;
     if(not_invertible) {
+      Rcpp::Rcout << "\nNot numerical stable for inversion. Add constant to diagonal.\n";
       small_identity *= 1e-6;
       C += small_identity;
     }
