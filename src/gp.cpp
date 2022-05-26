@@ -698,6 +698,9 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   mat chol_cov(P, P),
     stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
   
+  if(! cov_tilde.is_sympd()) {
+    Rcpp::Rcout << "\n\nCov tidle is not positive semi-definite.\n";
+  }
   chol_cov = chol(cov_tilde);
   return mu_tilde + chol_cov * stochasticity;
 };
@@ -799,8 +802,6 @@ void gp::sampleKthComponentParameters(uword k, umat members, uvec non_outliers) 
     sampleKthComponentHyperParameterPrior(k);
   }
   
-  Rcpp::Rcout << "\nMean functions sampled.\n\n";
-  
 };
 
 void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
@@ -821,15 +822,15 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   // calculateInverseCovariance(members, non_outliers);
   // sampleHyperParameters();
   
-  // for(uword k = 0; k < K; k++) {
-  std::for_each(
-    std::execution::par,
-    K_inds.begin(),
-    K_inds.end(),
-    [&](uword k) {
+  for(uword k = 0; k < K; k++) {
+  // std::for_each(
+  //   std::execution::par,
+  //   K_inds.begin(),
+  //   K_inds.end(),
+  //   [&](uword k) {
       sampleKthComponentParameters(k, members, non_outliers);
     }
-  );
+  // );
   
   // for (arma::uword k = 0; k < K; k++) {
   // 
@@ -859,7 +860,7 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   // 
   // }
   // if(randu() > 0.9) {
-  samplingCount++;
+  // samplingCount++;
   // if((samplingCount % 5) == 0) {
   //   Rcpp::Rcout << "\n\nSampling count: " << samplingCount;
   //   Rcpp::Rcout << "\nNumber of hyper propsals: " << floor(samplingCount / sampleHypersFrequency);
@@ -871,6 +872,8 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   //   Rcpp::Rcout << "\n\nLength: " << length.t();
   //   Rcpp::Rcout << "\n\nAmplitude: " << amplitude.t();
   // }
+  
+  Rcpp::Rcout << "\nMean functions sampled.\n\n";
 
 };
 
@@ -960,11 +963,11 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
   // small constant to the diagonal entries
   if(checkStability) {
     eigval = eig_sym( C );
-    not_invertible = min(eigval) < 1e-5;
+    not_invertible = min(eigval) < 1e-6;
     
     mat small_identity = I_p;
     if(not_invertible) {
-      small_identity *= 1e-5;
+      small_identity *= 1e-6;
       C += small_identity;
     }
   }
@@ -1025,6 +1028,10 @@ void gp::sampleLength(
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(cov_tilde);
 
+  if(rcond(new_cov_tilde) < 1e-3) {
+    return;
+  }
+  
   new_score = hyperParameterLogKernel(
     new_length, 
     mu.col(k), 
@@ -1098,6 +1105,10 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
   new_mu_tilde = first_product_repeated * component_data;
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(cov_tilde);
+  
+  if(rcond(new_cov_tilde) < 1e-3) {
+    return;
+  }
   
   new_score = hyperParameterLogKernel(
     new_amplitude, 
