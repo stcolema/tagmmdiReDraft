@@ -752,7 +752,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   cov_tilde = covCheck(cov_tilde, false, true);
   Rcpp::Rcout << "\nSample mean function.";
   
-  mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
+  mu.col(k) = mvnrnd(mu_tilde, cov_tilde); // sampleMeanFunction(mu_tilde, cov_tilde);
   
   if((samplingCount % sampleHypersFrequency) == 0) {
     // Rcpp::Rcout << "\nSampling hyperparameters.\n";
