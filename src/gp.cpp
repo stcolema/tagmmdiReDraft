@@ -957,7 +957,9 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
   if(checkSymmetry) {
     not_symmetric = ! C.is_symmetric();
     if(not_symmetric) {
-      Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper rigth trianguler matrix.\n";
+      Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper right triangular matrix.\n";
+      Rcpp::Rcout << C.submat(0, 0, 4, 4);
+      
       mat new_cov(P, P), u_cov = trimatu(C, 1);
       new_cov = u_cov + u_cov.t();
       new_cov.diag() = C.diag();
