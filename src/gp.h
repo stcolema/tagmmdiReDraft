@@ -94,9 +94,9 @@ public:
   double ampltiduePriorLogDensity(double x, bool logNorm = false);
   double lengthPriorLogDensity(double x, bool logNorm = false);
   
-  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-1);
-  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-1);
-  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 1e-1);
+  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 0.25);
+  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 0.25);
+  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 0.25);
   
   void sampleKthComponentHyperParameterPrior(uword k, bool logNorm = false);
   void sampleHyperParameterPriors();

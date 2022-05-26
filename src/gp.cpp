@@ -749,7 +749,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     Rcpp::Rcout << "\nCov (new):\n" << original_cov_tilde.submat(0, 0, 3, 3);
   }
 
-  cov_tilde = covCheck(cov_tilde, false, true);
+  cov_tilde = covCheck(cov_tilde, true, true);
   Rcpp::Rcout << "\nSample mean function.";
   
   mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
@@ -1087,9 +1087,10 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
   
   new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
     // std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
-  if(new_amplitude < 1e-6) {
+  if(new_amplitude < 1.0e-3) {
     return;
   }
+  
   new_sub_block = calculateKthComponentKernelSubBlock(new_amplitude, length(k));
   // new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
   // if(rcond(new_cov_mat) < 1e-2) {
@@ -1297,7 +1298,7 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data) {
 
   new_noise = proposeNewNonNegativeValue(noise(k), noise_proposal_window);
   
-  if(new_noise < 1.0e-5) {
+  if(new_noise < 1.0e-3) {
     return;
   }
   
