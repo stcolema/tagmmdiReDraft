@@ -139,7 +139,7 @@ public:
 
   mat smallerInversion(uword n_k, double noise, mat kernel_sub_block);
   mat firstCovProduct(uword n_k, double noise, mat kernel_sub_block);
-  mat covCheck(mat C, bool checkSymmetry = false, bool checkStability = true);
+  mat covCheck(mat C, bool checkSymmetry = true, bool checkStability = true);
   vec sampleMeanFunction(vec mu_tilde, mat cov_tilde);
   // mat firstCovProduct(mat A, mat B, uword N);
   // double blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P);

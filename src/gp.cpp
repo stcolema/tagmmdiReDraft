@@ -307,32 +307,32 @@ mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
   Z = smallerInversion(n_k, noise, kernel_sub_block);
   B = I_p - Z;
   
-  cross_product = kernel_sub_block * B;
-  for(uword ii = 0; ii < P; ii++) {
-    output.diag() += kernel_sub_block(0, 0);
-    for(uword jj = 0; jj < ii; jj++) {
-      output(ii, jj) = kernel_sub_block(ii - jj, 0);
-    }
-  }
-  output -= cross_product;
+  output = kernel_sub_block - kernel_sub_block * B;
+  // for(uword ii = 0; ii < P; ii++) {
+  //   output.diag() += kernel_sub_block(0, 0);
+  //   for(uword jj = 0; jj < ii; jj++) {
+  //     output(ii, jj) = kernel_sub_block(ii - jj, 0);
+  //   }
+  // }
+  // output -= cross_product;
   output *= noise;
   return output;
 };
 
 
-// mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block) {
-//   
-//   uvec rel_inds;
-//   mat J(n_k, n_k), Q_k(P, P), Z_k(P, P), I_NkP(n_k * P, n_k * P);
-//   J.ones();
-//   Q_k.zeros();
-//   Z_k.zeros();
-//   
-//   I_NkP = eye(n_k * P, n_k * P);
-//   Q_k = I_p + (n_k / noise) * kernel_sub_block;
-//   Z_k = inv_sympd(Q_k);
-//   return (1.0 / noise) * I_NkP - (1 / (n_k * noise)) * kron(J, I_p - Z_k);
-// };
+mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block) {
+
+  uvec rel_inds;
+  mat J(n_k, n_k), Q_k(P, P), Z_k(P, P), I_NkP(n_k * P, n_k * P);
+  J.ones();
+  Q_k.zeros();
+  Z_k.zeros();
+
+  I_NkP = eye(n_k * P, n_k * P);
+  Q_k = I_p + (n_k / noise) * kernel_sub_block;
+  Z_k = inv_sympd(Q_k);
+  return (1.0 / noise) * I_NkP - (1 / (n_k * noise)) * kron(J, I_p - Z_k);
+};
 // 
 // double gp::componentCovarianceDeterminant(uword k, uword n_k) {
 //   return std::pow(noise(k), n_k * P) * det(I_p + (n_k / noise (k)) * kernel_sub_block.slice(k));
@@ -748,10 +748,9 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // I_nkP = eye(n_k * P, n_k * P);
   
   // Objects related to the covariance function
-  // covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
   rel_cov_mat = kernel_sub_block.slice(k); // covariance_matrix.rows(P_inds);
-  // 
-  // inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
+
+
   
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
@@ -767,14 +766,16 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   cov_tilde = rel_cov_mat - final_product; // first_product * rel_cov_mat.t();
   cov_tilde = covCheck(cov_tilde);
 
-  // mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
-  // 
-  // bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
-  // if(! same_cov) {
-  //   Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
-  // //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
-  // //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
-  // }
+  covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
+  inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
+  mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+
+  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
+  if(! same_cov) {
+    Rcpp::Rcout << "\n\nDifferent covariances being acquired.\n";
+    Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.submat(0, 3, 0, 3);
+    Rcpp::Rcout << "\nCov (new):\n" << original_cov_tilde.submat(0, 3, 0, 3);
+  }
 
   mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   
@@ -1047,7 +1048,7 @@ void gp::sampleLength(
   
   new_mu_tilde = first_product_repeated * component_data;
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(cov_tilde, false, true);
+  new_cov_tilde = covCheck(cov_tilde);
 
   new_score = hyperParameterLogKernel(
     new_length, 
@@ -1121,7 +1122,7 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
   
   new_mu_tilde = first_product_repeated * component_data;
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(cov_tilde, false, true);
+  new_cov_tilde = covCheck(cov_tilde);
   
   new_score = hyperParameterLogKernel(
     new_amplitude, 
@@ -1147,97 +1148,97 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
   }
 };
 
-void gp::sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde) {
-  bool accept = false;
-  double 
-    acceptance_prob = 0.0, 
-    new_score = 0.0, 
-    old_score = 0.0,
-    new_amplitude = 0.0,
-    new_length = 0.0;
-  
-  vec new_mu_tilde(P);
-  mat 
-    new_sub_block(P, P), 
-    // new_cov_mat(n_k * P, n_k * P),
-    // new_inv_cov_mat(n_k * P, n_k * P), 
-    new_cov_tilde(P, P),
-    first_product(P, P),
-    first_product_repeated(P, n_k * P),
-    final_product(P, P);
-  
-  new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
-  new_length = proposeNewNonNegativeValue(length(k), length_proposal_window);
-  // std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
-  if( (new_amplitude < 1e-6) || (new_length < 1e-6) ) {
-    return;
-  }
-  new_sub_block = calculateKthComponentKernelSubBlock(new_amplitude, new_length);
-  // new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
-  // 
-  // if(! new_cov_mat.is_sympd()) {
-  //   return;
-  // }
-  
-  first_product = firstCovProduct(n_k, noise(k), new_sub_block);
-  first_product_repeated = repmat(first_product, 1, n_k);
-  
-  final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
-  
-  new_mu_tilde = first_product_repeated * component_data;
-  
-  new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(cov_tilde, false, true);
-  
-  
-  // new_inv_cov_mat = invertComponentCovariance(n_k, noise(k), new_sub_block);
-  // new_cov_tilde = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
-  // new_mu_tilde = posteriorMeanParameter(
-  //   component_data, 
-  //   new_cov_mat, 
-  //   new_inv_cov_mat
-  // );
-  
-  new_score = log(2 * M_PI)
-    + log_det_sympd(new_cov_tilde)
-    + as_scalar((mu.col(k) - new_mu_tilde).t() * inv_sympd(new_cov_tilde) * (mu.col(k) - new_mu_tilde));
-  new_score *= -0.5;
-  new_score += pNorm(log(new_amplitude), 0, 1);
-  new_score += pNorm(log(new_length), 0, 1);
-
-  old_score = log(2 * M_PI)
-    + log_det_sympd(cov_tilde)
-    + as_scalar((mu.col(k) - mu_tilde).t() * inv_sympd(cov_tilde) * (mu.col(k) - mu_tilde));
-  old_score *= -0.5;
-  old_score += pNorm(log(amplitude(k)), 0, 1);
-  old_score += pNorm(log(length(k)), 0, 1);
-    
-    
-  // new_score = hyperParameterLogKernel(
-  //   new_amplitude, 
-  //   mu.col(k), 
-  //   new_mu_tilde, 
-  //   new_cov_tilde,
-  //   logNormPriorUsed
-  // );
-  // 
-  // old_score = hyperParameterLogKernel(
-  //   amplitude(k), 
-  //   mu.col(k), 
-  //   mu_tilde, 
-  //   cov_tilde,
-  //   logNormPriorUsed
-  // );
-  
-  acceptance_prob =  std::min(1.0, std::exp(new_score - old_score));
-  accept = metropolisAcceptanceStep(acceptance_prob);
-  if(accept) {
-    amplitude(k) = new_amplitude;
-    length(k) = new_length;
-    amplitude_acceptance_count(k)++;
-    length_acceptance_count(k)++;
-  }
-};
+// void gp::sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde) {
+//   bool accept = false;
+//   double 
+//     acceptance_prob = 0.0, 
+//     new_score = 0.0, 
+//     old_score = 0.0,
+//     new_amplitude = 0.0,
+//     new_length = 0.0;
+//   
+//   vec new_mu_tilde(P);
+//   mat 
+//     new_sub_block(P, P), 
+//     // new_cov_mat(n_k * P, n_k * P),
+//     // new_inv_cov_mat(n_k * P, n_k * P), 
+//     new_cov_tilde(P, P),
+//     first_product(P, P),
+//     first_product_repeated(P, n_k * P),
+//     final_product(P, P);
+//   
+//   new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
+//   new_length = proposeNewNonNegativeValue(length(k), length_proposal_window);
+//   // std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
+//   if( (new_amplitude < 1e-6) || (new_length < 1e-6) ) {
+//     return;
+//   }
+//   new_sub_block = calculateKthComponentKernelSubBlock(new_amplitude, new_length);
+//   // new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
+//   // 
+//   // if(! new_cov_mat.is_sympd()) {
+//   //   return;
+//   // }
+//   
+//   first_product = firstCovProduct(n_k, noise(k), new_sub_block);
+//   first_product_repeated = repmat(first_product, 1, n_k);
+//   
+//   final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
+//   
+//   new_mu_tilde = first_product_repeated * component_data;
+//   
+//   new_cov_tilde = new_sub_block - final_product;
+//   new_cov_tilde = covCheck(cov_tilde);
+//   
+//   
+//   // new_inv_cov_mat = invertComponentCovariance(n_k, noise(k), new_sub_block);
+//   // new_cov_tilde = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
+//   // new_mu_tilde = posteriorMeanParameter(
+//   //   component_data, 
+//   //   new_cov_mat, 
+//   //   new_inv_cov_mat
+//   // );
+//   
+//   new_score = log(2 * M_PI)
+//     + log_det_sympd(new_cov_tilde)
+//     + as_scalar((mu.col(k) - new_mu_tilde).t() * inv_sympd(new_cov_tilde) * (mu.col(k) - new_mu_tilde));
+//   new_score *= -0.5;
+//   new_score += pNorm(log(new_amplitude), 0, 1);
+//   new_score += pNorm(log(new_length), 0, 1);
+// 
+//   old_score = log(2 * M_PI)
+//     + log_det_sympd(cov_tilde)
+//     + as_scalar((mu.col(k) - mu_tilde).t() * inv_sympd(cov_tilde) * (mu.col(k) - mu_tilde));
+//   old_score *= -0.5;
+//   old_score += pNorm(log(amplitude(k)), 0, 1);
+//   old_score += pNorm(log(length(k)), 0, 1);
+//     
+//     
+//   // new_score = hyperParameterLogKernel(
+//   //   new_amplitude, 
+//   //   mu.col(k), 
+//   //   new_mu_tilde, 
+//   //   new_cov_tilde,
+//   //   logNormPriorUsed
+//   // );
+//   // 
+//   // old_score = hyperParameterLogKernel(
+//   //   amplitude(k), 
+//   //   mu.col(k), 
+//   //   mu_tilde, 
+//   //   cov_tilde,
+//   //   logNormPriorUsed
+//   // );
+//   
+//   acceptance_prob =  std::min(1.0, std::exp(new_score - old_score));
+//   accept = metropolisAcceptanceStep(acceptance_prob);
+//   if(accept) {
+//     amplitude(k) = new_amplitude;
+//     length(k) = new_length;
+//     amplitude_acceptance_count(k)++;
+//     length_acceptance_count(k)++;
+//   }
+// };
 
 void gp::sampleHyperParametersKthComponent(
     uword k, 
