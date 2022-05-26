@@ -315,7 +315,7 @@ mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
   //   }
   // }
   // output -= cross_product;
-  output *= noise;
+  output *= (1.0 / noise);
   return output;
 };
 
@@ -330,8 +330,9 @@ mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block)
 
   I_NkP = eye(n_k * P, n_k * P);
   Q_k = I_p + (n_k / noise) * kernel_sub_block;
-  Z_k = inv_sympd(Q_k);
-  return (1.0 / noise) * I_NkP - (1 / (n_k * noise)) * kron(J, I_p - Z_k);
+  Z_k = smallerInversion(n_k, noise, kernel_sub_block);
+  // Z_k = inv_sympd(Q_k);
+  return (1.0 / noise) * I_NkP - (1.0 / (n_k * noise)) * kron(J, I_p - Z_k);
 };
 // 
 // double gp::componentCovarianceDeterminant(uword k, uword n_k) {
@@ -669,39 +670,10 @@ mat gp::posteriorCovarianceParameter(
   cov_tilde.zeros();
   
   cov_tilde = covariance_matrix.submat(P_inds, P_inds)
-    - covariance_matrix.rows(P_inds)
+    - (covariance_matrix.rows(P_inds)
     * inverse_covariance_matrix
-    * covariance_matrix.cols(P_inds);
+    * covariance_matrix.cols(P_inds));
 
-  // std::for_each(std::execution::par,
-  //               P_inds.begin(),
-  //               P_inds.end(),
-  //               [&](uword ii) {
-  // // for(uword ii = 0; ii < P; ii++) {
-  // // if(ii >= P) {
-  // //   Rcpp::Rcout << "\ni: " << ii;
-  // //   // throw;
-  // // }
-  // 
-  //   cov_tilde(ii, ii) = as_scalar(
-  //     covariance_matrix(ii, ii)
-  //   - covariance_matrix.row(ii)
-  //   * inverse_covariance_matrix
-  //   * covariance_matrix.col(ii)
-  //   );
-  // 
-  //   for(uword jj = ii + 1; jj < P; jj++) {
-  //     cov_tilde(ii, jj) = as_scalar(
-  //        covariance_matrix(ii, jj)
-  //        - covariance_matrix.row(ii)
-  //          * inverse_covariance_matrix
-  //          * covariance_matrix.col(jj)
-  //     );
-  //     cov_tilde(jj, ii) = cov_tilde(ii, jj);
-  //   }
-  // }
-  // );
-  
   return cov_tilde;
 };
 
@@ -771,7 +743,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   if(! same_cov) {
     Rcpp::Rcout << "\n\nDifferent covariances being acquired.\n";
     Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.submat(0, 0, 3, 3);
-    Rcpp::Rcout << "\nCov (new):\n" << original_cov_tilde.submat(0, 3, 3, 3);
+    Rcpp::Rcout << "\nCov (new):\n" << original_cov_tilde.submat(0, 0, 3, 3);
   }
 
   cov_tilde = covCheck(cov_tilde);
