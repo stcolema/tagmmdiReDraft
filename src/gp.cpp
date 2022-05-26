@@ -295,7 +295,8 @@ mat gp::constructCovarianceMatrix(uword n_k, mat kernel_sub_block) {
 
 mat gp::smallerInversion(uword n_k, double noise, mat kernel_sub_block) {
   mat Q(P, P), Z(P, P);
-  Q = I_p + noise * n_k * kernel_sub_block;
+  
+  Q = I_p + (n_k / noise) * kernel_sub_block;
   Z = inv_sympd(Q);
   return Z;
 }
@@ -314,7 +315,6 @@ mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
 
 mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block) {
 
-  uvec rel_inds;
   mat J(n_k, n_k), Q_k(P, P), Z_k(P, P), I_NkP(n_k * P, n_k * P);
   J.ones();
   Q_k.zeros();
