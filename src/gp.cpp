@@ -746,7 +746,9 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     Rcpp::Rcout << "\nCov (new):\n" << original_cov_tilde.submat(0, 0, 3, 3);
   }
 
-  cov_tilde = covCheck(cov_tilde);
+  cov_tilde = covCheck(cov_tilde, false, true);
+  Rcpp::Rcout << "\nSample mean function.";
+  
   mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   
   if((samplingCount % sampleHypersFrequency) == 0) {
@@ -796,6 +798,9 @@ void gp::sampleKthComponentParameters(uword k, umat members, uvec non_outliers) 
     mu.col(k) = arma::mvnrnd(zero_vec, kernel_sub_block.slice(k));
     sampleKthComponentHyperParameterPrior(k);
   }
+  
+  Rcpp::Rcout << "\nMean functions sampled.\n\n";
+  
 };
 
 void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
