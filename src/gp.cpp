@@ -320,48 +320,48 @@ mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
 };
 
 
-mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block) {
-  
-  uvec rel_inds;
-  mat J(n_k, n_k), Q_k(P, P), Z_k(P, P), I_NkP(n_k * P, n_k * P);
-  J.ones();
-  Q_k.zeros();
-  Z_k.zeros();
-  
-  I_NkP = eye(n_k * P, n_k * P);
-  Q_k = I_p + (n_k / noise) * kernel_sub_block;
-  Z_k = inv_sympd(Q_k);
-  return (1.0 / noise) * I_NkP - (1 / (n_k * noise)) * kron(J, I_p - Z_k);
-};
-
-double gp::componentCovarianceDeterminant(uword k, uword n_k) {
-  return std::pow(noise(k), n_k * P) * det(I_p + (n_k / noise (k)) * kernel_sub_block.slice(k));
-};
-
-double gp::componentCovarianceLogDeterminant(uword k, uword n_k) {
-  return n_k * P * std::log(noise(k)) +  log_det(I_p + (n_k / noise (k)) * kernel_sub_block.slice(k)).real();
-};
-
-void gp::calculateInverseCovariance(umat members, uvec non_outliers) {
-  
-  uword n_k = 0;
-  uvec rel_inds;
-  
-  for(uword k = 0; k < K; k++) {
-    // Find the items relevant to sampling the parameters
-    rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
-    // Find how many labels have the value
-    n_k = rel_inds.n_elem;
-    
-    inverse_covariance(k) = invertComponentCovariance(
-      n_k, 
-      noise(k),
-      kernel_sub_block.slice(k)
-    );
-    
-    cov_log_det(k) = componentCovarianceLogDeterminant(k, n_k);
-  }
-};
+// mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block) {
+//   
+//   uvec rel_inds;
+//   mat J(n_k, n_k), Q_k(P, P), Z_k(P, P), I_NkP(n_k * P, n_k * P);
+//   J.ones();
+//   Q_k.zeros();
+//   Z_k.zeros();
+//   
+//   I_NkP = eye(n_k * P, n_k * P);
+//   Q_k = I_p + (n_k / noise) * kernel_sub_block;
+//   Z_k = inv_sympd(Q_k);
+//   return (1.0 / noise) * I_NkP - (1 / (n_k * noise)) * kron(J, I_p - Z_k);
+// };
+// 
+// double gp::componentCovarianceDeterminant(uword k, uword n_k) {
+//   return std::pow(noise(k), n_k * P) * det(I_p + (n_k / noise (k)) * kernel_sub_block.slice(k));
+// };
+// 
+// double gp::componentCovarianceLogDeterminant(uword k, uword n_k) {
+//   return n_k * P * std::log(noise(k)) +  log_det(I_p + (n_k / noise (k)) * kernel_sub_block.slice(k)).real();
+// };
+// 
+// void gp::calculateInverseCovariance(umat members, uvec non_outliers) {
+//   
+//   uword n_k = 0;
+//   uvec rel_inds;
+//   
+//   for(uword k = 0; k < K; k++) {
+//     // Find the items relevant to sampling the parameters
+//     rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
+//     // Find how many labels have the value
+//     n_k = rel_inds.n_elem;
+//     
+//     inverse_covariance(k) = invertComponentCovariance(
+//       n_k, 
+//       noise(k),
+//       kernel_sub_block.slice(k)
+//     );
+//     
+//     cov_log_det(k) = componentCovarianceLogDeterminant(k, n_k);
+//   }
+// };
 
 // void gp::matrixCombinations(umat members, uvec non_outliers) {
 //   calculateInverseCovariance(members, non_outliers);
@@ -387,6 +387,7 @@ void gp::calculateInverseCovariance(umat members, uvec non_outliers) {
 //   }
 //   return mu_tilde;
 // };
+
 
 vec gp::posteriorMeanParameter(
     vec data, 
@@ -415,17 +416,17 @@ vec gp::posteriorMeanParameter(
 //   return mu_tilde;
 // };
 
-uvec gp::relevantIndices(uword ii, uword P) {
-  uvec inds_1, inds_2, inds(P);
-  
-  inds_1 = regspace< uvec >(ii, -1, 0);
-  inds = inds_1;
-  if(ii < P) {
-    inds_2 = regspace< uvec >(1, 1, P - ii - 1);
-    inds = join_cols(inds_1, inds_2);
-  }
-  return inds;
-}
+// uvec gp::relevantIndices(uword ii, uword P) {
+//   uvec inds_1, inds_2, inds(P);
+//   
+//   inds_1 = regspace< uvec >(ii, -1, 0);
+//   inds = inds_1;
+//   if(ii < P) {
+//     inds_2 = regspace< uvec >(1, 1, P - ii - 1);
+//     inds = join_cols(inds_1, inds_2);
+//   }
+//   return inds;
+// }
 
 // double gp::blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P) {
 //   double lambda = 0.0, lambda_comp = 0.0;
@@ -517,79 +518,79 @@ uvec gp::relevantIndices(uword ii, uword P) {
 //   return new_mat;
 // };
 
-double gp::blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P) {
-  double lambda = 0.0, lambda_comp = 0.0;
-  uvec lambda_block_inds(N), unique_inds(P), col_0 = zeros<uvec>(1);
-  vec a_used(P), b_used(P);
-  mat lambda_block(N, N);
-  
-  if(N > 1) {
-    lambda_block_inds = regspace< uvec >(jj, P, N * P  - 1);
-    lambda_block = B.rows(lambda_block_inds);
-    lambda = lambda_block(0, 0) - lambda_block(1, 0);
-    lambda_block.diag() -= lambda;
-    B.rows(lambda_block_inds) = lambda_block;
-    lambda_comp = a(jj) * lambda;
-  }
-  
-  unique_inds = regspace< uvec >(0, 1, P - 1);
-  a_used = a.elem(unique_inds);
-  b_used = B.submat(unique_inds, col_0);
-  
-  return N * accu(a_used % b_used) + lambda_comp;
-};
-
-double gp::blockVectorMultiplication(rowvec a, 
-                                     mat B, 
-                                     double lambda,
-                                     uword ii, 
-                                     uword jj, 
-                                     uword N, 
-                                     uword P) {
-  double lambda_comp = a[jj] * lambda;
-  uvec unique_inds(P), col_0 = zeros<uvec>(1);
-  vec a_used(P), b_used(P);
-  
-  unique_inds = regspace< uvec >(0, 1, P - 1);
-  a_used = a.elem(unique_inds);
-  b_used = B.submat(unique_inds, col_0);
-  
-  return N * accu(a_used % b_used) + lambda_comp;
-};
-
-
-double gp::findLambda(mat B, uword N, bool testLambdas) {
-  bool common_lambda = false;
-  double lambda = 0.0;
-  vec lambdas(P);
-  uvec lambda_block_inds(P), lambda_test(P);
-  mat lambda_block(P, P), diagonal_block(P, P);
-  
-  if(N == 1) {
-    return 0.0;
-  }
-  
-  lambda = B(0, 0) - B(P, 0);
-    
-  if(testLambdas) {
-    lambda_block_inds = P_inds;
-    lambda_block = B.submat(lambda_block_inds, lambda_block_inds);
-    diagonal_block = B.submat(P + lambda_block_inds, lambda_block_inds);
-    lambdas = lambda_block.diag() - diagonal_block.diag();
-    lambda = lambdas(0);
-    
-    lambda_test.zeros();
-    for(auto& l : lambdas) {
-      lambda_test = 1 * doubleApproxEqual(l, lambda);
-    }
-    common_lambda = all(lambda_test == 1);
-    
-    if(! common_lambda) {
-      Rcpp::Rcout << "\nLambda is NOT constant.";
-    }
-  }
-  return lambda;
-};
+// double gp::blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P) {
+//   double lambda = 0.0, lambda_comp = 0.0;
+//   uvec lambda_block_inds(N), unique_inds(P), col_0 = zeros<uvec>(1);
+//   vec a_used(P), b_used(P);
+//   mat lambda_block(N, N);
+//   
+//   if(N > 1) {
+//     lambda_block_inds = regspace< uvec >(jj, P, N * P  - 1);
+//     lambda_block = B.rows(lambda_block_inds);
+//     lambda = lambda_block(0, 0) - lambda_block(1, 0);
+//     lambda_block.diag() -= lambda;
+//     B.rows(lambda_block_inds) = lambda_block;
+//     lambda_comp = a(jj) * lambda;
+//   }
+//   
+//   unique_inds = regspace< uvec >(0, 1, P - 1);
+//   a_used = a.elem(unique_inds);
+//   b_used = B.submat(unique_inds, col_0);
+//   
+//   return N * accu(a_used % b_used) + lambda_comp;
+// };
+// 
+// double gp::blockVectorMultiplication(rowvec a, 
+//                                      mat B, 
+//                                      double lambda,
+//                                      uword ii, 
+//                                      uword jj, 
+//                                      uword N, 
+//                                      uword P) {
+//   double lambda_comp = a[jj] * lambda;
+//   uvec unique_inds(P), col_0 = zeros<uvec>(1);
+//   vec a_used(P), b_used(P);
+//   
+//   unique_inds = regspace< uvec >(0, 1, P - 1);
+//   a_used = a.elem(unique_inds);
+//   b_used = B.submat(unique_inds, col_0);
+//   
+//   return N * accu(a_used % b_used) + lambda_comp;
+// };
+// 
+// 
+// double gp::findLambda(mat B, uword N, bool testLambdas) {
+//   bool common_lambda = false;
+//   double lambda = 0.0;
+//   vec lambdas(P);
+//   uvec lambda_block_inds(P), lambda_test(P);
+//   mat lambda_block(P, P), diagonal_block(P, P);
+//   
+//   if(N == 1) {
+//     return 0.0;
+//   }
+//   
+//   lambda = B(0, 0) - B(P, 0);
+//     
+//   if(testLambdas) {
+//     lambda_block_inds = P_inds;
+//     lambda_block = B.submat(lambda_block_inds, lambda_block_inds);
+//     diagonal_block = B.submat(P + lambda_block_inds, lambda_block_inds);
+//     lambdas = lambda_block.diag() - diagonal_block.diag();
+//     lambda = lambdas(0);
+//     
+//     lambda_test.zeros();
+//     for(auto& l : lambdas) {
+//       lambda_test = 1 * doubleApproxEqual(l, lambda);
+//     }
+//     common_lambda = all(lambda_test == 1);
+//     
+//     if(! common_lambda) {
+//       Rcpp::Rcout << "\nLambda is NOT constant.";
+//     }
+//   }
+//   return lambda;
+// };
 
 // arma::mat gp::firstCovProduct(mat A, mat B, uword N) {
 //   uword jj_bound = 0;
@@ -720,6 +721,15 @@ mat gp::posteriorCovarianceParameter(
 //   return cov_tilde;
 // };
 
+
+vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
+  mat chol_cov(P, P),
+    stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
+  
+  chol_cov = chol(cov_tilde);
+  return mu_tilde + chol_cov * stochasticity;
+};
+
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
 
   bool not_invertible = false, not_symmetric = false;
@@ -730,79 +740,40 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     inverse_covariance(n_k * P, n_k * P),
     inverse_covariance_comp(n_k * P, n_k * P),
     I_nkP(n_k * P, n_k * P),
-    chol_cov(P, P),
-    stochasticity = mvnrnd(zeros<vec>(P), eye(P, P)),
     first_product(P, n_k * P),
     rel_cov_mat(P, n_k * P),
     final_prod(P, P);
   I_nkP = eye(n_k * P, n_k * P);
   
   // Objects related to the covariance function
-  covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
-  rel_cov_mat = covariance_matrix.rows(P_inds);
-  
-  inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
+  // covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
+  rel_cov_mat = kernel_sub_block.slice(k); // covariance_matrix.rows(P_inds);
+  // 
+  // inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
   
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
   
-  first_product = firstCovProduct(n_k, noise(k), kernel_sub_block.slice(k));
+  first_product = firstCovProduct(n_k, noise(k), rel_cov_mat);
   
   // first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
-  final_prod = n_k * (first_product.cols(P_inds) * rel_cov_mat.cols(P_inds).t());
+  final_prod = n_k * (first_product.cols(P_inds) * rel_cov_mat);
   
   // Mean and covariance hyperparameter
   mu_tilde = first_product * data_vec;
   cov_tilde = rel_cov_mat.cols(P_inds) - final_prod; // first_product * rel_cov_mat.t();
+  cov_tilde = covCheck(cov_tilde);
 
-  mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+  // mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+  // 
+  // bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
+  // if(! same_cov) {
+  //   Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
+  // //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
+  // //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
+  // }
 
-  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
-  if(! same_cov) {
-    Rcpp::Rcout << "\n\nDIfferent covariances being acquired.\n";
-  //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.head_rows(3);
-  //   Rcpp::Rcout << "\nCov (new):\n" << cov_tilde2.head_rows(3);
-  }
-  
-  // Rcpp::Rcout << "\n\n\nFirst prod:\n" << first_product.cols(P_inds);
-  // Rcpp::Rcout << "\n\nFinal prod:\n" << final_prod.cols(P_inds);
-  // Rcpp::Rcout << "\n\nFinal cov:\n" << cov_tilde.cols(P_inds);
-  
-  // We can have that the covariance matrix becomes asymetric; this appears to 
-  // be a floating point error, so we hardcode that the matrix is symmetric #
-  // based on the uuper right traingle of the calculated covariance martix
-  not_symmetric = ! cov_tilde.is_symmetric();
-  if(not_symmetric) {
-    mat new_cov(P, P), u_cov = trimatu(cov_tilde, 1);
-    new_cov = u_cov + u_cov.t();
-    new_cov.diag() = cov_tilde.diag();
-    cov_tilde = new_cov;
-  }
-  
-  // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
-  // small constant to the diagonal entries
-  eigval = eig_sym( cov_tilde );
-  not_invertible = min(eigval) < 1e-5;
-  
-  mat small_identity = I_p;
-  if(not_invertible) {
-    small_identity *= 1e-5;
-    cov_tilde += small_identity;
-  }
-  
-  // cov_tilde = inverse_covariance;
-  
-  // Rcpp::Rcout << "\nSampled the mean function.";
-  // Rcpp::Rcout << "\n\nMean hyper:\n" << mu_tilde;
-  // Rcpp::Rcout << "\n\nCov hyper:\n" << cov_tilde;
-  
-  // Rcpp::Rcout << "\nSampling mean function.\n";
-  // mu.col(k) = mvnrnd(mu_tilde, cov_tilde);
-  
-  chol_cov = chol(cov_tilde);
-  // mat stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
-  mu.col(k) = mu_tilde + chol_cov * stochasticity;
-  
+  mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   
   if((samplingCount % sampleHypersFrequency) == 0) {
     // Rcpp::Rcout << "\nSampling hyperparameters.\n";
@@ -817,8 +788,6 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     sampleNoise(k, n_k, data);
   }
   
-  
-  // return mvnrnd(mu_tilde, cov_tilde);
 };
 
 void gp::sampleKthComponentParameters(uword k, umat members, uvec non_outliers) {
@@ -990,6 +959,38 @@ double gp::hyperParameterLogKernel(
 // };
 
 
+mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
+  
+  bool not_symmetric = false, not_invertible = false;
+  vec eigval(P);
+  
+  // We can have that the covariance matrix becomes asymetric; this appears to 
+  // be a floating point error, so we hardcode that the matrix is symmetric #
+  // based on the uuper right traingle of the calculated covariance martix
+  if(checkSymmetry) {
+    not_symmetric = ! C.is_symmetric();
+    if(not_symmetric) {
+      mat new_cov(P, P), u_cov = trimatu(C, 1);
+      new_cov = u_cov + u_cov.t();
+      new_cov.diag() = C.diag();
+      C = new_cov;
+    }
+  }
+  
+  // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
+  // small constant to the diagonal entries
+  if(checkStability) {
+    eigval = eig_sym( C );
+    not_invertible = min(eigval) < 1e-5;
+    
+    mat small_identity = I_p;
+    if(not_invertible) {
+      small_identity *= 1e-5;
+      C += small_identity;
+    }
+  }
+  return C;
+}
 
 void gp::sampleLength(
     uword k, 
@@ -1009,7 +1010,9 @@ void gp::sampleLength(
     new_sub_block(P, P), 
     new_cov_mat(n_k * P, n_k * P),
     new_inv_cov_mat(n_k * P, n_k * P), 
-    new_cov_tilde_new(P, P);
+    new_cov_tilde(P, P),
+    first_product(P, P),
+    final_product(P, P);
   
   new_length = proposeNewNonNegativeValue(length(k), length_proposal_window);
   // new_length = std::exp(std::log(length(k) + randn() * length_proposal_window));
@@ -1017,24 +1020,33 @@ void gp::sampleLength(
     return;
   }
   new_sub_block = calculateKthComponentKernelSubBlock(amplitude(k), new_length);
-  new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
-  if(rcond(new_cov_mat) < 1e-2) {
-    return;
-  }
   
-  new_inv_cov_mat = invertComponentCovariance(n_k, noise(k),new_sub_block);
-  new_cov_tilde_new = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
-  new_mu_tilde = posteriorMeanParameter(
-    component_data, 
-    new_cov_mat, 
-    new_inv_cov_mat
-  );
-  
+  // new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
+  // if(rcond(new_cov_mat) < 1e-2) {
+  //   return;
+  // }
+  // 
+  // new_inv_cov_mat = invertComponentCovariance(n_k, noise(k),new_sub_block);
+  // new_cov_tilde = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
+  // new_mu_tilde = posteriorMeanParameter(
+  //   component_data, 
+  //   new_cov_mat, 
+  //   new_inv_cov_mat
+  // );
+
+  // The product of the covariance matrix and the inverse as used in sampling 
+  // parameters.
+  first_product = firstCovProduct(n_k, noise(k), new_sub_block);
+  final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
+  new_mu_tilde = first_product * component_data;
+  new_cov_tilde = new_sub_block - final_product;
+  new_cov_tilde = covCheck(cov_tilde, false, true);
+
   new_score = hyperParameterLogKernel(
     new_length, 
     mu.col(k), 
     new_mu_tilde, 
-    new_cov_tilde_new,
+    new_cov_tilde,
     logNormPriorUsed
   );
   
@@ -1071,7 +1083,9 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
     new_sub_block(P, P), 
     new_cov_mat(n_k * P, n_k * P),
     new_inv_cov_mat(n_k * P, n_k * P), 
-    new_cov_tilde_new(P, P);
+    new_cov_tilde(P, P),
+    first_product(P, P),
+    final_product(P, P);
   
   new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
     // std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
@@ -1079,24 +1093,30 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
     return;
   }
   new_sub_block = calculateKthComponentKernelSubBlock(new_amplitude, length(k));
-  new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
-  if(rcond(new_cov_mat) < 1e-2) {
-    return;
-  }
+  // new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
+  // if(rcond(new_cov_mat) < 1e-2) {
+  //   return;
+  // }
+  // 
+  // new_inv_cov_mat = invertComponentCovariance(n_k, noise(k),new_sub_block);
+  // new_cov_tilde = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
+  // new_mu_tilde = posteriorMeanParameter(
+  //   component_data, 
+  //   new_cov_mat, 
+  //   new_inv_cov_mat
+  // );
   
-  new_inv_cov_mat = invertComponentCovariance(n_k, noise(k),new_sub_block);
-  new_cov_tilde_new = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
-  new_mu_tilde = posteriorMeanParameter(
-    component_data, 
-    new_cov_mat, 
-    new_inv_cov_mat
-  );
+  first_product = firstCovProduct(n_k, noise(k), new_sub_block);
+  final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
+  new_mu_tilde = first_product * component_data;
+  new_cov_tilde = new_sub_block - final_product;
+  new_cov_tilde = covCheck(cov_tilde, false, true);
   
   new_score = hyperParameterLogKernel(
     new_amplitude, 
     mu.col(k), 
     new_mu_tilde, 
-    new_cov_tilde_new,
+    new_cov_tilde,
     logNormPriorUsed
   );
   
@@ -1128,9 +1148,11 @@ void gp::sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, m
   vec new_mu_tilde(P);
   mat 
     new_sub_block(P, P), 
-    new_cov_mat(n_k * P, n_k * P),
-    new_inv_cov_mat(n_k * P, n_k * P), 
-    new_cov_tilde(P, P);
+    // new_cov_mat(n_k * P, n_k * P),
+    // new_inv_cov_mat(n_k * P, n_k * P), 
+    new_cov_tilde(P, P),
+    first_product(P, P),
+    final_product(P, P);
   
   new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
   new_length = proposeNewNonNegativeValue(length(k), length_proposal_window);
@@ -1139,19 +1161,26 @@ void gp::sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, m
     return;
   }
   new_sub_block = calculateKthComponentKernelSubBlock(new_amplitude, new_length);
-  new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
+  // new_cov_mat = constructCovarianceMatrix(n_k, k, new_sub_block);
+  // 
+  // if(! new_cov_mat.is_sympd()) {
+  //   return;
+  // }
   
-  if(! new_cov_mat.is_sympd()) {
-    return;
-  }
+  first_product = firstCovProduct(n_k, noise(k), new_sub_block);
+  final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
+  new_mu_tilde = first_product * component_data;
+  new_cov_tilde = new_sub_block - final_product;
+  new_cov_tilde = covCheck(cov_tilde, false, true);
   
-  new_inv_cov_mat = invertComponentCovariance(n_k, noise(k), new_sub_block);
-  new_cov_tilde = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
-  new_mu_tilde = posteriorMeanParameter(
-    component_data, 
-    new_cov_mat, 
-    new_inv_cov_mat
-  );
+  
+  // new_inv_cov_mat = invertComponentCovariance(n_k, noise(k), new_sub_block);
+  // new_cov_tilde = posteriorCovarianceParameter(new_cov_mat, new_inv_cov_mat);
+  // new_mu_tilde = posteriorMeanParameter(
+  //   component_data, 
+  //   new_cov_mat, 
+  //   new_inv_cov_mat
+  // );
   
   new_score = log(2 * M_PI)
     + log_det_sympd(new_cov_tilde)

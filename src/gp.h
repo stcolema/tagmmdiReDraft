@@ -39,7 +39,7 @@ class gp : virtual public density
 public:
   
   bool logNormPriorUsed = true;
-  uword sampleHypersFrequency = 2, samplingCount = 0;
+  uword sampleHypersFrequency = 5, samplingCount = 0;
   
   double
     
@@ -133,23 +133,26 @@ public:
   //     mat inv_cov_mat
   //   );
   
-  mat constructCovMatrixUsingSymmetricBlockProperties(mat C, mat C_inv, uword n_k);
-  
-  uvec relevantIndices(uword ii, uword P);
+  // mat constructCovMatrixUsingSymmetricBlockProperties(mat C, mat C_inv, uword n_k);
+  // 
+  // uvec relevantIndices(uword ii, uword P);
+
   mat smallerInversion(uword n_k, double noise, mat kernel_sub_block);
   mat firstCovProduct(uword n_k, double noise, mat kernel_sub_block);
+  mat covCheck(mat C, bool checkSymmetry = false, bool checkStability = true);
+  vec sampleMeanFunction(vec mu_tilde, mat cov_tilde);
   // mat firstCovProduct(mat A, mat B, uword N);
-  double blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P);
-  double blockVectorMultiplication(
-      rowvec a, 
-      mat B, 
-      double lambda,
-      uword ii, 
-      uword jj, 
-      uword N, 
-      uword P
-  );
-  double findLambda(mat B, uword N, bool testLambdas = false);
+  // double blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P);
+  // double blockVectorMultiplication(
+  //     rowvec a, 
+  //     mat B, 
+  //     double lambda,
+  //     uword ii, 
+  //     uword jj, 
+  //     uword N, 
+  //     uword P
+  // );
+  // double findLambda(mat B, uword N, bool testLambdas = false);
   
   // mat posteriorCovarianceParameter(uword k, uword n_k);
   mat posteriorCovarianceParameter(
