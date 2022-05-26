@@ -307,7 +307,7 @@ mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
   Z = smallerInversion(n_k, noise, kernel_sub_block);
   B = I_p - Z;
   
-  output = kernel_sub_block - kernel_sub_block * B;
+  output = kernel_sub_block - (kernel_sub_block * B);
   // for(uword ii = 0; ii < P; ii++) {
   //   output.diag() += kernel_sub_block(0, 0);
   //   for(uword jj = 0; jj < ii; jj++) {
@@ -750,21 +750,18 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // Objects related to the covariance function
   rel_cov_mat = kernel_sub_block.slice(k); // covariance_matrix.rows(P_inds);
 
-
-  
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
-  
   first_product = firstCovProduct(n_k, noise(k), rel_cov_mat);
   first_product_repeated = repmat(first_product, 1, n_k);
   
   // first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
-  final_product = n_k * (first_product.cols(P_inds) * rel_cov_mat);
+  final_product = n_k * (first_product * rel_cov_mat);
   
   // Mean and covariance hyperparameter
   mu_tilde = first_product_repeated * data_vec;
   cov_tilde = rel_cov_mat - final_product; // first_product * rel_cov_mat.t();
-  cov_tilde = covCheck(cov_tilde);
+  
 
   covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
   inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
@@ -773,10 +770,11 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.1);
   if(! same_cov) {
     Rcpp::Rcout << "\n\nDifferent covariances being acquired.\n";
-    Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.submat(0, 3, 0, 3);
-    Rcpp::Rcout << "\nCov (new):\n" << original_cov_tilde.submat(0, 3, 0, 3);
+    Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.submat(0, 0, 3, 3);
+    Rcpp::Rcout << "\nCov (new):\n" << original_cov_tilde.submat(0, 3, 3, 3);
   }
 
+  cov_tilde = covCheck(cov_tilde);
   mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   
   if((samplingCount % sampleHypersFrequency) == 0) {
