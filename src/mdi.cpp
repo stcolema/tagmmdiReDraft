@@ -139,6 +139,8 @@ mdiModelAlt::mdiModelAlt(
     K_unfixed(l) = K(l) - K_fixed(l);
   }
   
+  complete_likelihood_vec = zeros< vec >(L);
+  
   // Declare the view-specific mixtures
   initialiseMDI();
 };
@@ -412,60 +414,60 @@ double mdiModelAlt::calcPhiRate(uword lstar, uword mstar) {
   return rate;
 };
 
-
-
-// Update the cluster weights
-void mdiModelAlt::updateWeights() {
+void mdiModelAlt::updateWeightsViewL(uword l) {
   
   double shape = 0.0, rate = 0.0;
   uvec members_lk(N);
   
+  for(uword k = 0; k < K(l); k++) {
+    
+    // Find how many labels have the value of k. We used to consider which
+    // were outliers and which were not, but the non-outliers still 
+    // contribute to the component weight, but not to the component parameters
+    // and we use ot hand this down to the local mixture, mistakenly using 
+    // the same value for N_k for the component parameters and the weights.
+    members_lk = 1 * (labels.col(l) == k);
+    members.slice(l).col(k) = members_lk;
+    N_k(k, l) = accu(members_lk);
+    
+    // The hyperparameters
+    shape = 1 + N_k(k, l);
+    rate = calcWeightRate(l, k);
+    
+    // Sample a new weight
+    w(k, l) = randg(
+      distr_param(
+        w_shape_prior + shape,
+        1.0 / (w_rate_prior + rate)
+      )
+    );
+    
+    // Pass the allocation count down to the mixture
+    // (this is used in the parameter sampling)
+    mixtures[l]->members.col(k) = members_lk;
+    
+  }
+  
+  mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
+}
+
+// Update the cluster weights
+void mdiModelAlt::updateWeights() {
   
   std::for_each(
     std::execution::par,
     L_inds.begin(),
     L_inds.end(),
     [&](uword l) {
-  // for(uword l = 0; l < L; l++) {
-    
-    for(uword k = 0; k < K(l); k++) {
-      
-      // Find how many labels have the value of k. We used to consider which
-      // were outliers and which were not, but the non-outliers still 
-      // contribute to the component weight, but not to the component parameters
-      // and we use ot hand this down to the local mixture, mistakenly using 
-      // the same value for N_k for the component parameters and the weights.
-      members_lk = 1 * (labels.col(l) == k);
-      members.slice(l).col(k) = members_lk;
-      N_k(k, l) = accu(members_lk);
-      
-      // The hyperparameters
-      shape = 1 + N_k(k, l);
-      rate = calcWeightRate(l, k);
-      
-      // Sample a new weight
-      w(k, l) = randg(
-        distr_param(
-          w_shape_prior + shape,
-          1.0 / (w_rate_prior + rate)
-        )
-      );
-      
-      // Pass the allocation count down to the mixture
-      // (this is used in the parameter sampling)
-      mixtures[l]->members.col(k) = members_lk;
-      
+      updateWeightsViewL(l);
     }
-    
-    mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
-    
-    // // If we only have one dataset, flip back to normalised weights
-    // if(L == 1) {
-    //   w = w / accu(w) ;
-    // }
-    
-  }
   );
+  
+  // // If we only have one dataset, flip back to normalised weights
+  // if(L == 1) {
+  //   w = w / accu(w) ;
+  // }
+  
 };
 
 double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
@@ -594,6 +596,14 @@ void mdiModelAlt::updatePhis() {
       // Rcpp::Rcout << "\n\nShape:" << shape;
       // Rcpp::Rcout << "\nRate:" << rate;
       
+      
+      // if(((phi_shape_prior + shape) < 1e-8 )  || (1.0 / (phi_rate_prior + rate)) < 1e-8) {
+      //   Rcpp::Rcout << "\nMDI phi hyperparameters very small.\n";
+      //   Rcpp::Rcout << "\nMDI phi shape: " << phi_shape_prior + shape;
+      //   Rcpp::Rcout << "\nMDI phi rate: " << phi_rate_prior + rate;
+      //   Rcpp::Rcout << "\nMDI phi rate reciprocal: " << 1.0 / ( phi_rate_prior + rate );
+      // }
+      
       phis(phi_ind_map(m, l)) = randg(distr_param(
         phi_shape_prior + shape,
         1.0 / (phi_rate_prior + rate)
@@ -675,6 +685,10 @@ void mdiModelAlt::updateNormalisingConst() {
 };
 
 void mdiModelAlt::sampleStrategicLatentVariable() {
+  // if((1 / Z) < 1e-8) {
+  //   Rcpp::Rcout << "\n\nNormalising constant very large: " << Z;
+  // }
+  
   v = randg(distr_param(N, 1.0 / Z));
 }
 
@@ -745,13 +759,13 @@ void mdiModelAlt::initialiseMDI() {
   
   // Rcpp::Rcout << "Priors sampled.\n";
   
-  std::for_each(
-    std::execution::par,
-    L_inds.begin(),
-    L_inds.end(),
-    [&](uword l) {
+  // std::for_each(
+  //   std::execution::par,
+  //   L_inds.begin(),
+  //   L_inds.end(),
+  //   [&](uword l) {
   
-  // for(uword l = 0; l < L; l++) {
+  for(uword l = 0; l < L; l++) {
     upweights = calculateUpweights(l);
     
     
@@ -766,45 +780,35 @@ void mdiModelAlt::initialiseMDI() {
     // Rcpp::Rcout << l << "th view 0 iteration run.\n\n";
     
   }
-  );
+  // );
   
 };
 
-void mdiModelAlt::updateAllocation() {
+void mdiModelAlt::updateAllocationViewL(uword l) {
   
-  // uvec matching_labels(N);
-  vec complete_likelihood_vec(L);
   mat upweights; // (N, K_max);
+
+  upweights = calculateUpweights(l);
   
+  // Update the allocation within the mixture using MDI level weights and phis
+  mixtures[l]->updateAllocation(w(span(0, K(l) - 1), l), upweights.t());
+  
+  // Pass the new labels from the mixture level back to the MDI level.
+  labels.col(l) = mixtures[l]->labels;
+  non_outliers.col(l) = mixtures[l]->non_outliers;
+  complete_likelihood_vec(l) = mixtures[l]->complete_likelihood;
+}
+
+void mdiModelAlt::updateAllocation() {
+
   complete_likelihood = 0.0;
-  
-  // throw std::invalid_argument( "in MDI allocation." );
-  
+
   std::for_each(
     std::execution::par,
     L_inds.begin(),
     L_inds.end(),
     [&](uword l) {
-  // for(uword l = 0; l < L; l++) {
-    upweights = calculateUpweights(l);
-    
-    
-    // Update the allocation within the mixture using MDI level weights and phis
-    mixtures[l]->updateAllocation(w(span(0, K(l) - 1), l), upweights.t());
-    
-    // Pass the new labels from the mixture level back to the MDI level.
-    // labels.col(l) = mixtures[l]->labels;
-    // non_outliers.col(l) = mixtures[l]->non_outliers;
-    
-    // labels.col(l) = (*mixtures)[l]->labels;
-    // non_outliers.col(l) = (*mixtures)[l]->non_outliers;
-    
-    // Rcpp::Rcout << "\n\nPass from mixtures back to MDI level.\n";
-    
-    labels.col(l) = mixtures[l]->labels;
-    non_outliers.col(l) = mixtures[l]->non_outliers;
-    // complete_likelihood += mixtures[l]->complete_likelihood;
-    complete_likelihood_vec(l) = mixtures[l]->complete_likelihood;
+      updateAllocationViewL(l);
     }
   );
   

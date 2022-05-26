@@ -60,10 +60,9 @@ public:
     K_unfixed,          // Number of components not fixed
     K_fixed,            // Number of components fixed (i.e. at least one member has an observed label)
     L_inds,             // indices over views
-    L_minus_1_inds,     // indices used to parallelise loop over nested views
     N_inds;             // indices over items
   
-  arma::vec phis;
+  arma::vec phis, complete_likelihood_vec;
   
   arma::umat 
     
@@ -123,6 +122,7 @@ public:
   
   // Update the cluster weights
   void updateWeights();
+  void updateWeightsViewL(uword l);
   
   // === Phis ==================================================================
   
@@ -151,6 +151,7 @@ public:
   
   // Update the current allocations
   void updateAllocation();
+  void updateAllocationViewL(uword l);
   
   // === Initialisation functions ==============================================
   

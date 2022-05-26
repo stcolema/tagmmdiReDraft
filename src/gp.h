@@ -39,7 +39,7 @@ class gp : virtual public density
 public:
   
   bool logNormPriorUsed = true;
-  uword sampleHypersFrequency = 2, samplingCount = 0;
+  uword sampleHypersFrequency = 5, samplingCount = 0;
   
   double
     
@@ -94,9 +94,9 @@ public:
   double ampltiduePriorLogDensity(double x, bool logNorm = false);
   double lengthPriorLogDensity(double x, bool logNorm = false);
   
-  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-3);
-  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-3);
-  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 1e-3);
+  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-2);
+  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-2);
+  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 1e-2);
   
   void sampleKthComponentHyperParameterPrior(uword k, bool logNorm = false);
   void sampleHyperParameterPriors();
@@ -110,13 +110,13 @@ public:
   mat calculateKthComponentKernelSubBlock(double amplitude, double length);
   void calculateKernelSubBlock();
   // void constructCovarianceMatrix(uword n_k, uword k);
-  mat constructCovarianceMatrix(uword n_k, uword k, mat kernel_sub_block);
-  double componentCovarianceDeterminant(uword k, uword n_k);
-  arma::mat calculateCovarianceKernel(arma::uvec t_inds);
+  mat constructCovarianceMatrix(uword n_k, mat kernel_sub_block);
+  // double componentCovarianceDeterminant(uword k, uword n_k);
+  // arma::mat calculateCovarianceKernel(arma::uvec t_inds);
   mat invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block);
   // mat invertComponentCovariance(uword k, uword n_k);
-  double componentCovarianceLogDeterminant(uword k, uword n_k);
-  void calculateInverseCovariance(umat members, uvec non_outliers);
+  // double componentCovarianceLogDeterminant(uword k, uword n_k);
+  // void calculateInverseCovariance(umat members, uvec non_outliers);
   
   // Sample and calulcate objects related to sampling the mean posterior function
   // vec posteriorMeanParameter(uword k, uword n_k, vec data);
@@ -133,21 +133,26 @@ public:
   //     mat inv_cov_mat
   //   );
   
-  mat constructCovMatrixUsingSymmetricBlockProperties(mat C, mat C_inv, uword n_k);
-  
-  uvec relevantIndices(uword ii, uword P);
-  mat firstCovProduct(mat A, mat B, uword N);
-  double blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P);
-  double blockVectorMultiplication(
-      rowvec a, 
-      mat B, 
-      double lambda,
-      uword ii, 
-      uword jj, 
-      uword N, 
-      uword P
-  );
-  double findLambda(mat B, uword N, bool testLambdas = false);
+  // mat constructCovMatrixUsingSymmetricBlockProperties(mat C, mat C_inv, uword n_k);
+  // 
+  // uvec relevantIndices(uword ii, uword P);
+
+  mat smallerInversion(uword n_k, double noise, mat kernel_sub_block);
+  mat firstCovProduct(uword n_k, double noise, mat kernel_sub_block);
+  mat covCheck(mat C, bool checkSymmetry = false, bool checkStability = true);
+  vec sampleMeanFunction(vec mu_tilde, mat cov_tilde);
+  // mat firstCovProduct(mat A, mat B, uword N);
+  // double blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P);
+  // double blockVectorMultiplication(
+  //     rowvec a, 
+  //     mat B, 
+  //     double lambda,
+  //     uword ii, 
+  //     uword jj, 
+  //     uword N, 
+  //     uword P
+  // );
+  // double findLambda(mat B, uword N, bool testLambdas = false);
   
   // mat posteriorCovarianceParameter(uword k, uword n_k);
   mat posteriorCovarianceParameter(
