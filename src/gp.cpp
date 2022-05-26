@@ -160,9 +160,9 @@ void gp::sampleHyperParameterPriors() {
   for(uword k = 0; k < K; k++) {
     sampleKthComponentHyperParameterPrior(k, logNormPriorUsed);
   }
-  Rcpp::Rcout << "\nAmplitude:\n" << amplitude.t();
-  Rcpp::Rcout << "\n\nLength:\n" << length.t();
-  Rcpp::Rcout << "\n\nNoise:\n" << noise.t();
+  // Rcpp::Rcout << "\nAmplitude:\n" << amplitude.t();
+  // Rcpp::Rcout << "\n\nLength:\n" << length.t();
+  // Rcpp::Rcout << "\n\nNoise:\n" << noise.t();
 };
 
 // arma::mat gp::calculateCovarianceKernel(arma::uvec t_inds) {
@@ -690,9 +690,9 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   mat chol_cov(P, P),
     stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
   
-  if(! cov_tilde.is_sympd()) {
-    Rcpp::Rcout << "\n\nCov tidle is not positive semi-definite.\n";
-  }
+  // if(! cov_tilde.is_sympd()) {
+  //   Rcpp::Rcout << "\n\nCov tidle is not positive semi-definite.\n";
+  // }
   chol_cov = chol(cov_tilde);
   return mu_tilde + chol_cov * stochasticity;
 };
@@ -730,19 +730,19 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   cov_tilde = rel_cov_mat - final_product;
   
 
-  covariance_matrix = constructCovarianceMatrix(n_k, kernel_sub_block.slice(k));
-  inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
-  mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+  // covariance_matrix = constructCovarianceMatrix(n_k, kernel_sub_block.slice(k));
+  // inverse_covariance = invertComponentCovariance(n_k, noise(k), kernel_sub_block.slice(k));
+  // mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
+  // 
+  // bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.01);
+  // if(! same_cov) {
+  //   Rcpp::Rcout << "\n\nDifferent covariances being acquired.\n";
+  //   Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.submat(0, 0, 3, 3);
+  //   Rcpp::Rcout << "\nCov (new):\n" << original_cov_tilde.submat(0, 0, 3, 3);
+  // }
 
-  bool same_cov = approx_equal(cov_tilde, original_cov_tilde, "reldiff", 0.01);
-  if(! same_cov) {
-    Rcpp::Rcout << "\n\nDifferent covariances being acquired.\n";
-    Rcpp::Rcout << "\nCov (original):\n" << cov_tilde.submat(0, 0, 3, 3);
-    Rcpp::Rcout << "\nCov (new):\n" << original_cov_tilde.submat(0, 0, 3, 3);
-  }
-
-  cov_tilde = covCheck(cov_tilde, true, true);
-  Rcpp::Rcout << "\nSample mean function.";
+  cov_tilde = covCheck(cov_tilde, false, true);
+  // Rcpp::Rcout << "\nSample mean function.";
   
   mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   
@@ -865,7 +865,7 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
   //   Rcpp::Rcout << "\n\nAmplitude: " << amplitude.t();
   // }
   
-  Rcpp::Rcout << "\nMean functions sampled.\n\n";
+  // Rcpp::Rcout << "\nMean functions sampled.\n\n";
 
 };
 
@@ -938,10 +938,10 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
   bool not_symmetric = false, not_invertible = false, not_sympd = false;
   vec eigval(P);
   
-  not_sympd = ! C.is_sympd();
-  if(not_sympd) {
-    Rcpp::Rcout << "\nNot symmetric positive definite.\n";
-  }
+  // not_sympd = ! C.is_sympd();
+  // if(not_sympd) {
+  //   Rcpp::Rcout << "\nNot symmetric positive definite.\n";
+  // }
   
   // We can have that the covariance matrix becomes asymetric; this appears to 
   // be a floating point error, so we hardcode that the matrix is symmetric #
@@ -949,8 +949,8 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
   if(checkSymmetry) {
     not_symmetric = ! C.is_symmetric();
     if(not_symmetric) {
-      Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper right triangular matrix.\n";
-      Rcpp::Rcout << C.submat(0, 0, 4, 4);
+      // Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper right triangular matrix.\n";
+      // Rcpp::Rcout << C.submat(0, 0, 4, 4);
       
       mat new_cov(P, P), u_cov = trimatu(C, 1);
       new_cov = u_cov + u_cov.t();
@@ -967,7 +967,7 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
     
     mat small_identity = I_p;
     if(not_invertible) {
-      Rcpp::Rcout << "\nNot numerical stable for inversion. Add constant to diagonal.\n";
+      // Rcpp::Rcout << "\nNot numerical stable for inversion. Add constant to diagonal.\n";
       small_identity *= 1e-6;
       C += small_identity;
     }
