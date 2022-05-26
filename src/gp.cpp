@@ -739,11 +739,13 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     covariance_matrix(n_k * P, n_k * P),
     inverse_covariance(n_k * P, n_k * P),
     inverse_covariance_comp(n_k * P, n_k * P),
-    I_nkP(n_k * P, n_k * P),
-    first_product(P, n_k * P),
-    rel_cov_mat(P, n_k * P),
-    final_prod(P, P);
-  I_nkP = eye(n_k * P, n_k * P);
+    // I_nkP(n_k * P, n_k * P),
+    first_product(P, P),
+    first_product_repeated(P, n_k * P),
+    rel_cov_mat(P, P),
+    final_product(P, P);
+  
+  // I_nkP = eye(n_k * P, n_k * P);
   
   // Objects related to the covariance function
   // covariance_matrix = constructCovarianceMatrix(n_k, k, kernel_sub_block.slice(k));
@@ -755,13 +757,14 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // parameters.
   
   first_product = firstCovProduct(n_k, noise(k), rel_cov_mat);
+  first_product_repeated = repmat(first_product, 1, n_k);
   
   // first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
-  final_prod = n_k * (first_product.cols(P_inds) * rel_cov_mat);
+  final_product = n_k * (first_product.cols(P_inds) * rel_cov_mat);
   
   // Mean and covariance hyperparameter
-  mu_tilde = first_product * data_vec;
-  cov_tilde = rel_cov_mat.cols(P_inds) - final_prod; // first_product * rel_cov_mat.t();
+  mu_tilde = first_product_repeated * data_vec;
+  cov_tilde = rel_cov_mat - final_product; // first_product * rel_cov_mat.t();
   cov_tilde = covCheck(cov_tilde);
 
   // mat original_cov_tilde = posteriorCovarianceParameter(covariance_matrix, inverse_covariance);
@@ -1012,6 +1015,7 @@ void gp::sampleLength(
     new_inv_cov_mat(n_k * P, n_k * P), 
     new_cov_tilde(P, P),
     first_product(P, P),
+    first_product_repeated(P, n_k * P),
     final_product(P, P);
   
   new_length = proposeNewNonNegativeValue(length(k), length_proposal_window);
@@ -1037,8 +1041,11 @@ void gp::sampleLength(
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
   first_product = firstCovProduct(n_k, noise(k), new_sub_block);
+  first_product_repeated = repmat(first_product, 1, n_k);
+  
   final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
-  new_mu_tilde = first_product * component_data;
+  
+  new_mu_tilde = first_product_repeated * component_data;
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(cov_tilde, false, true);
 
@@ -1085,6 +1092,7 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
     new_inv_cov_mat(n_k * P, n_k * P), 
     new_cov_tilde(P, P),
     first_product(P, P),
+    first_product_repeated(P, n_k * P),
     final_product(P, P);
   
   new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
@@ -1107,8 +1115,11 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
   // );
   
   first_product = firstCovProduct(n_k, noise(k), new_sub_block);
+  first_product_repeated = repmat(first_product, 1, n_k);
+  
   final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
-  new_mu_tilde = first_product * component_data;
+  
+  new_mu_tilde = first_product_repeated * component_data;
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(cov_tilde, false, true);
   
@@ -1152,6 +1163,7 @@ void gp::sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, m
     // new_inv_cov_mat(n_k * P, n_k * P), 
     new_cov_tilde(P, P),
     first_product(P, P),
+    first_product_repeated(P, n_k * P),
     final_product(P, P);
   
   new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
@@ -1168,8 +1180,12 @@ void gp::sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, m
   // }
   
   first_product = firstCovProduct(n_k, noise(k), new_sub_block);
+  first_product_repeated = repmat(first_product, 1, n_k);
+  
   final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
-  new_mu_tilde = first_product * component_data;
+  
+  new_mu_tilde = first_product_repeated * component_data;
+  
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(cov_tilde, false, true);
   
