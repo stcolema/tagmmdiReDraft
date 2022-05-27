@@ -700,7 +700,7 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
 
   bool not_invertible = false, not_symmetric = false;
-  vec mu_tilde(P), data_vec = data.as_row().t(), eigval(P);
+  vec mu_tilde(P), sample_mean(P), eigval(P), data_vec = data.as_row().t();
   mat
     cov_tilde(P, P), 
     covariance_matrix(n_k * P, n_k * P),
@@ -712,7 +712,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     first_product_repeated(P, n_k * P),
     final_product(P, P);
   
-  // I_nkP = eye(n_k * P, n_k * P);
+  sample_mean = sampleMean(data);
   
   // Objects related to the covariance function
   rel_cov_mat = kernel_sub_block.slice(k); // covariance_matrix.rows(P_inds);
@@ -726,7 +726,19 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   final_product = n_k * (first_product * rel_cov_mat);
   
   // Mean and covariance hyperparameter
-  mu_tilde = first_product_repeated * data_vec;
+  vec mu_tilde_naive = first_product_repeated * data_vec;
+  // for(uword p = 0; p < P; p++) {
+  //   mu_tilde(p) = as_scalar(first_product.row(p) * sample_mean);
+  // }
+  mu_tilde = n_k * first_product * sample_mean;
+
+  bool same_mu = approx_equal(mu_tilde, mu_tilde_naive, "reldiff", 0.01);
+  if(! same_mu) {
+    Rcpp::Rcout << "\n\nDifferent means being acquired.\n";
+    Rcpp::Rcout << "\nMean (new):\n" << mu_tilde.head(3);
+    Rcpp::Rcout << "\nMean (original):\n" << mu_tilde_naive.head(3);
+  }
+  
   cov_tilde = rel_cov_mat - final_product;
   
 
@@ -752,7 +764,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
       k,
       n_k,
       mu_tilde,
-      data_vec,
+      sample_mean,
       cov_tilde
     );
     
@@ -979,7 +991,7 @@ void gp::sampleLength(
     uword k, 
     uword n_k, 
     vec mu_tilde, 
-    vec component_data, 
+    vec sample_mean, 
     mat cov_tilde
 ) {
   bool accept = false;
@@ -1021,11 +1033,12 @@ void gp::sampleLength(
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
   first_product = firstCovProduct(n_k, noise(k), new_sub_block);
-  first_product_repeated = repmat(first_product, 1, n_k);
+  // first_product_repeated = repmat(first_product, 1, n_k);
   
   final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
   
-  new_mu_tilde = first_product_repeated * component_data;
+  // new_mu_tilde = first_product_repeated * component_data;
+  new_mu_tilde = n_k * first_product * sample_mean;
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(cov_tilde);
 
@@ -1062,7 +1075,13 @@ double gp::proposeNewNonNegativeValue(double x, double window) {
   // return std::exp(std::log(x) + randn() * window);
 }
 
-void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde) {
+void gp::sampleAmplitude(
+    uword k, 
+    uword n_k, 
+    vec mu_tilde, 
+    vec sample_mean, 
+    mat cov_tilde
+  ) {
   bool accept = false;
   double 
     acceptance_prob = 0.0, 
@@ -1100,11 +1119,18 @@ void gp::sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, m
   // );
   
   first_product = firstCovProduct(n_k, noise(k), new_sub_block);
-  first_product_repeated = repmat(first_product, 1, n_k);
+  // first_product_repeated = repmat(first_product, 1, n_k);
   
   final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
   
-  new_mu_tilde = first_product_repeated * component_data;
+  // for(uword p = 0; p < P; p++) {
+  //   sample_mean(p) = as_scalar(first_product.row(p) * sample_mean);
+  // }
+  // sample_mean *= n_k;
+  new_mu_tilde = n_k * first_product * sample_mean;
+  
+  // new_mu_tilde = first_product_repeated * component_data;
+  
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(cov_tilde);
   
@@ -1232,14 +1258,14 @@ void gp::sampleHyperParametersKthComponent(
     uword k, 
     uword n_k, 
     vec mu_tilde, 
-    vec component_data,
+    vec sample_mean,
     mat cov_tilde
 ) {
   sampleAmplitude(
     k,
     n_k,
     mu_tilde,
-    component_data,
+    sample_mean,
     cov_tilde
   );
 
@@ -1247,7 +1273,7 @@ void gp::sampleHyperParametersKthComponent(
     k,
     n_k,
     mu_tilde,
-    component_data,
+    sample_mean,
     cov_tilde
   );
   
