@@ -700,7 +700,7 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
 
   bool not_invertible = false, not_symmetric = false;
-  vec mu_tilde(P), sample_mean(P), eigval(P), data_vec = data.as_row().t();
+  vec mu_tilde(P), sample_mean(P), eigval(P); // data_vec = data.as_row().t();
   mat
     cov_tilde(P, P), 
     covariance_matrix(n_k * P, n_k * P),
@@ -709,7 +709,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
     // I_nkP(n_k * P, n_k * P),
     rel_cov_mat(P, P),
     first_product(P, P),
-    first_product_repeated(P, n_k * P),
+    // first_product_repeated(P, n_k * P),
     final_product(P, P);
   
   sample_mean = sampleMean(data);
@@ -720,24 +720,24 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
   first_product = firstCovProduct(n_k, noise(k), rel_cov_mat);
-  first_product_repeated = repmat(first_product, 1, n_k);
+  // first_product_repeated = repmat(first_product, 1, n_k);
   
   // first_product = firstCovProduct(rel_cov_mat, inverse_covariance, n_k);
   final_product = n_k * (first_product * rel_cov_mat);
   
   // Mean and covariance hyperparameter
-  vec mu_tilde_naive = first_product_repeated * data_vec;
+  // vec mu_tilde_naive = first_product_repeated * data_vec;
   // for(uword p = 0; p < P; p++) {
   //   mu_tilde(p) = as_scalar(first_product.row(p) * sample_mean);
   // }
   mu_tilde = n_k * first_product * sample_mean;
 
-  bool same_mu = approx_equal(mu_tilde, mu_tilde_naive, "reldiff", 0.01);
-  if(! same_mu) {
-    Rcpp::Rcout << "\n\nDifferent means being acquired.\n";
-    Rcpp::Rcout << "\nMean (new):\n" << mu_tilde.head(3);
-    Rcpp::Rcout << "\nMean (original):\n" << mu_tilde_naive.head(3);
-  }
+  // bool same_mu = approx_equal(mu_tilde, mu_tilde_naive, "reldiff", 0.01);
+  // if(! same_mu) {
+  //   Rcpp::Rcout << "\n\nDifferent means being acquired.\n";
+  //   Rcpp::Rcout << "\nMean (new):\n" << mu_tilde.head(3);
+  //   Rcpp::Rcout << "\nMean (original):\n" << mu_tilde_naive.head(3);
+  // }
   
   cov_tilde = rel_cov_mat - final_product;
   
