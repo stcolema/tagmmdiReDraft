@@ -180,3 +180,13 @@ double squaredExponentialFunction(double amplitude, double length, uword i, uwor
 bool doubleApproxEqual(double x, double y, double precision) {
   return std::abs(x - y) < precision;
 };
+
+
+//' @title Sample mean
+//' @description calculate the sample mean of a matrix X.
+//' @param X Matrix
+//' @return Vector of the column means of X.
+vec sampleMean(arma::mat X) {
+  mat mu_t = mean(X);
+  return mu_t.row(0).t();
+}

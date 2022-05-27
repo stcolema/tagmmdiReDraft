@@ -95,5 +95,11 @@ double squaredExponentialFunction(double amplitude, double length, arma::uword i
 
 bool doubleApproxEqual(double x, double y, double precision = 0.000002);
 
-#endif /* GENFUN_H */
 
+//' @title Sample mean
+//' @description calculate the sample mean of a matrix X.
+//' @param X Matrix
+//' @return Vector of the column means of X.
+vec sampleMean(arma::mat X);
+
+#endif /* GENFUN_H */
