@@ -4,8 +4,11 @@
 #ifndef GP_H
 #define GP_H
 
+
 // =============================================================================
 // included dependencies
+#define ARMA_WARN_LEVEL 1 // Turn off warnings that occur due to point errors.
+
 # include <RcppArmadillo.h>
 # include "density.h"
 # include "genericFunctions.h"
