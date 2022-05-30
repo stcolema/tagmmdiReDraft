@@ -1012,7 +1012,7 @@ void gp::sampleLength(
   
   new_length = proposeNewNonNegativeValue(length(k), length_proposal_window);
   // new_length = std::exp(std::log(length(k) + randn() * length_proposal_window));
-  if(new_length < 1e-6) {
+  if(new_length < 1e-2) {
     return;
   }
   new_sub_block = calculateKthComponentKernelSubBlock(amplitude(k), new_length);
@@ -1100,7 +1100,7 @@ void gp::sampleAmplitude(
   
   new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
     // std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
-  if(new_amplitude < 1.0e-3) {
+  if(new_amplitude < 1.0e-2) {
     return;
   }
   
@@ -1318,7 +1318,7 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data) {
 
   new_noise = proposeNewNonNegativeValue(noise(k), noise_proposal_window);
   
-  if(new_noise < 1.0e-3) {
+  if(new_noise < 1.0e-2) {
     return;
   }
   
