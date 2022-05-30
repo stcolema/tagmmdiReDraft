@@ -42,13 +42,14 @@ void outlierComponent::updateWeights(uvec non_outliers, uvec outliers) {
   tau_2 = (double) sum(outliers);
   
   // Sample values for the weights
+  // outlier_weight = rBeta(tau_2 + u, N + v - tau_2);
   non_outlier_weight = rBeta(tau_1 + v, N + u - tau_1);
-  outlier_weight = rBeta(tau_2 + u, N + v - tau_2);
+  non_outlier_weight = 1.0 - outlier_weight;
   
   // Normalise these
-  non_outlier_weight = non_outlier_weight / (non_outlier_weight + outlier_weight);
-  outlier_weight = outlier_weight / (non_outlier_weight + outlier_weight);
-  
+  // non_outlier_weight = non_outlier_weight / (non_outlier_weight + outlier_weight);
+  // outlier_weight = outlier_weight / (non_outlier_weight + outlier_weight);
+  // 
 };
 
 arma::uword outlierComponent::sampleOutlier(double non_outlier_likelihood_n,
