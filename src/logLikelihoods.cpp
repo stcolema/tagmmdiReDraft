@@ -14,6 +14,14 @@ double gammaLogLikelihood(double x, double shape, double rate){
   return shape * log(rate) - lgamma(shape) + (shape - 1) * log(x) - rate * x;
 };
 
+double gammaLogLikelihood(arma::vec x, double shape, double rate){
+  double out = 0.0;
+  for (auto & element : x) {
+    out += gammaLogLikelihood(element, shape, rate);
+  }
+  return out;
+};
+
 double invGammaLogLikelihood(double x, double shape, double scale) {
   return shape * log(scale) - lgamma(shape) + (-shape - 1) * log(x) - scale / x;
 };

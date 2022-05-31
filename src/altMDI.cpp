@@ -43,10 +43,12 @@ Rcpp::List runAltMDI(arma::uword R,
   
   vec likelihood_record(n_saved);
   
-  mat phis_record(n_saved, my_mdi.LC2); //,
+  mat phis_record(n_saved, my_mdi.LC2), mass_record(n_saved, L); //,
     // likelihood_record(n_saved, L);
   
   phis_record.zeros();
+  mass_record.zeros();
+  
   likelihood_record.zeros();
   
   ucube class_record(n_saved, N, L),
@@ -88,6 +90,8 @@ Rcpp::List runAltMDI(arma::uword R,
   
   likelihood_record(save_ind) = my_mdi.complete_likelihood;
   
+  mass_record.row(save_ind) = my_mdi.mass.t();
+  
   // Rcpp::Rcout << "\n\nSave phis.";
   phis_record.row(save_ind) = my_mdi.phis.t();
   
@@ -109,6 +113,8 @@ Rcpp::List runAltMDI(arma::uword R,
     my_mdi.sampleStrategicLatentVariable();
     
     // Rcpp::Rcout << "\nSample component weights.";
+    
+    my_mdi.updateMassParameters();
     
     // Rcpp::Rcout << "\nWeights update.";
     my_mdi.updateWeights();
@@ -163,6 +169,8 @@ Rcpp::List runAltMDI(arma::uword R,
       
       likelihood_record(save_ind) = my_mdi.complete_likelihood;
       
+      mass_record.row(save_ind) = my_mdi.mass.t();
+      
       // Rcpp::Rcout << "\n\nSave phis.";
       phis_record.row(save_ind) = my_mdi.phis.t();
       
@@ -178,6 +186,7 @@ Rcpp::List runAltMDI(arma::uword R,
       Named("allocations") = class_record,
       Named("phis") = phis_record,
       Named("weights") = weight_record,
+      Named("mass") = mass_record,
       Named("outliers") = outlier_record,
       Named("allocation_probabilities") = alloc,
       Named("N_k") = N_k_record,

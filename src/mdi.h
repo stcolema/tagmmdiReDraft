@@ -36,6 +36,11 @@ public:
     
     // Strategic latent variable
     v = 0.0,
+    
+    // Prior hyperparameters for view mass components
+    mass_proposal_window = 0.1,
+    mass_shape_prior = 2.0,
+    mass_rate_prior = 0.25,
   
     // Prior hyperparameters for component weights
     w_shape_prior = 2.0,
@@ -62,7 +67,7 @@ public:
     L_inds,             // indices over views
     N_inds;             // indices over items
   
-  arma::vec phis, complete_likelihood_vec;
+  arma::vec phis, complete_likelihood_vec, mass;
   
   arma::umat 
     
@@ -124,6 +129,9 @@ public:
   void updateWeights();
   void updateWeightsViewL(uword l);
   
+  void updateMassParameters();
+  void updateMassParameterViewL(uword l);
+  
   // === Phis ==================================================================
   
   // The rate for the phi coefficient between the lth and mth datasets.
@@ -171,6 +179,9 @@ public:
   // Sample from the prior distribution of parameters at the global level, i.e.
   // phis and gammas (arguably v and Z too)
   void sampleFromGlobalPriors();
+  vec samplePhiPrior(uword n_phis);
+  double sampleWeightPrior(uword l);
+  vec sampleMassPrior();
   
   // Calculate the upweight due to matching labels across views (a function of 
   // phis)
