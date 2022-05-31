@@ -79,10 +79,11 @@ void categorical::sampleFromPriors() {
   for(uword p = 0; p < P; p++) {
     for(uword ii = 0; ii < n_cat(p); ii++) {
       for(uword k = 0; k < K; k++) {
-        category_probabilities(p).row(ii) = arma::randg(
-          K,
-          arma::distr_param(cat_prior_probability(p)(ii), 1.0)
-        ).t();
+        category_probabilities(p).row(ii) = rGamma(K, cat_prior_probability(p)(ii), 1.0).t();
+        //   arma::randg(
+        //   K,
+        //   arma::distr_param(cat_prior_probability(p)(ii), 1.0)
+        // ).t();
       }
     }
   }
@@ -109,10 +110,11 @@ void categorical::sampleKthComponentParameters(
       
       concentration_n = cat_prior_probability(p)(ii) + cat_count;
       
-      category_probabilities(p).row(ii) = arma::randg(
-        K, 
-        arma::distr_param(concentration_n, 1.0)
-      ).t();
+      category_probabilities(p).row(ii) = rGamma(K, concentration_n, 1.0).t();
+      // arma::randg(
+      //   K, 
+      //   arma::distr_param(concentration_n, 1.0)
+      // ).t();
     }
   }
 }

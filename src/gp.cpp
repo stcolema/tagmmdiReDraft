@@ -544,7 +544,8 @@ void gp::sampleLength(
 };
 
 double gp::proposeNewNonNegativeValue(double x, double window) {
-  return randg( distr_param( x * window, 1.0 / window) );
+  return rGamma(x * window, window);
+  // return randg( distr_param( x * window, 1.0 / window) );
   // return std::exp(std::log(x) + randn() * window);
 }
 

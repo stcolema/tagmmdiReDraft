@@ -9,23 +9,43 @@ using namespace arma ;
 //' @title The Inverse Gamma Distribution
 //' @description Random generation from the inverse Gamma distribution.
 //' @param shape Shape parameter.
-//' @param scale Scale parameter.
-//' @return Sample from invGamma(shape, scale).
-double rInvGamma(double shape, double scale) {
-  double x = arma::randg( distr_param(shape, scale) );
+//' @param rate Rate parameter.
+//' @return Sample from invGamma(shape, rate).
+double rInvGamma(double shape, double rate) {
+  double x = arma::randg( distr_param(shape, 1.0 / rate) );
   return (1 / x);
-}
+};
 
 //' @title The Inverse Gamma Distribution
 //' @description Random generation from the inverse Gamma distribution.
 //' @param N Number of samples to draw.
 //' @param shape Shape parameter.
-//' @param scale Scale parameter.
-//' @return Sample from invGamma(shape, scale).
-arma::vec rInvGamma(uword N, double shape, double scale) {
-  vec x = arma::randg(N, distr_param(shape, scale) );
+//' @param rate Rate parameter.
+//' @return Sample from invGamma(shape, rate).
+arma::vec rInvGamma(uword N, double shape, double rate) {
+  vec x = arma::randg(N, distr_param(shape, 1.0 / rate) );
   return (1 / x);
-}
+};
+
+//' @title The Gamma Distribution
+//' @description Random generation from the Gamma distribution.
+//' @param shape Shape parameter.
+//' @param rate Rate parameter.
+//' @return Sample from Gamma(shape, rate).
+double rGamma(double shape, double rate) {
+  return arma::randg( distr_param(shape, 1.0 / rate) );
+};
+
+//' @title The Gamma Distribution
+//' @description Random generation from the Gamma distribution.
+//' @param N Number of samples to draw.
+//' @param shape Shape parameter.
+//' @param rate Rate parameter.
+//' @return N samples from Gamma(shape, rate).
+arma::vec rGamma(uword N, double shape, double rate) {
+  return arma::randg(N, distr_param(shape, 1.0 / rate) );
+};
+
 
 //' @title The Half-Cauchy Distribution
 //' @description Random generation from the Half-Cauchy distribution.
@@ -41,7 +61,7 @@ double rHalfCauchy(double mu, double scale) {
   }
   y = rInvGamma(0.5, 0.5 * std::pow(scale, 2.0));
   return mu + x * std::sqrt(y);
-}
+};
 
 //' @title The Half-Cauchy Distribution
 //' @description Random generation from the Half-Cauchy distribution.
@@ -60,7 +80,7 @@ arma::vec rHalfCauchy(uword N, arma::vec mu, double scale) {
   }
   y = rInvGamma(N, 0.5, 0.5 * std::pow(scale, 2.0));
   return mu + x * arma::sqrt(y);
-}
+};
 
 //' @title The Half-Cauchy Distribution
 //' @description Calculates the pdf of the Half-Cauchy distribution for value x.
@@ -83,7 +103,7 @@ double pHalfCauchy(double x, double mu, double scale, bool logValue) {
   } else {
     return 2 / (M_PI * scale * denom);
   }
-}
+};
 
 double pHalfCauchy(double x, double mu, double scale) {
   double denom = 0.0;
@@ -93,7 +113,7 @@ double pHalfCauchy(double x, double mu, double scale) {
   }
   denom = 2.0 * std::log((x - mu) / scale);
   return log(2) - log(M_PI) - log(scale) - denom;
-}
+};
 
 //' @title The Beta Distribution
 //' @description Random generation from the Beta distribution.
@@ -108,7 +128,7 @@ double rBeta(double a, double b) { // double theta = 1.0) {
   double Y = arma::randg( arma::distr_param(b, 1.0) );
   double beta = X / (double)(X + Y);
   return(beta);
-}
+};
 
 //' @title The Beta Distribution
 //' @description Random generation from the Beta distribution.
@@ -124,7 +144,7 @@ arma::vec rBeta(arma::uword n, double a, double b) {
   arma::vec Y = arma::randg(n, arma::distr_param(b, 1.0) );
   arma::vec beta = X / (X + Y);
   return(beta);
-}
+};
 
 //' @title Calculate sample covariance
 //' @description Returns the unnormalised sample covariance. Required as
@@ -151,7 +171,7 @@ arma::mat calcSampleCov(arma::mat data,
     sample_covariance = data.t() * data;
   }
   return sample_covariance;
-}
+};
 
 //' @title Metropolis acceptance step
 //' @description Given a probaility, randomly accepts by sampling from a uniform 
@@ -189,4 +209,4 @@ bool doubleApproxEqual(double x, double y, double precision) {
 vec sampleMean(arma::mat X) {
   mat mu_t = mean(X);
   return mu_t.row(0).t();
-}
+};
