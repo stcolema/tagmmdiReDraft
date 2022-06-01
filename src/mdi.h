@@ -38,9 +38,9 @@ public:
     v = 0.0,
     
     // Prior hyperparameters for view mass components
-    mass_proposal_window = 0.1,
+    mass_proposal_window = 75,
     mass_shape_prior = 2.0,
-    mass_rate_prior = 0.25,
+    mass_rate_prior = 0.1,
   
     // Prior hyperparameters for component weights
     w_shape_prior = 2.0,
