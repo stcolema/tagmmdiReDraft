@@ -18,7 +18,10 @@ using namespace arma ;
 //' @param x Current value to be proposed
 //' @param window The proposal window
 //' @return new double
-double proposeNewNonNegativeValue(double x, double window, bool use_log_norm = false);
+double proposeNewNonNegativeValue(double x, double window, 
+  bool use_log_norm = false,
+  double tolerance = 1e-6
+);
 
 //' @title The Inverse Gamma Distribution
 //' @description Random generation from the inverse Gamma distribution.

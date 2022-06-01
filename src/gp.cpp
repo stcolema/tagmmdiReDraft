@@ -498,7 +498,12 @@ void gp::sampleLength(
     first_product_repeated(P, n_k * P),
     final_product(P, P);
   
-  new_length = proposeNewNonNegativeValue(length(k), length_proposal_window);
+  new_length = proposeNewNonNegativeValue(
+    length(k), 
+    length_proposal_window,
+    use_log_norm_proposal
+  );
+  
   // new_length = std::exp(std::log(length(k) + randn() * length_proposal_window));
   if(new_length < 1e-2) {
     return;
@@ -572,7 +577,11 @@ void gp::sampleAmplitude(
     first_product_repeated(P, n_k * P),
     final_product(P, P);
   
-  new_amplitude = proposeNewNonNegativeValue(amplitude(k), amplitude_proposal_window);
+  new_amplitude = proposeNewNonNegativeValue(
+    amplitude(k), 
+    amplitude_proposal_window,
+    use_log_norm_proposal
+  );
     // std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
   if(new_amplitude < 1.0e-2) {
     return;
@@ -665,7 +674,11 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data) {
       old_score = 0.0,
       new_noise = 0.0;
 
-  new_noise = proposeNewNonNegativeValue(noise(k), noise_proposal_window);
+  new_noise = proposeNewNonNegativeValue(
+    noise(k), 
+    noise_proposal_window,
+    use_log_norm_proposal
+  );
   
   if(new_noise < 1.0e-2) {
     return;

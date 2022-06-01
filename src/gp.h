@@ -40,19 +40,19 @@ class gp : virtual public density
   
 public:
   
-  bool logNormPriorUsed = true;
+  bool logNormPriorUsed = true, use_log_norm_proposal = true;
   uword sampleHypersFrequency = 5, samplingCount = 0;
   
   double
     
     kernel_subblock_threshold = 1e-5,
     
-    // amplitude_proposal_window = 0.02, 
-    // length_proposal_window = 0.02, 
-    // noise_proposal_window = 0.02;
-    amplitude_proposal_window = 75,
-    length_proposal_window = 75, 
-    noise_proposal_window = 75;
+    amplitude_proposal_window = 0.025,
+    length_proposal_window = 0.025,
+    noise_proposal_window = 0.025;
+    // amplitude_proposal_window = 75,
+    // length_proposal_window = 75, 
+    // noise_proposal_window = 75;
   
   uvec t_inds, density_non_outliers,
     

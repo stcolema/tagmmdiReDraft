@@ -28,6 +28,8 @@ private:
   
 public:
   
+  bool use_log_norm_proposal = true;
+  
   uword N, L, K_max, K_prod, K_to_the_L, n_combinations, LC2 = 1;
 
   double 
@@ -38,7 +40,7 @@ public:
     v = 0.0,
     
     // Prior hyperparameters for view mass components
-    mass_proposal_window = 75,
+    mass_proposal_window = 0.025,
     mass_shape_prior = 2.0,
     mass_rate_prior = 0.1,
   

@@ -772,9 +772,12 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
   current_weights = w.col(l);
   current_mass = mass(l);
   cur_log_likelihood = -gammaLogLikelihood(current_weights, current_mass / K(l), 1);
-  cur_log_prior = -gammaLogLikelihood(current_weights, mass_shape_prior, mass_rate_prior);
+  cur_log_prior = -gammaLogLikelihood(current_mass, mass_shape_prior, mass_rate_prior);
   
-  proposed_mass = proposeNewNonNegativeValue(current_mass, mass_proposal_window); // current_mass + randn() * mass_proposal_window;
+  proposed_mass = proposeNewNonNegativeValue(current_mass,
+    mass_proposal_window, 
+    use_log_norm_proposal
+  ); // current_mass + randn() * mass_proposal_window;
   if(proposed_mass <= 0.0) {
     acceptance_ratio = 0.0;
   } else {

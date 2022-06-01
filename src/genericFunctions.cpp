@@ -11,16 +11,26 @@ using namespace arma ;
 //' @param x Current value to be proposed
 //' @param window The proposal window
 //' @return new double
-double proposeNewNonNegativeValue(double x, double window, bool use_log_norm) {
+double proposeNewNonNegativeValue(double x, double window, 
+    bool use_log_norm,
+    double tolerance
+  ) {
+  bool value_below_tolerance = false;
   double proposed_value = 0.0;
   if(use_log_norm) {
     proposed_value = std::exp(std::log(x) + randn() * window);
   } else {
     proposed_value = rGamma(x * window, window);
   }
+  
+  // If the value is too small (normally close to 0 or negative somehow)
+  value_below_tolerance = (proposed_value < tolerance);
+  if(value_below_tolerance) {
+    proposed_value = proposeNewNonNegativeValue(x, window, use_log_norm, tolerance);
+  }
+  
   return proposed_value;
 };
-
 
 //' @title The Inverse Gamma Distribution
 //' @description Random generation from the inverse Gamma distribution.
