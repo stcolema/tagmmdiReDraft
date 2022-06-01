@@ -114,7 +114,7 @@ void categorical::sampleKthComponentParameters(
       
       concentration_n = cat_prior_probability(p)(ii) + cat_count;
       
-      category_probabilities(ii, k, p) = rGamma(concentration_n, 1.0);
+      category_probabilities(p)(ii, k) = rGamma(concentration_n, 1.0);
       // arma::randg(
       //   K, 
       //   arma::distr_param(concentration_n, 1.0)
