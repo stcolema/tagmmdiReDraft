@@ -132,7 +132,7 @@ public:
   void sampleParameters(arma::umat members, arma::uvec non_outliers);
   
   
-  double proposeNewNonNegativeValue(double x, double window);
+  // double proposeNewNonNegativeValue(double x, double window);
   double hyperParameterLogKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde, bool logNorm = false);
   void sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
   void sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);

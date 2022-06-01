@@ -6,6 +6,22 @@
 using namespace Rcpp ;
 using namespace arma ;
 
+//' @title Propose new non-negative value
+//' @description Propose new non-negative for sampling.
+//' @param x Current value to be proposed
+//' @param window The proposal window
+//' @return new double
+double proposeNewNonNegativeValue(double x, double window, bool use_log_norm) {
+  double proposed_value = 0.0;
+  if(use_log_norm) {
+    proposed_value = std::exp(std::log(x) + randn() * window);
+  } else {
+    proposed_value = rGamma(x * window, window);
+  }
+  return proposed_value;
+};
+
+
 //' @title The Inverse Gamma Distribution
 //' @description Random generation from the inverse Gamma distribution.
 //' @param shape Shape parameter.

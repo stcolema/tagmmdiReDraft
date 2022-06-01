@@ -13,6 +13,12 @@ using namespace arma ;
 // =============================================================================
 // a set of functions used in a few different places
 
+//' @title Propose new non-negative value
+//' @description Propose new non-negative for sampling.
+//' @param x Current value to be proposed
+//' @param window The proposal window
+//' @return new double
+double proposeNewNonNegativeValue(double x, double window, bool use_log_norm = false);
 
 //' @title The Inverse Gamma Distribution
 //' @description Random generation from the inverse Gamma distribution.
