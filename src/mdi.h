@@ -45,7 +45,7 @@ public:
     mass_rate_prior = 0.1,
   
     // Prior hyperparameters for component weights
-    w_shape_prior = 2.0,
+    // w_shape_prior = 2.0,
     w_rate_prior = 2.0,
     
     // Prior hyperparameters for MDI phi parameters

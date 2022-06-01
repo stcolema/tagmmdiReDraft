@@ -771,8 +771,8 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
   vec current_weights;
   current_weights = w.col(l);
   current_mass = mass(l);
-  cur_log_likelihood = -gammaLogLikelihood(current_weights, current_mass / K(l), 1);
-  cur_log_prior = -gammaLogLikelihood(current_mass, mass_shape_prior, mass_rate_prior);
+  cur_log_likelihood = gammaLogLikelihood(current_weights, current_mass / K(l), 1);
+  cur_log_prior = gammaLogLikelihood(current_mass, mass_shape_prior, mass_rate_prior);
   
   proposed_mass = proposeNewNonNegativeValue(current_mass,
     mass_proposal_window, 
@@ -781,10 +781,15 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
   if(proposed_mass <= 0.0) {
     acceptance_ratio = 0.0;
   } else {
-    new_log_likelihood = -gammaLogLikelihood(current_weights, proposed_mass / K(l), 1);
-    new_log_prior = -gammaLogLikelihood(proposed_mass,  mass_shape_prior, mass_rate_prior);
+    new_log_likelihood = gammaLogLikelihood(current_weights, proposed_mass / K(l), 1);
+    new_log_prior = gammaLogLikelihood(proposed_mass,  mass_shape_prior, mass_rate_prior);
     
-    acceptance_ratio = exp(-new_log_likelihood - new_log_prior + cur_log_likelihood + cur_log_prior);
+    acceptance_ratio = exp(
+      new_log_likelihood
+      + new_log_prior 
+      - cur_log_likelihood 
+      - cur_log_prior
+    );
   }
   accepted = randu() < acceptance_ratio;
   if(accepted) {
