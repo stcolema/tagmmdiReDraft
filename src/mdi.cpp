@@ -791,7 +791,9 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
       - cur_log_prior
     );
   }
-  accepted = randu() < acceptance_ratio;
+  
+  accepted = (randu() < acceptance_ratio);
+  
   if(accepted) {
     mass(l) = proposed_mass;
   }
