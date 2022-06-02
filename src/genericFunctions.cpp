@@ -172,32 +172,6 @@ arma::vec rBeta(arma::uword n, double a, double b) {
   return(beta);
 };
 
-//' @title Calculate sample covariance
-//' @description Returns the unnormalised sample covariance. Required as
-//' arma::cov() does not work for singletons.
-//' @param data Data in matrix format
-//' @param sample_mean Sample mean for data
-//' @param n The number of samples in data
-//' @param n_col The number of columns in data
-//' @return One of the parameters required to calculate the posterior of the
-//'  Multivariate normal with uknown mean and covariance (the unnormalised
-//'  sample covariance).
-arma::mat calcSampleCov(arma::mat data,
-                        arma::vec sample_mean,
-                        arma::uword N,
-                        arma::uword P
-) {
-
-  mat sample_covariance = zeros<mat>(P, P);
-
-  // If n > 0 (as this would crash for empty clusters), and for n = 1 the
-  // sample covariance is 0
-  if(N > 1){
-    data.each_row() -= sample_mean.t();
-    sample_covariance = data.t() * data;
-  }
-  return sample_covariance;
-};
 
 //' @title Metropolis acceptance step
 //' @description Given a probaility, randomly accepts by sampling from a uniform 
@@ -235,4 +209,31 @@ bool doubleApproxEqual(double x, double y, double precision) {
 vec sampleMean(arma::mat X) {
   mat mu_t = mean(X);
   return mu_t.row(0).t();
+};
+
+//' @title Calculate sample covariance
+//' @description Returns the unnormalised sample covariance. Required as
+//' arma::cov() does not work for singletons.
+//' @param data Data in matrix format
+//' @param sample_mean Sample mean for data
+//' @param n The number of samples in data
+//' @param n_col The number of columns in data
+//' @return One of the parameters required to calculate the posterior of the
+//'  Multivariate normal with uknown mean and covariance (the unnormalised
+//'  sample covariance).
+arma::mat calcSampleCov(arma::mat data,
+                        arma::vec sample_mean,
+                        arma::uword N,
+                        arma::uword P
+) {
+  
+  mat sample_covariance = zeros<mat>(P, P);
+  
+  // If n > 0 (as this would crash for empty clusters), and for n = 1 the
+  // sample covariance is 0
+  if(N > 1){
+    data.each_row() -= sample_mean.t();
+    sample_covariance = data.t() * data;
+  }
+  return sample_covariance;
 };
