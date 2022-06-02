@@ -744,14 +744,15 @@ void mdiModelAlt::sampleFromGlobalPriors() {
 };
 
 void mdiModelAlt::updateMassParameters() {
-  std::for_each(
-    std::execution::par,
-    L_inds.begin(),
-    L_inds.end(),
-    [&](uword l) {
+  for(uword l = 0; l < L; l++) {
+  // std::for_each(
+  //   std::execution::par,
+  //   L_inds.begin(),
+  //   L_inds.end(),
+  //   [&](uword l) {
       updateMassParameterViewL(l);
     }
-  );
+  // );
 }
 
 void mdiModelAlt::updateMassParameterViewL(uword l) {
@@ -768,8 +769,9 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
     
     acceptance_ratio = 0.0;
   
-  vec current_weights;
-  current_weights = w.col(l);
+  vec current_weights(K(l));
+  
+  current_weights = w(span(0, K(l) - 1), l);
   current_mass = mass(l);
   cur_log_likelihood = gammaLogLikelihood(current_weights, current_mass / K(l), 1);
   cur_log_prior = gammaLogLikelihood(current_mass, mass_shape_prior, mass_rate_prior);
@@ -792,7 +794,7 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
     );
   }
   
-  accepted = (randu() < acceptance_ratio);
+  accepted = metropolisAcceptanceStep(acceptance_ratio);
   
   if(accepted) {
     mass(l) = proposed_mass;
