@@ -69,6 +69,10 @@ mdiModelAlt::mdiModelAlt(
   comb_inds.set_size(K_to_the_L, L);
   comb_inds.zeros();
   
+  // Concentration mass for each view
+  mass.set_size(L);
+  mass.zeros();
+  
   // A weight vector for each dataset. Note that for ease of manipulations we
   // are using K_max and not K(l); this is to avoid ragged fields of vectors.
   w.set_size(K_max, L);
@@ -320,7 +324,6 @@ double mdiModelAlt::calcWeightRate(uword lstar, uword kstar) {
   weight_products.ones(n_used);
   phi_products.ones(n_used);
   
-  
   // The phi products (should be a matrix of 0's and phis)
   phi_prod_mat = relevant_phis.each_col() % phis;
   
@@ -435,12 +438,8 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
     rate = calcWeightRate(l, k);
     
     // Sample a new weight
-    w(k, l) = randg(
-      distr_param(
-        w_shape_prior + shape,
-        1.0 / (w_rate_prior + rate)
-      )
-    );
+    // w(k, l) = rGamma((w_shape_prior / K(l)) + shape, w_rate_prior + rate);
+    w(k, l) = rGamma((mass(l) / K(l)) + shape, w_rate_prior + rate);
     
     // Pass the allocation count down to the mixture
     // (this is used in the parameter sampling)
@@ -604,11 +603,15 @@ void mdiModelAlt::updatePhis() {
       //   Rcpp::Rcout << "\nMDI phi rate reciprocal: " << 1.0 / ( phi_rate_prior + rate );
       // }
       
-      phis(phi_ind_map(m, l)) = randg(distr_param(
-        phi_shape_prior + shape,
-        1.0 / (phi_rate_prior + rate)
-      )
+      phis(phi_ind_map(m, l)) = rGamma(
+        phi_shape_prior + shape, 
+        phi_rate_prior + rate
       );
+      //   randg(distr_param(
+      //   phi_shape_prior + shape,
+      //   1.0 / (phi_rate_prior + rate)
+      // )
+      // );
     }
   }
   //  );
@@ -688,8 +691,8 @@ void mdiModelAlt::sampleStrategicLatentVariable() {
   // if((1 / Z) < 1e-8) {
   //   Rcpp::Rcout << "\n\nNormalising constant very large: " << Z;
   // }
-  
-  v = randg(distr_param(N, 1.0 / Z));
+  v = rGamma(N, Z);
+  // v = randg(distr_param(N, 1.0 / Z));
 }
 
 void mdiModelAlt::sampleFromPriors() {
@@ -708,17 +711,93 @@ void mdiModelAlt::sampleFromLocalPriors() {
   }
 };
 
+
+vec mdiModelAlt::samplePhiPrior(uword n_phis) {
+  return rGamma(n_phis, phi_shape_prior , phi_rate_prior);
+};
+
+double mdiModelAlt::sampleWeightPrior(uword l) {
+  // return rGamma(w_shape_prior / K(l) , w_rate_prior);
+  return rGamma(mass(l) / K(l) , w_rate_prior);
+}
+
+vec mdiModelAlt::sampleMassPrior() {
+  return rGamma(L, mass_shape_prior, mass_rate_prior);
+}
+
 void mdiModelAlt::sampleFromGlobalPriors() {
+  
+  mass = sampleMassPrior();
+  
   if(L > 1) {
-    phis = randg(LC2, distr_param(2.0 , 1.0 / 2));
+    phis = samplePhiPrior(LC2);
+    // phis = randg(LC2, distr_param(2.0 , 1.0 / 2));
   } else {
     phis.ones();
   }
   
   for(uword l = 0; l < L; l++) {
     for(uword k = 0; k < K(l); k++) {
-      w(k, l) = randg(distr_param(1.0 / (double)K(l), 1.0));
+      w(k, l) = sampleWeightPrior(l); // randg(distr_param(1.0 / (double)K(l), 1.0));
     }
+  }
+};
+
+void mdiModelAlt::updateMassParameters() {
+  for(uword l = 0; l < L; l++) {
+  // std::for_each(
+  //   std::execution::par,
+  //   L_inds.begin(),
+  //   L_inds.end(),
+  //   [&](uword l) {
+      updateMassParameterViewL(l);
+    }
+  // );
+}
+
+void mdiModelAlt::updateMassParameterViewL(uword l) {
+  bool accepted = false;
+  double
+    current_mass = 0.0, 
+    proposed_mass = 0.0, 
+    
+    cur_log_likelihood = 0.0,
+    cur_log_prior = 0.0,
+    
+    new_log_likelihood = 0.0,
+    new_log_prior = 0.0,
+    
+    acceptance_ratio = 0.0;
+  
+  vec current_weights(K(l));
+  
+  current_weights = w(span(0, K(l) - 1), l);
+  current_mass = mass(l);
+  cur_log_likelihood = gammaLogLikelihood(current_weights, current_mass / K(l), 1);
+  cur_log_prior = gammaLogLikelihood(current_mass, mass_shape_prior, mass_rate_prior);
+  
+  proposed_mass = proposeNewNonNegativeValue(current_mass,
+    mass_proposal_window, 
+    use_log_norm_proposal
+  ); // current_mass + randn() * mass_proposal_window;
+  if(proposed_mass <= 0.0) {
+    acceptance_ratio = 0.0;
+  } else {
+    new_log_likelihood = gammaLogLikelihood(current_weights, proposed_mass / K(l), 1);
+    new_log_prior = gammaLogLikelihood(proposed_mass,  mass_shape_prior, mass_rate_prior);
+    
+    acceptance_ratio = exp(
+      new_log_likelihood
+      + new_log_prior 
+      - cur_log_likelihood 
+      - cur_log_prior
+    );
+  }
+  
+  accepted = metropolisAcceptanceStep(acceptance_ratio);
+  
+  if(accepted) {
+    mass(l) = proposed_mass;
   }
 };
 

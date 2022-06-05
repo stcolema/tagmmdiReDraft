@@ -13,12 +13,52 @@ using namespace arma ;
 // =============================================================================
 // a set of functions used in a few different places
 
+//' @title Propose new non-negative value
+//' @description Propose new non-negative for sampling.
+//' @param x Current value to be proposed
+//' @param window The proposal window
+//' @return new double
+double proposeNewNonNegativeValue(double x, double window, 
+  bool use_log_norm = false,
+  double tolerance = 1e-6
+);
+
 //' @title The Inverse Gamma Distribution
 //' @description Random generation from the inverse Gamma distribution.
 //' @param shape Shape parameter.
-//' @param scale Scale parameter.
-//' @return Sample from invGamma(shape, scale).
-double rInvGamma(double shape, double scale);
+//' @param rate Rate parameter.
+//' @return Sample from invGamma(shape, rate).
+double rInvGamma(double shape, double rate);
+
+//' @title The Inverse Gamma Distribution
+//' @description Random generation from the inverse Gamma distribution.
+//' @param N Number of samples to draw.
+//' @param shape Shape parameter.
+//' @param rate Rate parameter.
+//' @return Sample from invGamma(shape, rate).
+arma::vec rInvGamma(uword N, double shape, double rate);
+
+//' @title The Gamma Distribution
+//' @description Random generation from the Gamma distribution.
+//' @param shape Shape parameter.
+//' @param rate Rate parameter.
+//' @return Sample from Gamma(shape, rate).
+double rGamma(double shape, double rate);
+
+//' @title The Gamma Distribution
+//' @description Random generation from the Gamma distribution.
+//' @param N Number of samples to draw.
+//' @param shape Shape parameter.
+//' @param rate Rate parameter.
+//' @return N samples from Gamma(shape, rate).
+arma::vec rGamma(uword N, double shape, double rate);
+
+// //' @title The Inverse Gamma Distribution
+// //' @description Random generation from the inverse Gamma distribution.
+// //' @param shape Shape parameter.
+// //' @param scale Scale parameter.
+// //' @return Sample from invGamma(shape, scale).
+// double rInvGamma(double shape, double scale);
 
 //' @title The Half-Cauchy Distribution
 //' @description Random generation from the Half-Cauchy distribution.
@@ -93,7 +133,20 @@ bool metropolisAcceptanceStep(double acceptance_prob);
 // [[Rcpp::export]]
 double squaredExponentialFunction(double amplitude, double length, arma::uword i, arma::uword j);
 
+//' @title Double approximately equal
+//' @description Compare two doubles in a way that makes sense.
+//' @param x first double considered
+//' @param y double compared to x
+//' @param precision double of the tolerance of disagreement between x and y.
+//' @return bool indicating if the absolute difference between x and y is less 
+//' than precision.
 bool doubleApproxEqual(double x, double y, double precision = 0.000002);
 
-#endif /* GENFUN_H */
 
+//' @title Sample mean
+//' @description calculate the sample mean of a matrix X.
+//' @param X Matrix
+//' @return Vector of the column means of X.
+vec sampleMean(arma::mat X);
+
+#endif /* GENFUN_H */

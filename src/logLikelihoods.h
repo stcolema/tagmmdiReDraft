@@ -9,18 +9,26 @@
 # include <RcppArmadillo.h>
 
 // =============================================================================
-  // Log-likelihood functions used in Metropolis-hastings
-
+  
 //' @title Gamma log-likelihood
 //' @description Used in calculating model probability in Metropolis-Hastings 
 //' algorithm when proposals are from the Gamma distribution.
-//' @param x - double; the value to calculate the unnormalised likelihood of.
+//' @param x - double; the value to calculate the likelihood of.
 //' @param shape - double; the shape of the Gamma distribution.
 //' @param rate - double; the rate of the Gamma distribution
-//' @return the unnormalised log-likelihood of x in a Gamma with parameters shape 
+//' @return the log-likelihood of x in a Gamma with parameters shape 
 //' and rate.
 // [[Rcpp::export]]
 double gammaLogLikelihood(double x, double shape, double rate);
+
+//' @title Gamma log-likelihood
+//' @description The log-likelihood of each element of a vector in a Gamma 
+//' distribution parametrised with a shape and rate.
+//' @param x - vector; the values to calculate the likelihood of.
+//' @param shape - double; the shape of the Gamma distribution.
+//' @param rate - double; the rate of the Gamma distribution
+//' @return the log-likelihood of x in a Gamma with parameters shape and rate.
+double gammaLogLikelihood(arma::vec x, double shape, double rate);
 
 //' @title Inverse gamma log-likelihood
 //' @description Used in calculating model probability in Metropolis-Hastings 

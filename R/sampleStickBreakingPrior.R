@@ -7,7 +7,7 @@
 #' weights <- stickBreakingPrior(1, 50)
 #' @importFrom stats rbeta
 sampleStickBreakingPrior <- function(alpha, K) {
-  v <- stats::rbeta(K, alpha, 1)
+  v <- stats::rbeta(K, 1, alpha)
   stick <- 1
   w <- rep(0, K)
   

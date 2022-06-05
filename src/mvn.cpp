@@ -123,12 +123,8 @@ arma::vec mvn::itemLogLikelihood(arma::vec item) {
   
   for(arma::uword k = 0; k < K; k++){
     
-    // The exponent part of the MVN pdf
-    dist_to_mean = item - mu.col(k);
-    exponent = arma::as_scalar(dist_to_mean.t() * cov_inv.slice(k) * dist_to_mean);
-    
     // Normal log likelihood
-    ll(k) = -0.5 *(cov_log_det(k) + exponent + (double) P * log(2.0 * M_PI));
+    ll(k) = logLikelihood(item, k);
   }
   return(ll);
 };
@@ -150,61 +146,6 @@ double mvn::logLikelihood(arma::vec item, arma::uword k) {
   return(ll);
 };
 void mvn::sampleParameters(arma::umat members, arma::uvec non_outliers) {
-  
-  // arma::uword n_k = 0;
-  // uvec rel_inds;
-  // arma::vec mu_n(P), sample_mean(P);
-  // arma::mat sample_cov(P, P), dist_from_prior(P, P), scale_n(P, P);
-  // mat arma_cov(P, P);
-  // 
-  // for (arma::uword k = 0; k < K; k++) {
-  //   
-  //   // Find the items relevant to sampling the parameters
-  //   rel_inds = find((members.col(k) == 1) && (non_outliers == 1));
-  //   
-  //   // Find how many labels have the value
-  //   n_k = rel_inds.n_elem;
-  //   
-  //   if(n_k > 0){
-  //     
-  //     // Component data
-  //     arma::mat component_data = X.rows( rel_inds ) ;
-  //     
-  //     // Sample mean in the component data
-  //     sample_mean = mean(component_data).t();
-  //     
-  //     // Sample covariance times its degree of freedom
-  //     sample_cov = calcSampleCov(component_data, sample_mean, n_k, P);
-  //     // arma_cov = (n_k - 1) * arma::cov(component_data);
-  //     
-  //     // Calculate the distance of the sample mean from the prior
-  //     dist_from_prior = (sample_mean - xi) * (sample_mean - xi).t();
-  //     
-  //     // Update the scale hyperparameter
-  //     scale_n = scale + sample_cov + ((kappa * n_k) / (double) (kappa + n_k)) * dist_from_prior;
-  //     
-  //     // Sample a new covariance matrix
-  //     cov.slice(k) = iwishrnd(scale_n, nu + n_k);
-  //     
-  //     // The weighted average of the prior mean and sample mean
-  //     mu_n = (kappa * xi + n_k * sample_mean) / (double)(kappa + n_k);
-  //     
-  //     // Sample a new mean vector
-  //     mu.col(k) = mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k), 1);
-  //     
-  //   } else{
-  //     
-  //     // If no members in the component, draw from the prior distribution
-  //     cov.slice(k) = iwishrnd(scale, nu);
-  //     mu.col(k) = mvnrnd(xi, (1.0 / (double) kappa) * cov.slice(k), 1);
-  //     
-  //   }
-  //   
-  //   // Save the inverse and log determinant of the new covariance matrices
-  //   cov_inv.slice(k) = inv_sympd(cov.slice(k));
-  //   cov_log_det(k) = log_det(cov.slice(k)).real();
-  //   
-  // }
   
   // for(uword k = 0; k < K; k++) {
   std::for_each(
@@ -229,7 +170,7 @@ void mvn::sampleKthComponentParameters(
   arma::uword n_k = 0;
   uvec rel_inds;
   arma::vec mu_n(P), sample_mean(P);
-  arma::mat sample_cov(P, P), dist_from_prior(P, P), scale_n(P, P);
+  arma::mat sample_cov(P, P), dist_from_prior(P, P), scale_n(P, P), component_data;
   mat arma_cov(P, P);
   
   // Find the items relevant to sampling the parameters
@@ -241,10 +182,10 @@ void mvn::sampleKthComponentParameters(
   if(n_k > 0){
     
     // Component data
-    arma::mat component_data = X.rows( rel_inds ) ;
+    component_data = X.rows( rel_inds ) ;
   
     // Sample mean in the component data
-    sample_mean = mean(component_data).t();
+    sample_mean = sampleMean(component_data);
     
     // Sample covariance times its degree of freedom
     sample_cov = calcSampleCov(component_data, sample_mean, n_k, P);
@@ -256,13 +197,6 @@ void mvn::sampleKthComponentParameters(
     // Update the scale hyperparameter
     scale_n = scale + sample_cov + ((kappa * n_k) / (double) (kappa + n_k)) * dist_from_prior;
     
-    // Rcpp::Rcout << "\n\nSample cov:\n" << sample_cov;
-    // Rcpp::Rcout << "\n\nkappa: " << kappa;
-    // Rcpp::Rcout << "\nn_k: " << n_k;
-    // Rcpp::Rcout << "\n\nDistance from prior:\n" << dist_from_prior;
-    // Rcpp::Rcout << "\n\nScale_n:\n" << scale_n;
-    // Rcpp::Rcout << "\n\nDegrees of freedom: " << nu + n_k;
-    
     // Sample a new covariance matrix
     cov.slice(k) = iwishrnd(scale_n, nu + n_k);
     
@@ -270,13 +204,13 @@ void mvn::sampleKthComponentParameters(
     mu_n = (kappa * xi + n_k * sample_mean) / (double)(kappa + n_k);
     
     // Sample a new mean vector
-    mu.col(k) = mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k), 1);
+    mu.col(k) = mvnrnd(mu_n, (1.0 / (double) (kappa + n_k)) * cov.slice(k));
     
   } else{
     
     // If no members in the component, draw from the prior distribution
     cov.slice(k) = iwishrnd(scale, nu);
-    mu.col(k) = mvnrnd(xi, (1.0 / (double) kappa) * cov.slice(k), 1);
+    mu.col(k) = mvnrnd(xi, (1.0 / (double) kappa) * cov.slice(k));
     
   }
 

@@ -6,6 +6,8 @@
 
 // =============================================================================
 // included dependencies
+// #define ARMA_WARN_LEVEL 1 // Turn off warnings that occur due to point errors.
+
 # include <RcppArmadillo.h>
 # include "density.h"
 # include "genericFunctions.h"
@@ -38,19 +40,19 @@ class gp : virtual public density
   
 public:
   
-  bool logNormPriorUsed = true;
+  bool logNormPriorUsed = true, use_log_norm_proposal = true;
   uword sampleHypersFrequency = 5, samplingCount = 0;
   
   double
     
     kernel_subblock_threshold = 1e-5,
     
-    // amplitude_proposal_window = 0.02, 
-    // length_proposal_window = 0.02, 
-    // noise_proposal_window = 0.02;
-    amplitude_proposal_window = 75,
-    length_proposal_window = 75, 
-    noise_proposal_window = 75;
+    amplitude_proposal_window = 0.025,
+    length_proposal_window = 0.025,
+    noise_proposal_window = 0.025;
+    // amplitude_proposal_window = 75,
+    // length_proposal_window = 75, 
+    // noise_proposal_window = 75;
   
   uvec t_inds, density_non_outliers,
     
@@ -109,63 +111,28 @@ public:
   void sampleHyperParameters();
   mat calculateKthComponentKernelSubBlock(double amplitude, double length);
   void calculateKernelSubBlock();
-  // void constructCovarianceMatrix(uword n_k, uword k);
   mat constructCovarianceMatrix(uword n_k, mat kernel_sub_block);
-  // double componentCovarianceDeterminant(uword k, uword n_k);
-  // arma::mat calculateCovarianceKernel(arma::uvec t_inds);
   mat invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block);
-  // mat invertComponentCovariance(uword k, uword n_k);
-  // double componentCovarianceLogDeterminant(uword k, uword n_k);
-  // void calculateInverseCovariance(umat members, uvec non_outliers);
-  
-  // Sample and calulcate objects related to sampling the mean posterior function
-  // vec posteriorMeanParameter(uword k, uword n_k, vec data);
-  vec posteriorMeanParameter(
-      vec data,
-      mat covariance_matrix,
-      mat inverse_covariance_matrix
-  );
-  
-  // vec posteriorMeanParameter(
-  //     uword n_k, 
-  //     double noise, 
-  //     mat data, 
-  //     mat inv_cov_mat
-  //   );
-  
-  // mat constructCovMatrixUsingSymmetricBlockProperties(mat C, mat C_inv, uword n_k);
-  // 
-  // uvec relevantIndices(uword ii, uword P);
-
   mat smallerInversion(uword n_k, double noise, mat kernel_sub_block);
   mat firstCovProduct(uword n_k, double noise, mat kernel_sub_block);
   mat covCheck(mat C, bool checkSymmetry = false, bool checkStability = true);
-  vec sampleMeanFunction(vec mu_tilde, mat cov_tilde);
-  // mat firstCovProduct(mat A, mat B, uword N);
-  // double blockVectorMultiplication(rowvec a, mat B, uword ii, uword jj, uword N, uword P);
-  // double blockVectorMultiplication(
-  //     rowvec a, 
-  //     mat B, 
-  //     double lambda,
-  //     uword ii, 
-  //     uword jj, 
-  //     uword N, 
-  //     uword P
-  // );
-  // double findLambda(mat B, uword N, bool testLambdas = false);
   
-  // mat posteriorCovarianceParameter(uword k, uword n_k);
-  mat posteriorCovarianceParameter(
-      mat covariance_matrix,
-      mat inverse_covariance_matrix
+  // Sample and calulcate objects related to sampling the mean posterior function
+  vec posteriorMeanParameter(
+      mat data, 
+      mat first_product
   );
+
+  
+  vec sampleMeanFunction(vec mu_tilde, mat cov_tilde);
+  
   void sampleMeanPosterior(uword k, uword n_k, mat data);
   
   void sampleKthComponentParameters(uword k, umat members, uvec non_outliers);
   void sampleParameters(arma::umat members, arma::uvec non_outliers);
   
   
-  double proposeNewNonNegativeValue(double x, double window);
+  // double proposeNewNonNegativeValue(double x, double window);
   double hyperParameterLogKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde, bool logNorm = false);
   void sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
   void sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
