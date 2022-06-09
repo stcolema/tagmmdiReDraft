@@ -286,6 +286,8 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, int n_places) {
   bool not_symmetric = false, not_invertible = false, not_sympd = false;
   vec eigval(P);
   
+  C = roundMatrix(C, n_places);
+  
   // not_sympd = ! C.is_sympd();
   // if(not_sympd) {
   //   Rcpp::Rcout << "\nNot symmetric positive definite.\n";
@@ -330,8 +332,6 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, int n_places) {
       C += small_identity;
     }
   }
-  
-  C = roundMatrix(C, n_places);
   
   return C;
 };
