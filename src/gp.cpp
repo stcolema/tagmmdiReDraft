@@ -406,7 +406,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // Check that the covariance hyperparameter is numerically stable, add some 
   // small value to the diagonal if necessary
-  cov_tilde = covCheck(cov_tilde, false, true, 9);
+  cov_tilde = covCheck(cov_tilde, true, true, 9);
   
   // Rcpp::Rcout << "\n\nCovariance matrix:\n" << cov_tilde;
   
@@ -534,7 +534,7 @@ void gp::sampleLength(
   // new_mu_tilde = first_product_repeated * component_data;
   new_mu_tilde = n_k * first_product * sample_mean;
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(cov_tilde);
+  new_cov_tilde = covCheck(cov_tilde, true, true, 9);
 
   if(rcond(new_cov_tilde) < 1e-3) {
     return;
@@ -610,7 +610,7 @@ void gp::sampleAmplitude(
   new_mu_tilde = n_k * first_product * sample_mean;
   
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(cov_tilde);
+  new_cov_tilde = covCheck(cov_tilde, true, true, 9);
   
   if(rcond(new_cov_tilde) < 1e-3) {
     return;
