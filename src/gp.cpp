@@ -395,7 +395,9 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // Check that the covariance hyperparameter is numerically stable, add some 
   // small value to the diagonal if necessary
-  cov_tilde = covCheck(cov_tilde, false, true, 5);
+  cov_tilde = covCheck(cov_tilde, false, true, 9);
+  
+  Rcpp::Rcout << "\n\nCovariance matrix:\n" << cov_tilde;
   
   mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   
