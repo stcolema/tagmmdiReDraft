@@ -120,7 +120,7 @@ public:
       mat C, 
       bool checkSymmetry = false, 
       bool checkStability = true, 
-      int n_places = 7
+      int n_places = 8
   );
   
   // Sample and calulcate objects related to sampling the mean posterior function
