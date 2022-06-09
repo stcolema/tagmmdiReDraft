@@ -295,16 +295,26 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, int n_places) {
   // be a floating point error, so we hardcode that the matrix is symmetric #
   // based on the uuper right traingle of the calculated covariance martix
   if(checkSymmetry) {
-    not_symmetric = ! C.is_symmetric();
-    if(not_symmetric) {
-      // Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper right triangular matrix.\n";
-      // Rcpp::Rcout << C.submat(0, 0, 4, 4);
-      
-      mat new_cov(P, P), u_cov = trimatu(C, 1);
-      new_cov = u_cov + u_cov.t();
-      new_cov.diag() = C.diag();
-      C = new_cov;
+    
+    mat u_cov = trimatu(C,  1);  // omit the main diagonal
+    mat l_cov = trimatl(C, -1).t();  // omit the main diagonal
+    
+    // not_symmetric = ! C.is_symmetric();
+    bool not_symmetric_my_check = approx_equal(u_cov, l_cov, "reldiff", 0.1);
+    // if(not_symmetric) {
+    //   Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper right triangular matrix.\n";
+    //   Rcpp::Rcout << C.submat(0, 0, 4, 4);
+    //   
+    //   mat new_cov(P, P); // u_cov = trimatu(C, 1);
+    //   new_cov = u_cov + u_cov.t();
+    //   new_cov.diag() = C.diag();
+    //   C = new_cov;
+    // }
+    if(not_symmetric_my_check) {
+      Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper right triangular matrix.\n";
+      Rcpp::Rcout << C.submat(0, 0, 4, 4);
     }
+    
   }
   
   // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
@@ -395,7 +405,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // Check that the covariance hyperparameter is numerically stable, add some 
   // small value to the diagonal if necessary
-  cov_tilde = covCheck(cov_tilde, false, true, 9);
+  cov_tilde = covCheck(cov_tilde, true, true, 7);
   
   Rcpp::Rcout << "\n\nCovariance matrix:\n" << cov_tilde;
   
