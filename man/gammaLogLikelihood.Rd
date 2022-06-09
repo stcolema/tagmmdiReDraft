@@ -7,14 +7,14 @@
 gammaLogLikelihood(x, shape, rate)
 }
 \arguments{
-\item{x}{- double; the value to calculate the unnormalised likelihood of.}
+\item{x}{- double; the value to calculate the likelihood of.}
 
 \item{shape}{- double; the shape of the Gamma distribution.}
 
 \item{rate}{- double; the rate of the Gamma distribution}
 }
 \value{
-the unnormalised log-likelihood of x in a Gamma with parameters shape 
+the log-likelihood of x in a Gamma with parameters shape 
 and rate.
 }
 \description{

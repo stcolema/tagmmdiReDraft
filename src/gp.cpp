@@ -291,8 +291,6 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, int n_places) {
   //   Rcpp::Rcout << "\nNot symmetric positive definite.\n";
   // }
   
-  C = roundMatrix(C, n_places);
-  
   // We can have that the covariance matrix becomes asymetric; this appears to 
   // be a floating point error, so we hardcode that the matrix is symmetric #
   // based on the uuper right traingle of the calculated covariance martix
@@ -322,6 +320,9 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, int n_places) {
       C += small_identity;
     }
   }
+  
+  C = roundMatrix(C, n_places);
+  
   return C;
 };
 
@@ -356,16 +357,16 @@ vec gp::posteriorMeanParameter(
 
 vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   
-  return mvnrnd(mu_tilde, cov_tilde);
+  // return mvnrnd(mu_tilde, cov_tilde);
   
-  // mat chol_cov(P, P),
-  //   stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
-  // 
-  // // if(! cov_tilde.is_sympd()) {
-  // //   Rcpp::Rcout << "\n\nCov tidle is not positive semi-definite.\n";
-  // // }
-  // chol_cov = chol(cov_tilde);
-  // return mu_tilde + chol_cov * stochasticity;
+  mat chol_cov(P, P),
+    stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
+
+  // if(! cov_tilde.is_sympd()) {
+  //   Rcpp::Rcout << "\n\nCov tidle is not positive semi-definite.\n";
+  // }
+  chol_cov = chol(cov_tilde);
+  return mu_tilde + chol_cov * stochasticity;
 };
 
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {

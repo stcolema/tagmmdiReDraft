@@ -5,101 +5,159 @@ runAltMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed
     .Call(`_tagmReDraft_runAltMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed)
 }
 
+#' title Propose new non-negative value
+#' description Propose new non-negative for sampling.
+#' param x Current value to be proposed
+#' param window The proposal window
+#' return new double
+NULL
+
+#' title The Inverse Gamma Distribution
+#' description Random generation from the inverse Gamma distribution.
+#' param shape Shape parameter.
+#' param rate Rate parameter.
+#' return Sample from invGamma(shape, rate).
+NULL
+
+#' title The Inverse Gamma Distribution
+#' description Random generation from the inverse Gamma distribution.
+#' param N Number of samples to draw.
+#' param shape Shape parameter.
+#' param rate Rate parameter.
+#' return Sample from invGamma(shape, rate).
+NULL
+
+#' title The Gamma Distribution
+#' description Random generation from the Gamma distribution.
+#' param shape Shape parameter.
+#' param rate Rate parameter.
+#' return Sample from Gamma(shape, rate).
+NULL
+
+#' title The Gamma Distribution
+#' description Random generation from the Gamma distribution.
+#' param N Number of samples to draw.
+#' param shape Shape parameter.
+#' param rate Rate parameter.
+#' return N samples from Gamma(shape, rate).
+NULL
+
+#' title The Half-Cauchy Distribution
+#' description Random generation from the Half-Cauchy distribution.
+#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+#' param mu Location parameter.
+#' param scale Scale parameter.
+#' return Sample from HalfCauchy(mu, scale).
+NULL
+
+#' title The Half-Cauchy Distribution
+#' description Random generation from the Half-Cauchy distribution.
+#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+#' param N The number of samples to draw
+#' param mu Location parameter.
+#' param scale Scale parameter.
+#' return Sample from HalfCauchy(mu, scale).
+NULL
+
+#' title The Half-Cauchy Distribution
+#' description Calculates the pdf of the Half-Cauchy distribution for value x.
+#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+#' param x Value to calculate the probability density of.
+#' param mu Location parameter.
+#' param scale Scale parameter.
+#' return Sample from HalfCauchy(mu, scale).
+NULL
+
+#' title The Beta Distribution
+#' description Random generation from the Beta distribution.
+#' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.
+#' Samples from a Beta distribution based using two independent gamma
+#' distributions.
+#' param a Shape parameter.
+#' param b Shape parameter.
+#' return Sample from Beta(a, b).
+NULL
+
+#' title The Beta Distribution
+#' description Random generation from the Beta distribution.
+#' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.
+#' Samples from a Beta distribution based using two independent gamma
+#' distributions.
+#' param n The number of samples to draw.
+#' param a Shape parameter.
+#' param b Shape parameter.
+#' return Sample from Beta(a, b).
+NULL
+
+#' title Metropolis acceptance step
+#' description Given a probaility, randomly accepts by sampling from a uniform 
+#' distribution.
+#' param acceptance_prob Double between 0 and 1.
+#' return Boolean indicating acceptance.
+NULL
+
+#' title Squared exponential function
+#' description The squared exponential function as used in a covariance kernel.
+#' param amplitude The amplitude parameter (double)
+#' param length The length parameter (double)
+#' param i Time point (unsigned integer)
+#' param j Time point (unsigned integer)
+#' return Squared exponential metric of (i, j)
+NULL
+
+#' title Sample mean
+#' description calculate the sample mean of a matrix X.
+#' param X Matrix
+#' return Vector of the column means of X.
+NULL
+
+#' title Calculate sample covariance
+#' description Returns the unnormalised sample covariance. Required as
+#' arma::cov() does not work for singletons.
+#' param data Data in matrix format
+#' param sample_mean Sample mean for data
+#' param n The number of samples in data
+#' param n_col The number of columns in data
+#' return One of the parameters required to calculate the posterior of the
+#'  Multivariate normal with uknown mean and covariance (the unnormalised
+#'  sample covariance).
+NULL
+
+#' @title Propose new non-negative value
+#' @description Propose new non-negative for sampling.
+#' @param x Current value to be proposed
+#' @param window The proposal window
+#' @return new double
+NULL
+
 #' @title The Inverse Gamma Distribution
 #' @description Random generation from the inverse Gamma distribution.
 #' @param shape Shape parameter.
-#' @param scale Scale parameter.
-#' @return Sample from invGamma(shape, scale).
+#' @param rate Rate parameter.
+#' @return Sample from invGamma(shape, rate).
 NULL
 
 #' @title The Inverse Gamma Distribution
 #' @description Random generation from the inverse Gamma distribution.
 #' @param N Number of samples to draw.
 #' @param shape Shape parameter.
-#' @param scale Scale parameter.
-#' @return Sample from invGamma(shape, scale).
+#' @param rate Rate parameter.
+#' @return Sample from invGamma(shape, rate).
 NULL
 
-#' @title The Half-Cauchy Distribution
-#' @description Random generation from the Half-Cauchy distribution.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' @param mu Location parameter.
-#' @param scale Scale parameter.
-#' @return Sample from HalfCauchy(mu, scale).
-NULL
-
-#' @title The Half-Cauchy Distribution
-#' @description Random generation from the Half-Cauchy distribution.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' @param N The number of samples to draw
-#' @param mu Location parameter.
-#' @param scale Scale parameter.
-#' @return Sample from HalfCauchy(mu, scale).
-NULL
-
-#' @title The Half-Cauchy Distribution
-#' @description Calculates the pdf of the Half-Cauchy distribution for value x.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' @param x Value to calculate the probability density of.
-#' @param mu Location parameter.
-#' @param scale Scale parameter.
-#' @return Sample from HalfCauchy(mu, scale).
-NULL
-
-#' @title The Beta Distribution
-#' @description Random generation from the Beta distribution.
-#' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.
-#' Samples from a Beta distribution based using two independent gamma
-#' distributions.
-#' @param a Shape parameter.
-#' @param b Shape parameter.
-#' @return Sample from Beta(a, b).
-NULL
-
-#' @title The Beta Distribution
-#' @description Random generation from the Beta distribution.
-#' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.
-#' Samples from a Beta distribution based using two independent gamma
-#' distributions.
-#' @param n The number of samples to draw.
-#' @param a Shape parameter.
-#' @param b Shape parameter.
-#' @return Sample from Beta(a, b).
-NULL
-
-#' @title Calculate sample covariance
-#' @description Returns the unnormalised sample covariance. Required as
-#' arma::cov() does not work for singletons.
-#' @param data Data in matrix format
-#' @param sample_mean Sample mean for data
-#' @param n The number of samples in data
-#' @param n_col The number of columns in data
-#' @return One of the parameters required to calculate the posterior of the
-#'  Multivariate normal with uknown mean and covariance (the unnormalised
-#'  sample covariance).
-NULL
-
-#' @title Metropolis acceptance step
-#' @description Given a probaility, randomly accepts by sampling from a uniform 
-#' distribution.
-#' @param acceptance_prob Double between 0 and 1.
-#' @return Boolean indicating acceptance.
-NULL
-
-#' @title Squared exponential function
-#' @description The squared exponential function as used in a covariance kernel.
-#' @param amplitude The amplitude parameter (double)
-#' @param length The length parameter (double)
-#' @param i Time point (unsigned integer)
-#' @param j Time point (unsigned integer)
-#' @return Boolean indicating acceptance.
-NULL
-
-#' @title The Inverse Gamma Distribution
-#' @description Random generation from the inverse Gamma distribution.
+#' @title The Gamma Distribution
+#' @description Random generation from the Gamma distribution.
 #' @param shape Shape parameter.
-#' @param scale Scale parameter.
-#' @return Sample from invGamma(shape, scale).
+#' @param rate Rate parameter.
+#' @return Sample from Gamma(shape, rate).
+NULL
+
+#' @title The Gamma Distribution
+#' @description Random generation from the Gamma distribution.
+#' @param N Number of samples to draw.
+#' @param shape Shape parameter.
+#' @param rate Rate parameter.
+#' @return N samples from Gamma(shape, rate).
 NULL
 
 #' @title The Half-Cauchy Distribution
@@ -156,6 +214,28 @@ NULL
 #' distribution.
 #' @param acceptance_prob Double between 0 and 1.
 #' @return Boolean indicating acceptance.
+NULL
+
+#' @title Double approximately equal
+#' @description Compare two doubles in a way that makes sense.
+#' @param x first double considered
+#' @param y double compared to x
+#' @param precision double of the tolerance of disagreement between x and y.
+#' @return bool indicating if the absolute difference between x and y is less 
+#' than precision.
+NULL
+
+#' @title Sample mean
+#' @description calculate the sample mean of a matrix X.
+#' @param X Matrix
+#' @return Vector of the column means of X.
+NULL
+
+#' @title Round matrix
+#' @description Round a matrix to n_places decimal places.
+#' @param X Matrix
+#' @param n_places Integer - number of decimal places to round to
+#' @return Matrix X round to n_places decimal places.
 NULL
 
 #' @title Squared exponential function
@@ -168,6 +248,15 @@ NULL
 squaredExponentialFunction <- function(amplitude, length, i, j) {
     .Call(`_tagmReDraft_squaredExponentialFunction`, amplitude, length, i, j)
 }
+
+#' @title Gamma log-likelihood
+#' @description The log-likelihood of each element of a vector in a Gamma 
+#' distribution parametrised with a shape and rate.
+#' @param x - vector; the values to calculate the likelihood of.
+#' @param shape - double; the shape of the Gamma distribution.
+#' @param rate - double; the rate of the Gamma distribution
+#' @return the log-likelihood of x in a Gamma with parameters shape and rate.
+NULL
 
 #' @title Gaussian log-likelihood
 #' @description The log-likelihood function for a point in the univariate 
@@ -182,10 +271,10 @@ NULL
 #' @title Gamma log-likelihood
 #' @description Used in calculating model probability in Metropolis-Hastings 
 #' algorithm when proposals are from the Gamma distribution.
-#' @param x - double; the value to calculate the unnormalised likelihood of.
+#' @param x - double; the value to calculate the likelihood of.
 #' @param shape - double; the shape of the Gamma distribution.
 #' @param rate - double; the rate of the Gamma distribution
-#' @return the unnormalised log-likelihood of x in a Gamma with parameters shape 
+#' @return the log-likelihood of x in a Gamma with parameters shape 
 #' and rate.
 gammaLogLikelihood <- function(x, shape, rate) {
     .Call(`_tagmReDraft_gammaLogLikelihood`, x, shape, rate)
