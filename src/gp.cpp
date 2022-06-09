@@ -373,7 +373,7 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   mat R(P, P), X = mvnrnd(zeros<vec>(P), eye(P, P));
   uvec P_vec(P);
   
-  chol(R, P_vec, X, "upper", "vector");
+  chol(R, P_vec, cov_tilde, "upper", "vector");
   
   // MVN generation using pivoted cholesky decomposition
   return mu_tilde + X * R * P;
