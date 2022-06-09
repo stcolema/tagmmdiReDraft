@@ -149,4 +149,11 @@ bool doubleApproxEqual(double x, double y, double precision = 0.000002);
 //' @return Vector of the column means of X.
 vec sampleMean(arma::mat X);
 
+//' @title Round matrix
+//' @description Round a matrix to n_places decimal places.
+//' @param X Matrix
+//' @param n_places Integer - number of decimal places to round to
+//' @return Matrix X round to n_places decimal places.
+arma::mat roundMatrix(arma::mat X, int n_places = 0);
+
 #endif /* GENFUN_H */

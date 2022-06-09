@@ -115,7 +115,13 @@ public:
   mat invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block);
   mat smallerInversion(uword n_k, double noise, mat kernel_sub_block);
   mat firstCovProduct(uword n_k, double noise, mat kernel_sub_block);
-  mat covCheck(mat C, bool checkSymmetry = false, bool checkStability = true);
+  
+  mat covCheck(
+      mat C, 
+      bool checkSymmetry = false, 
+      bool checkStability = true, 
+      int n_places = 5
+  );
   
   // Sample and calulcate objects related to sampling the mean posterior function
   vec posteriorMeanParameter(

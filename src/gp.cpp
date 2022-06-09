@@ -281,7 +281,7 @@ mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block)
 };
 
 
-mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
+mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, int n_places) {
   
   bool not_symmetric = false, not_invertible = false, not_sympd = false;
   vec eigval(P);
@@ -290,6 +290,8 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
   // if(not_sympd) {
   //   Rcpp::Rcout << "\nNot symmetric positive definite.\n";
   // }
+  
+  C = roundMatrix(C, n_places);
   
   // We can have that the covariance matrix becomes asymetric; this appears to 
   // be a floating point error, so we hardcode that the matrix is symmetric #
@@ -392,7 +394,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // Check that the covariance hyperparameter is numerically stable, add some 
   // small value to the diagonal if necessary
-  cov_tilde = covCheck(cov_tilde, false, true);
+  cov_tilde = covCheck(cov_tilde, false, true, 5);
   
   mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   

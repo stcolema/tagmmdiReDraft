@@ -237,3 +237,8 @@ arma::mat calcSampleCov(arma::mat data,
   }
   return sample_covariance;
 };
+
+arma::mat roundMatrix(arma::mat X, int n_places) {
+  double multiplier = std::pow(10, n_places);
+  return round(X * multiplier) / multiplier;
+}
