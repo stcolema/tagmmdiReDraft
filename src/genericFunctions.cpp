@@ -190,11 +190,11 @@ bool metropolisAcceptanceStep(double acceptance_prob) {
 //' param i Time point (unsigned integer)
 //' param j Time point (unsigned integer)
 //' return Squared exponential metric of (i, j)
-double squaredExponentialFunction(double amplitude, double length, uword i, uword j) {
+double squaredExponentialFunction(double amplitude, double length, int i, int j) {
   // if(i > j) {
   //   return amplitude * std::exp(- std::pow(i - j, 2.0) / length);
   // } 
-  return amplitude * std::exp(- std::pow(j - i, 2.0) / (2.0 * length));
+  return amplitude * std::exp(- std::pow((double) (j - i), 2.0) / (2.0 * length));
 };
 
 bool doubleApproxEqual(double x, double y, double precision) {

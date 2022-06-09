@@ -30,15 +30,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // squaredExponentialFunction
-double squaredExponentialFunction(double amplitude, double length, arma::uword i, arma::uword j);
+double squaredExponentialFunction(double amplitude, double length, int i, int j);
 RcppExport SEXP _tagmReDraft_squaredExponentialFunction(SEXP amplitudeSEXP, SEXP lengthSEXP, SEXP iSEXP, SEXP jSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< double >::type amplitude(amplitudeSEXP);
     Rcpp::traits::input_parameter< double >::type length(lengthSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type i(iSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type j(jSEXP);
+    Rcpp::traits::input_parameter< int >::type i(iSEXP);
+    Rcpp::traits::input_parameter< int >::type j(jSEXP);
     rcpp_result_gen = Rcpp::wrap(squaredExponentialFunction(amplitude, length, i, j));
     return rcpp_result_gen;
 END_RCPP

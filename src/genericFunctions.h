@@ -131,7 +131,7 @@ bool metropolisAcceptanceStep(double acceptance_prob);
 //' @param j Time point (unsigned integer)
 //' @return Boolean indicating acceptance.
 // [[Rcpp::export]]
-double squaredExponentialFunction(double amplitude, double length, arma::uword i, arma::uword j);
+double squaredExponentialFunction(double amplitude, double length, int i, int j);
 
 //' @title Double approximately equal
 //' @description Compare two doubles in a way that makes sense.
