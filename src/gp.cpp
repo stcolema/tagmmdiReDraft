@@ -385,7 +385,8 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   
   eig_sym( eigval, eigvec, cov_tilde );
   
-  eigval_mat.diag() = arma::pow(eigvec, 0.5);
+  
+  eigval_mat.diag() = arma::pow(eigval, 0.5);
   
   return mu_tilde + eigvec * eigval_mat * stochasticity;
   
