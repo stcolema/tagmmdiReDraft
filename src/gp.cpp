@@ -199,7 +199,8 @@ void gp::sampleFromPriors() {
 
 // === Covariance function =====================================================
 
-mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length) {
+mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length,
+                                            double kernel_subblock_threshold) {
   mat sub_block(P, P);
   sub_block.zeros();
   for(uword ii = 0; ii < P; ii++) {
@@ -217,11 +218,11 @@ mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length) {
         jj
       );
       
-      // if(sub_block(ii, jj) < kernel_subblock_threshold) {
-      //   sub_block(ii, jj) = 0.0;
-      //   sub_block(jj, ii) = 0.0;
-      //   break;
-      // }
+      if(sub_block(ii, jj) < kernel_subblock_threshold) {
+        sub_block(ii, jj) = 0.0;
+        sub_block(jj, ii) = 0.0;
+        break;
+      }
       sub_block(jj, ii) = sub_block(ii, jj);
     }
   }
