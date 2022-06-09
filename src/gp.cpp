@@ -370,16 +370,25 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   
   // return mvnrnd(mu_tilde, cov_tilde);
   
-  mat R(P, P), X = mvnrnd(zeros<vec>(P), eye(P, P));
-  uvec P_vec(P);
+  mat chol_cov, stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
+  // uvec P_vec;
   
-  chol(R, P_vec, cov_tilde, "upper", "vector");
+  // chol(chol_cov, P_vec, cov_tilde, "lower", "vector");
   
   // MVN generation using pivoted cholesky decomposition
-  return mu_tilde + X * R * P;
+  // return mu_tilde + stochasticity * chol_cov * P_vec;
   // chol_cov(P, P),
   
-
+  vec eigval;
+  mat eigvec, eigval_mat(P, P);
+  eigval_mat.zeros();
+  
+  eig_sym( eigval, eigvec, cov_tilde );
+  
+  eigval_mat.diag() = arma::pow(eigvec, 0.5);
+  
+  return mu_tilde + eigvec * eigval_mat * stochasticity;
+  
   // if(! cov_tilde.is_sympd()) {
   //   Rcpp::Rcout << "\n\nCov tidle is not positive semi-definite.\n";
   // }
