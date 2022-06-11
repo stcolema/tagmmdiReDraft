@@ -67,9 +67,9 @@ double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma) {
   // }
   return -0.5 * (
      log(2 * M_PI) 
-     + arma::log_det_sympd(Sigma) 
+     + arma::log_det(Sigma).real() 
      + arma::as_scalar(
-         (x - mu).t() * arma::inv_sympd(Sigma) * (x - mu) 
+         (x - mu).t() * arma::inv(Sigma) * (x - mu) 
        )
     );
 }
