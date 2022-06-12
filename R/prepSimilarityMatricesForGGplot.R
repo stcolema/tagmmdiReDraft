@@ -11,6 +11,13 @@
 #' entry for geom_tile()), `y` (the y-axis position of the entry for 
 #' geom_tile()), `Entry` (value in similarity  matrix) and `Chain` (assumes 
 #' chains are ordered from one to the number of chains present).
+#' @examples 
+#' plot_df <- prepSimilarityMatricesForGGplot(my_psms)
+#' plot_df |> 
+#'   ggplot(aes(x = x, y= y, fill = Entry)) + 
+#'     geom_tile() + 
+#'     facet_wrap(~Chain) + 
+#'     scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
 #' @export
 prepSimilarityMatricesForGGplot <- function(similarity_matrices, 
   matrix_setting_order = 1,
