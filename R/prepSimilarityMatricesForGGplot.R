@@ -40,7 +40,7 @@ prepSimilarityMatricesForGGplot <- function(similarity_matrices,
   
   for(ii in seq(1, n_matrices)) {
     first_iteration <- ii == 1
-    .df <- prepDataForggPheatmap(similarity_matrices[[ii]], row_order, col_order) 
+    .df <- prepDataForggHeatmap(similarity_matrices[[ii]], row_order, col_order) 
     .df$Chain <- ii
     if(first_iteration) {
       sim_df <- .df
