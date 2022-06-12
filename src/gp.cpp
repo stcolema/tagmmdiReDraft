@@ -370,7 +370,7 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   
   // return mvnrnd(mu_tilde, cov_tilde);
   
-  mat chol_cov, stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
+  // mat chol_cov, stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
   // uvec P_vec;
   
   // chol(chol_cov, P_vec, cov_tilde, "lower", "vector");
@@ -379,22 +379,18 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   // return mu_tilde + stochasticity * chol_cov * P_vec;
   // chol_cov(P, P),
   
+  uvec nonrobust_values(P);
   vec eigval;
-  mat eigvec, eigval_mat(P, P);
+  mat eigvec, eigval_mat(P, P), stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
   eigval_mat.zeros();
   
   eig_sym( eigval, eigvec, cov_tilde );
   
-  
+  nonrobust_values = find(eigval < 0.0);
+  eigval(nonrobust_values).fill(0.0);
   eigval_mat.diag() = arma::pow(eigval, 0.5);
   
   return mu_tilde + eigvec * eigval_mat * stochasticity;
-  
-  // if(! cov_tilde.is_sympd()) {
-  //   Rcpp::Rcout << "\n\nCov tidle is not positive semi-definite.\n";
-  // }
-  // chol_cov = chol(cov_tilde);
-  // return mu_tilde + chol_cov * stochasticity;
 };
 
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
@@ -423,7 +419,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // Check that the covariance hyperparameter is numerically stable, add some 
   // small value to the diagonal if necessary
-  cov_tilde = covCheck(cov_tilde, false, true, 9);
+  // cov_tilde = covCheck(cov_tilde, false, true, 9);
   
   // Rcpp::Rcout << "\n\nCovariance matrix:\n" << cov_tilde;
   
@@ -551,7 +547,7 @@ void gp::sampleLength(
   // new_mu_tilde = first_product_repeated * component_data;
   new_mu_tilde = n_k * first_product * sample_mean;
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(new_cov_tilde, false, true, 9);
+  // new_cov_tilde = covCheck(new_cov_tilde, false, true, 9);
 
   if(rcond(new_cov_tilde) < 1e-3) {
     return;
@@ -627,7 +623,7 @@ void gp::sampleAmplitude(
   new_mu_tilde = n_k * first_product * sample_mean;
   
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(new_cov_tilde, false, true, 9);
+  // new_cov_tilde = covCheck(new_cov_tilde, false, true, 9);
   
   if(rcond(new_cov_tilde) < 1e-3) {
     return;
