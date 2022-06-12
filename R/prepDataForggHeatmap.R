@@ -42,19 +42,20 @@ prepDataForggHeatmap <- function(X, row_order = NULL, col_order = NULL) {
     row_order <- seq(1, N)
   }
   if (cluster_rows) {
-    row_order <- findOrder(X)
+    row_order <-  hclust(dist(X, method = "euclidean"), method =  "complete")$order
   }
   
-  Y$y <- match(Y$y, row_order)
-  
+  Y$y <-match(Y$y, row_order)
+  feature_name_order <- colnames(Y)[-ncol(Y)]
   Z <- tidyr::pivot_longer(Y, -y, names_to = "Feature", values_to = "Entry")
-  Z$x <- as.numeric(stringr::str_extract(Z$Feature, "[:digit:]+"))
+  # Z$x <- as.numeric(stringr::str_extract(Z$Feature, "[:digit:]+"))
+  Z$x <- match(Z$Feature, feature_name_order)
   
   if(no_col_ordering) {
     col_order <- Z$x
   }
   if (cluster_cols) {
-    col_order <- findOrder(t(X))
+    col_order <-  hclust(dist(t(X), method = "euclidean"), method =  "complete")$order
   }
   
   Z$x <- match(Z$x, col_order)

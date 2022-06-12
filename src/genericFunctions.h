@@ -131,7 +131,7 @@ bool metropolisAcceptanceStep(double acceptance_prob);
 //' @param j Time point (unsigned integer)
 //' @return Boolean indicating acceptance.
 // [[Rcpp::export]]
-double squaredExponentialFunction(double amplitude, double length, arma::uword i, arma::uword j);
+double squaredExponentialFunction(double amplitude, double length, int i, int j);
 
 //' @title Double approximately equal
 //' @description Compare two doubles in a way that makes sense.
@@ -148,5 +148,12 @@ bool doubleApproxEqual(double x, double y, double precision = 0.000002);
 //' @param X Matrix
 //' @return Vector of the column means of X.
 vec sampleMean(arma::mat X);
+
+//' @title Round matrix
+//' @description Round a matrix to n_places decimal places.
+//' @param X Matrix
+//' @param n_places Integer - number of decimal places to round to
+//' @return Matrix X round to n_places decimal places.
+arma::mat roundMatrix(arma::mat X, int n_places = 0);
 
 #endif /* GENFUN_H */

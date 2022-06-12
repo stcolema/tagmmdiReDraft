@@ -1,3 +1,5 @@
+
+#include <R_ext/Print.h>
 # include <RcppArmadillo.h>
 
 # include "logLikelihoods.h"
@@ -65,6 +67,8 @@ Rcpp::List runAltMDI(arma::uword R,
   // field<mat> alloc(L);
   field<cube> alloc(L);
   
+  // Progress p(n_saved, display_progress);
+  
   for(uword l = 0; l < L; l++) {
     // alloc(l) = zeros<mat>(N, K(l));
     alloc(l) = zeros<cube>(N, K(l), n_saved);
@@ -98,6 +102,8 @@ Rcpp::List runAltMDI(arma::uword R,
   N_k_record.slice(save_ind) = my_mdi.N_k;
   
   for(uword r = 0; r < R; r++) {
+    
+    Rcpp::checkUserInterrupt();
     
     // Should the current MCMC iteration be saved?
     save_this_iteration = ((r + 1) % thin == 0);
@@ -176,6 +182,8 @@ Rcpp::List runAltMDI(arma::uword R,
       
       N_k_record.slice(save_ind) = my_mdi.N_k;
     }
+    
+    // p.increment(); 
     
     // Rcpp::Rcout << r << "th iteration done.\n";
     // throw;

@@ -199,7 +199,8 @@ void gp::sampleFromPriors() {
 
 // === Covariance function =====================================================
 
-mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length) {
+mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length,
+                                            double kernel_subblock_threshold) {
   mat sub_block(P, P);
   sub_block.zeros();
   for(uword ii = 0; ii < P; ii++) {
@@ -217,11 +218,11 @@ mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length) {
         jj
       );
       
-      // if(sub_block(ii, jj) < kernel_subblock_threshold) {
-      //   sub_block(ii, jj) = 0.0;
-      //   sub_block(jj, ii) = 0.0;
-      //   break;
-      // }
+      if(sub_block(ii, jj) < kernel_subblock_threshold) {
+        sub_block(ii, jj) = 0.0;
+        sub_block(jj, ii) = 0.0;
+        break;
+      }
       sub_block(jj, ii) = sub_block(ii, jj);
     }
   }
@@ -281,10 +282,12 @@ mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block)
 };
 
 
-mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
+mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, int n_places) {
   
   bool not_symmetric = false, not_invertible = false, not_sympd = false;
   vec eigval(P);
+  
+  // C = roundMatrix(C, n_places);
   
   // not_sympd = ! C.is_sympd();
   // if(not_sympd) {
@@ -295,16 +298,26 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
   // be a floating point error, so we hardcode that the matrix is symmetric #
   // based on the uuper right traingle of the calculated covariance martix
   if(checkSymmetry) {
+    
+    mat u_cov = trimatu(C,  1);  // omit the main diagonal
+    mat l_cov = trimatl(C, -1).t();  // omit the main diagonal
+    
     not_symmetric = ! C.is_symmetric();
+    // bool not_symmetric_my_check = approx_equal(u_cov, l_cov, "reldiff", 0.1);
     if(not_symmetric) {
       // Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper right triangular matrix.\n";
       // Rcpp::Rcout << C.submat(0, 0, 4, 4);
       
-      mat new_cov(P, P), u_cov = trimatu(C, 1);
+      mat new_cov(P, P); // u_cov = trimatu(C, 1);
       new_cov = u_cov + u_cov.t();
       new_cov.diag() = C.diag();
       C = new_cov;
     }
+    // if(not_symmetric_my_check) {
+    //   Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper right triangular matrix.\n";
+    //   Rcpp::Rcout << C.submat(0, 0, 4, 4);
+    // }
+    // 
   }
   
   // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
@@ -320,6 +333,7 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability) {
       C += small_identity;
     }
   }
+  
   return C;
 };
 
@@ -354,16 +368,29 @@ vec gp::posteriorMeanParameter(
 
 vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   
-  return mvnrnd(mu_tilde, cov_tilde);
+  // return mvnrnd(mu_tilde, cov_tilde);
   
-  // mat chol_cov(P, P),
-  //   stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
-  // 
-  // // if(! cov_tilde.is_sympd()) {
-  // //   Rcpp::Rcout << "\n\nCov tidle is not positive semi-definite.\n";
-  // // }
-  // chol_cov = chol(cov_tilde);
-  // return mu_tilde + chol_cov * stochasticity;
+  // mat chol_cov, stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
+  // uvec P_vec;
+  
+  // chol(chol_cov, P_vec, cov_tilde, "lower", "vector");
+  
+  // MVN generation using pivoted cholesky decomposition
+  // return mu_tilde + stochasticity * chol_cov * P_vec;
+  // chol_cov(P, P),
+  
+  uvec nonrobust_values(P);
+  vec eigval;
+  mat eigvec, eigval_mat(P, P), stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
+  eigval_mat.zeros();
+  
+  eig_sym( eigval, eigvec, cov_tilde );
+  
+  nonrobust_values = find(eigval < 0.0);
+  eigval(nonrobust_values).fill(0.0);
+  eigval_mat.diag() = arma::pow(eigval, 0.5);
+  
+  return mu_tilde + eigvec * eigval_mat * stochasticity;
 };
 
 void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
@@ -392,7 +419,9 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // Check that the covariance hyperparameter is numerically stable, add some 
   // small value to the diagonal if necessary
-  cov_tilde = covCheck(cov_tilde, false, true);
+  // cov_tilde = covCheck(cov_tilde, false, true, 9);
+  
+  // Rcpp::Rcout << "\n\nCovariance matrix:\n" << cov_tilde;
   
   mu.col(k) = sampleMeanFunction(mu_tilde, cov_tilde);
   
@@ -518,7 +547,7 @@ void gp::sampleLength(
   // new_mu_tilde = first_product_repeated * component_data;
   new_mu_tilde = n_k * first_product * sample_mean;
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(cov_tilde);
+  // new_cov_tilde = covCheck(new_cov_tilde, false, true, 9);
 
   if(rcond(new_cov_tilde) < 1e-3) {
     return;
@@ -594,7 +623,7 @@ void gp::sampleAmplitude(
   new_mu_tilde = n_k * first_product * sample_mean;
   
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(cov_tilde);
+  // new_cov_tilde = covCheck(new_cov_tilde, false, true, 9);
   
   if(rcond(new_cov_tilde) < 1e-3) {
     return;

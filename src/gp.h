@@ -109,13 +109,20 @@ public:
   
   // Sampling and calculations related to the covarianc function/matrix
   void sampleHyperParameters();
-  mat calculateKthComponentKernelSubBlock(double amplitude, double length);
+  mat calculateKthComponentKernelSubBlock(double amplitude, double length,
+                                          double kernel_subblock_threshold = 1e-16);
   void calculateKernelSubBlock();
   mat constructCovarianceMatrix(uword n_k, mat kernel_sub_block);
   mat invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block);
   mat smallerInversion(uword n_k, double noise, mat kernel_sub_block);
   mat firstCovProduct(uword n_k, double noise, mat kernel_sub_block);
-  mat covCheck(mat C, bool checkSymmetry = false, bool checkStability = true);
+  
+  mat covCheck(
+      mat C, 
+      bool checkSymmetry = false, 
+      bool checkStability = true, 
+      int n_places = 8
+  );
   
   // Sample and calulcate objects related to sampling the mean posterior function
   vec posteriorMeanParameter(
