@@ -43,7 +43,7 @@ Rcpp::List runAltMDI(arma::uword R,
   
   N = my_mdi.N;
   
-  vec likelihood_record(n_saved);
+  vec likelihood_record(n_saved), evidence(n_saved - 1);
   
   mat phis_record(n_saved, my_mdi.LC2), mass_record(n_saved, L); //,
     // likelihood_record(n_saved, L);
@@ -52,6 +52,7 @@ Rcpp::List runAltMDI(arma::uword R,
   mass_record.zeros();
   
   likelihood_record.zeros();
+  evidence.zeros();
   
   ucube class_record(n_saved, N, L),
     outlier_record(n_saved, N, L),
@@ -173,6 +174,8 @@ Rcpp::List runAltMDI(arma::uword R,
         // likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
       }
       
+      evidence(save_ind - 1) = my_mdi.Z;
+      
       likelihood_record(save_ind) = my_mdi.complete_likelihood;
       
       mass_record.row(save_ind) = my_mdi.mass.t();
@@ -198,7 +201,8 @@ Rcpp::List runAltMDI(arma::uword R,
       Named("outliers") = outlier_record,
       Named("allocation_probabilities") = alloc,
       Named("N_k") = N_k_record,
-      Named("complete_likelihood") = likelihood_record
+      Named("complete_likelihood") = likelihood_record,
+      Named("evidence") = evidence
     )
   );
   
