@@ -41,7 +41,7 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   
   for(int ii = 0; ii < P; ii++) {
     for(int jj = ii + 1; jj < P; jj++) {
-      time_diff_mat(ii, jj) = -std::pow((double) (jj - ii), 2.0) / (2.0);
+      time_diff_mat(ii, jj) = - 0.5 * std::pow((double) (jj - ii), 2.0);
       time_diff_mat(jj, ii) = time_diff_mat(ii, jj);
     }
   }
@@ -209,12 +209,13 @@ void gp::sampleFromPriors() {
 
 // === Covariance function =====================================================
 
-mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length,
+mat gp::calculateKthComponentKernelSubBlock(double amplitude,
+                                            double length,
                                             double kernel_subblock_threshold) {
   mat sub_block(P, P);
   sub_block.zeros();
   
-  sub_block = std::log(amplitude) + time_diff_mat / length;
+  sub_block = std::log(amplitude) + (1.0 / length) * time_diff_mat;
   sub_block = exp(sub_block);
   sub_block.elem( find(sub_block < kernel_subblock_threshold) ).zeros();
   

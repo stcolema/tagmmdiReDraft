@@ -45,7 +45,7 @@ public:
   
   double
     
-    kernel_subblock_threshold = 1e-12,
+    // kernel_subblock_threshold = 1e-12,
     
     amplitude_proposal_window = 0.025,
     length_proposal_window = 0.025,
@@ -110,7 +110,7 @@ public:
   // Sampling and calculations related to the covarianc function/matrix
   void sampleHyperParameters();
   mat calculateKthComponentKernelSubBlock(double amplitude, double length,
-                                          double kernel_subblock_threshold = 1e-16);
+                                          double kernel_subblock_threshold = 1e-12);
   void calculateKernelSubBlock();
   mat constructCovarianceMatrix(uword n_k, mat kernel_sub_block);
   mat invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block);
