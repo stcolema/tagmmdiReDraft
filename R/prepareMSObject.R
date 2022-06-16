@@ -12,19 +12,21 @@
 #'  arbitrarily with a ``1`` as these will be sampled again within the wrapper 
 #'  of ``callMDI``) and ``class_key`` which maps the numeric representation of 
 #'  organelles back to the original naming.
+#'  @importFrom Biobase exprs fData
 #' @export
 prepareMSObject <- function(MS_object) {
   
   # Extract the LOPIT data and the organelles
   X <- Biobase::exprs(MS_object)
-  organelles <- fData(MS_object)[, "markers"]
+  organelles <- Biobase::fData(MS_object)[, "markers"]
   
   # Create a data frame of the classes present and their associated number;\
   # this can be used to map the numeric representation of the classes back to
   # an organelle
   organelles_present <- pRoloc::getMarkerClasses(MS_object)
   class_key <- data.frame(Organelle = organelles_present, 
-                          Key = 1:length(organelles_present))
+    Key = seq(1, length(organelles_present))
+  )
   
   # Number of components modelled
   K <- length(organelles_present)

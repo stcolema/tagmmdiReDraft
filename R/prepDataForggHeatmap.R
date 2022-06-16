@@ -11,7 +11,7 @@
 #' @returns A long data.frame containing columns `x` (the x-axis position of the 
 #' entry for geom_tile()), `y` (the y-axis position of the entry for 
 #' geom_tile()), and `Entry` (value in similarity  matrix).
-#' @importFrom tidyr pivot_longer
+#' @importFrom tidyr pivot_longer any_of
 #' @importFrom stringr str_extract
 #' @export
 prepDataForggHeatmap <- function(X, row_order = NULL, col_order = NULL) {
@@ -42,12 +42,12 @@ prepDataForggHeatmap <- function(X, row_order = NULL, col_order = NULL) {
     row_order <- seq(1, N)
   }
   if (cluster_rows) {
-    row_order <-  hclust(dist(X, method = "euclidean"), method =  "complete")$order
+    row_order <-  findOrder(X)
   }
   
   Y$y <-match(Y$y, row_order)
   feature_name_order <- colnames(Y)[-ncol(Y)]
-  Z <- tidyr::pivot_longer(Y, -y, names_to = "Feature", values_to = "Entry")
+  Z <- tidyr::pivot_longer(Y, -tidyr::any_of("y"), names_to = "Feature", values_to = "Entry")
   # Z$x <- as.numeric(stringr::str_extract(Z$Feature, "[:digit:]+"))
   Z$x <- match(Z$Feature, feature_name_order)
   
@@ -55,7 +55,7 @@ prepDataForggHeatmap <- function(X, row_order = NULL, col_order = NULL) {
     col_order <- Z$x
   }
   if (cluster_cols) {
-    col_order <-  hclust(dist(t(X), method = "euclidean"), method =  "complete")$order
+    col_order <- findOrder(t(X))
   }
   
   Z$x <- match(Z$x, col_order)
