@@ -280,10 +280,6 @@ mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
   Z = smallerInversion(n_k, noise, kernel_sub_block);
   B = I_p - Z;
   
-  Rcpp::Rcout << "\n\nKernel sub block is symmetric: " << kernel_sub_block.is_symmetric();
-  Rcpp::Rcout << "\nInversion is symmetric: " << B.is_symmetric();
-  Rcpp::Rcout << "\nProduct is symmetric: " << (kernel_sub_block * B).is_symmetric();
-  
   output = (1.0 / noise) * (kernel_sub_block - (kernel_sub_block * B));
   return output;
 };
@@ -437,6 +433,11 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // parameters.
   first_product = firstCovProduct(n_k, noise(k), rel_cov_mat);
   final_product = n_k * (first_product * rel_cov_mat);
+  
+  Rcpp::Rcout << "\nFinal product is symmetric: " << final_product.is_symmetric();
+  if(! final_product.is_symmetric()) {
+    Rcpp::Rcout << "\nFinal product: " << final_product;
+  }
   
   // Mean and covariance hyperparameter
   mu_tilde = n_k * first_product * sample_mean;
