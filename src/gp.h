@@ -46,7 +46,7 @@ public:
   double
     
     // kernel_subblock_threshold = 1e-12,
-    matrix_precision = 1e-09,
+    matrix_precision = 1e-08,
     amplitude_proposal_window = 0.025,
     length_proposal_window = 0.025,
     noise_proposal_window = 0.025;
