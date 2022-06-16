@@ -432,12 +432,10 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
   first_product = firstCovProduct(n_k, noise(k), rel_cov_mat);
+  first_product.elem( find(first_product < matrix_precision) ).zeros();
+
   final_product = n_k * (first_product * rel_cov_mat);
-  
-  Rcpp::Rcout << "\nFinal product is symmetric: " << final_product.is_symmetric();
-  if(! final_product.is_symmetric()) {
-    Rcpp::Rcout << "\nFinal product: " << final_product;
-  }
+  final_product.elem( find(final_product < matrix_precision) ).zeros();
   
   // Mean and covariance hyperparameter
   mu_tilde = n_k * first_product * sample_mean;
@@ -445,7 +443,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // Check that the covariance hyperparameter is numerically stable, add some 
   // small value to the diagonal if necessary
-  cov_tilde = covCheck(cov_tilde, false, true, 1e-12);
+  cov_tilde = covCheck(cov_tilde, false, true, matrix_precision);
   
   // Rcpp::Rcout << "\n\nCovariance matrix:\n" << cov_tilde;
   
@@ -573,7 +571,7 @@ void gp::sampleLength(
   // new_mu_tilde = first_product_repeated * component_data;
   new_mu_tilde = n_k * first_product * sample_mean;
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(new_cov_tilde, false, true, 1e-12);
+  new_cov_tilde = covCheck(new_cov_tilde, false, true, matrix_precision);
 
   if(rcond(new_cov_tilde) < 1e-3) {
     return;
@@ -649,7 +647,7 @@ void gp::sampleAmplitude(
   new_mu_tilde = n_k * first_product * sample_mean;
   
   new_cov_tilde = new_sub_block - final_product;
-  new_cov_tilde = covCheck(new_cov_tilde, false, true, 1e-12);
+  new_cov_tilde = covCheck(new_cov_tilde, false, true, matrix_precision);
   
   if(rcond(new_cov_tilde) < 1e-3) {
     return;
