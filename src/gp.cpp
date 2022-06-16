@@ -516,7 +516,7 @@ double gp::hyperParameterLogKernel(
     bool logNorm
   ) {
   double score = 0.0;
-  score = pNorm(mu_k, mu_tilde, cov_tilde);
+  score = pNorm(mu_k, mu_tilde, cov_tilde, false);
   if(logNorm) {
     score += pNorm(log(hyper), 0, 1);
   } else {
