@@ -280,6 +280,10 @@ mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
   Z = smallerInversion(n_k, noise, kernel_sub_block);
   B = I_p - Z;
   
+  Rcpp::Rcout << "\n\nKernel sub block is symmetric: " << kernel_sub_block.is_symmetric();
+  Rcpp::Rcout << "\nInversion is symmetric: " << B.is_symmetric();
+  Rcpp::Rcout << "\nProduct is symmetric: " << (kernel_sub_block * B).is_symmetric();
+  
   output = (1.0 / noise) * (kernel_sub_block - (kernel_sub_block * B));
   return output;
 };
