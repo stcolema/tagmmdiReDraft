@@ -17,8 +17,29 @@
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial 
 #' labels are as intended or should ``generateInitialLabels`` be called.
-#' @return A named list containing the sampled partitions, component weights and
-#' phi parameters, model fit measures and some details on the model call.
+#' @return A named list containing the sampled partitions, component weights,
+#' phi and mass parameters, model fit measures and some details on the model call.
+#' @examples 
+#' 
+#' N <- 100
+#' X <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
+#' Y <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
+#' data_modelled <- list(X, Y)
+#' 
+#' R <- 100
+#' thin <- 5
+#' 
+#' alpha <- c(1, 1)
+#' K <- c(10, 15)
+#' labels <- matrix(0, nrow = N, ncol = 2)
+#' labels[, 1] <- generateInitialUnsupervisedLabels(N, alpha[1], K[1])
+#' labels[, 2] <- generateInitialUnsupervisedLabels(N, alpha[1], K[2])
+#' 
+#' fixed <- matrix(0, nrow = N, ncol = 2)
+#' types <- c("MVN", "G")
+#' 
+#' mcmc_out <- callMDI(data_modelled, R, thin, labels, fixed, types, K, alpha)
+#' 
 #' @export
 callMDI <- function(X,
                     R,
