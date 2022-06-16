@@ -45,7 +45,7 @@ public:
   
   double
     
-    kernel_subblock_threshold = 1e-5,
+    kernel_subblock_threshold = 1e-12,
     
     amplitude_proposal_window = 0.025,
     length_proposal_window = 0.025,
@@ -63,7 +63,7 @@ public:
   
   vec amplitude, length, noise, cov_log_det, zero_vec;
   umat density_members;
-  mat scale, mu, cov_comb_log_det, time_difference_mat, I_p;
+  mat scale, mu, cov_comb_log_det, time_difference_mat, I_p, time_diff_mat;
   cube kernel_sub_block;
   field < uvec > repeated_time_indices;
   field < vec > repeated_mean_vector, flattened_component_data;
@@ -121,7 +121,8 @@ public:
       mat C, 
       bool checkSymmetry = false, 
       bool checkStability = true, 
-      int n_places = 8
+      double threshold = 1e-12
+      // int n_places = 8
   );
   
   // Sample and calulcate objects related to sampling the mean posterior function

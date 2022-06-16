@@ -112,15 +112,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // pNorm
-double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma);
-RcppExport SEXP _tagmReDraft_pNorm(SEXP xSEXP, SEXP muSEXP, SEXP SigmaSEXP) {
+double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma, bool is_sympd);
+RcppExport SEXP _tagmReDraft_pNorm(SEXP xSEXP, SEXP muSEXP, SEXP SigmaSEXP, SEXP is_sympdSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type mu(muSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type Sigma(SigmaSEXP);
-    rcpp_result_gen = Rcpp::wrap(pNorm(x, mu, Sigma));
+    Rcpp::traits::input_parameter< bool >::type is_sympd(is_sympdSEXP);
+    rcpp_result_gen = Rcpp::wrap(pNorm(x, mu, Sigma, is_sympd));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -133,7 +134,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_tagmReDraft_wishartLogLikelihood", (DL_FUNC) &_tagmReDraft_wishartLogLikelihood, 4},
     {"_tagmReDraft_invWishartLogLikelihood", (DL_FUNC) &_tagmReDraft_invWishartLogLikelihood, 4},
     {"_tagmReDraft_mvtLogLikelihood", (DL_FUNC) &_tagmReDraft_mvtLogLikelihood, 4},
-    {"_tagmReDraft_pNorm", (DL_FUNC) &_tagmReDraft_pNorm, 3},
+    {"_tagmReDraft_pNorm", (DL_FUNC) &_tagmReDraft_pNorm, 4},
     {NULL, NULL, 0}
 };
 

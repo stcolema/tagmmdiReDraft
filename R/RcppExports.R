@@ -336,10 +336,12 @@ mvtLogLikelihood <- function(x, mu, Sigma, nu) {
 #' Normal (MVN) distribution.
 #' @param x - vector; the sample to calculate the log likelihood of.
 #' @param mu - vector; the mean parameter of the MVN distribution.
-#' @param Sigma - matrix; the covariance matrix of the MVN distribution..
+#' @param Sigma - matrix; the covariance matrix of the MVN distribution.
+#' @param is_sympd - boolean; is the covariance matrix positive definite (
+#' calculations are faster if this is the case).
 #' @return the normalised log-likelihood of x in a MVN distribution with 
 #' parameters mu, Sigma.
-pNorm <- function(x, mu, Sigma) {
-    .Call(`_tagmReDraft_pNorm`, x, mu, Sigma)
+pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
+    .Call(`_tagmReDraft_pNorm`, x, mu, Sigma, is_sympd)
 }
 

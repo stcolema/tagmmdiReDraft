@@ -82,11 +82,13 @@ double mvtLogLikelihood(arma::vec x, arma::vec mu, arma::mat Sigma, double nu);
 //' Normal (MVN) distribution.
 //' @param x - vector; the sample to calculate the log likelihood of.
 //' @param mu - vector; the mean parameter of the MVN distribution.
-//' @param Sigma - matrix; the covariance matrix of the MVN distribution..
+//' @param Sigma - matrix; the covariance matrix of the MVN distribution.
+//' @param is_sympd - boolean; is the covariance matrix positive definite (
+//' calculations are faster if this is the case).
 //' @return the normalised log-likelihood of x in a MVN distribution with 
 //' parameters mu, Sigma.
 // [[Rcpp::export]]
-double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma);
+double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma, bool is_sympd = true);
 
 //' @title Gaussian log-likelihood
 //' @description The log-likelihood function for a point in the univariate 

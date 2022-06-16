@@ -36,6 +36,16 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
   kernel_sub_block.set_size(P, P, K);
   kernel_sub_block.zeros();
   
+  time_diff_mat.set_size(P, P);
+  time_diff_mat.zeros();
+  
+  for(int ii = 0; ii < P; ii++) {
+    for(int jj = ii + 1; jj < P; jj++) {
+      time_diff_mat(ii, jj) = -std::pow((double) (jj - ii), 2.0) / (2.0);
+      time_diff_mat(jj, ii) = time_diff_mat(ii, jj);
+    }
+  }
+  
   I_p = eye(P, P);
   
   noise_acceptance_count.set_size(K);
@@ -203,29 +213,36 @@ mat gp::calculateKthComponentKernelSubBlock(double amplitude, double length,
                                             double kernel_subblock_threshold) {
   mat sub_block(P, P);
   sub_block.zeros();
-  for(uword ii = 0; ii < P; ii++) {
-  // std::for_each(
-  //   std::execution::par,
-  //   P_inds.begin(),
-  //   P_inds.end(),
-  //   [&](uword ii) {
-    sub_block(ii, ii) = amplitude;
-    for(uword jj = ii + 1; jj < P; jj++) {
-      sub_block(ii, jj) = squaredExponentialFunction(
-        amplitude, 
-        length, 
-        ii, 
-        jj
-      );
-      
-      if(sub_block(ii, jj) < kernel_subblock_threshold) {
-        sub_block(ii, jj) = 0.0;
-        sub_block(jj, ii) = 0.0;
-        break;
-      }
-      sub_block(jj, ii) = sub_block(ii, jj);
-    }
-  }
+  
+  sub_block = std::log(amplitude) + time_diff_mat / length;
+  sub_block = exp(sub_block);
+  sub_block.elem( find(sub_block < kernel_subblock_threshold) ).zeros();
+  
+  
+  // for(uword ii = 0; ii < P; ii++) {
+  // // std::for_each(
+  // //   std::execution::par,
+  // //   P_inds.begin(),
+  // //   P_inds.end(),
+  // //   [&](uword ii) {
+  //   sub_block(ii, ii) = amplitude;
+  //   for(uword jj = ii + 1; jj < P; jj++) {
+  //     sub_block(ii, jj) = squaredExponentialFunction(
+  //       amplitude, 
+  //       length, 
+  //       ii, 
+  //       jj
+  //     );
+  //     
+  //     // if(sub_block(ii, jj) < kernel_subblock_threshold) {
+  //     //   sub_block(ii, jj) = 0.0;
+  //     //   sub_block(jj, ii) = 0.0;
+  //     //   break;
+  //     // }
+  //     sub_block(jj, ii) = sub_block(ii, jj);
+  //   }
+  // }
+  
   // );
   return sub_block;
 };
@@ -282,13 +299,16 @@ mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block)
 };
 
 
-mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, int n_places) {
+mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, double threshold) {
   
   bool not_symmetric = false, not_invertible = false, not_sympd = false;
   vec eigval(P);
   
-  // C = roundMatrix(C, n_places);
+  C.elem( find(C < threshold) ).zeros();
   
+  // 
+  // C = roundMatrix(C, n_places);
+  // 
   // not_sympd = ! C.is_sympd();
   // if(not_sympd) {
   //   Rcpp::Rcout << "\nNot symmetric positive definite.\n";
@@ -419,7 +439,7 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   
   // Check that the covariance hyperparameter is numerically stable, add some 
   // small value to the diagonal if necessary
-  // cov_tilde = covCheck(cov_tilde, false, true, 9);
+  cov_tilde = covCheck(cov_tilde, false, true, 1e-12);
   
   // Rcpp::Rcout << "\n\nCovariance matrix:\n" << cov_tilde;
   
@@ -547,7 +567,7 @@ void gp::sampleLength(
   // new_mu_tilde = first_product_repeated * component_data;
   new_mu_tilde = n_k * first_product * sample_mean;
   new_cov_tilde = new_sub_block - final_product;
-  // new_cov_tilde = covCheck(new_cov_tilde, false, true, 9);
+  new_cov_tilde = covCheck(new_cov_tilde, false, true, 1e-12);
 
   if(rcond(new_cov_tilde) < 1e-3) {
     return;
@@ -623,7 +643,7 @@ void gp::sampleAmplitude(
   new_mu_tilde = n_k * first_product * sample_mean;
   
   new_cov_tilde = new_sub_block - final_product;
-  // new_cov_tilde = covCheck(new_cov_tilde, false, true, 9);
+  new_cov_tilde = covCheck(new_cov_tilde, false, true, 1e-12);
   
   if(rcond(new_cov_tilde) < 1e-3) {
     return;
@@ -685,7 +705,7 @@ void gp::sampleHyperParametersKthComponent(
 double gp::noiseLogKernel(uword n_k, double noise, vec mean_vec, mat data) {
   double score = 0.0, prior_contribution = 0.0;
   for(uword n = 0; n < n_k; n++) {
-    score += pNorm(data.row(n).t(), mean_vec, noise * I_p);
+    score += pNorm(data.row(n).t(), mean_vec, noise * I_p, true);
   }
   prior_contribution += noisePriorLogDensity(noise, logNormPriorUsed); 
   
