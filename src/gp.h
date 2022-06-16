@@ -6,7 +6,7 @@
 
 // =============================================================================
 // included dependencies
-// #define ARMA_WARN_LEVEL 1 // Turn off warnings that occur due to point errors.
+// #define ARMA_WARN_LEVEL 0 // Turn off warnings that occur due to point errors.
 
 # include <RcppArmadillo.h>
 # include "density.h"
@@ -42,11 +42,12 @@ public:
   
   bool logNormPriorUsed = true, use_log_norm_proposal = true;
   uword sampleHypersFrequency = 5, samplingCount = 0;
+  std::string matrixSaved = "i";
   
   double
     
     // kernel_subblock_threshold = 1e-12,
-    matrix_precision = 1e-08,
+    matrix_precision = 8, //  1e-08,
     amplitude_proposal_window = 0.025,
     length_proposal_window = 0.025,
     noise_proposal_window = 0.025;

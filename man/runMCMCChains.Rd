@@ -47,7 +47,6 @@ bound on the number of clusters in each dataset).}
 \value{
 A named list containing the sampled partitions, component weights and
 phi parameters, model fit measures and some details on the model call.
- @importFrom parallel parLapply
 }
 \description{
 Run multiple chains of Multiple Dataset Integration (MDI) using

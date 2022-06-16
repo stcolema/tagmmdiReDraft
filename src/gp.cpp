@@ -215,34 +215,37 @@ mat gp::calculateKthComponentKernelSubBlock(double amplitude,
   mat sub_block(P, P);
   sub_block.zeros();
   
-  sub_block = std::log(amplitude) + (1.0 / length) * time_diff_mat;
-  sub_block = exp(sub_block);
-  sub_block.elem( find(sub_block < kernel_subblock_threshold) ).zeros();
+  // sub_block = std::log(amplitude) + (1.0 / length) * time_diff_mat;
+  // sub_block = exp(sub_block);
   
   
-  // for(uword ii = 0; ii < P; ii++) {
-  // // std::for_each(
-  // //   std::execution::par,
-  // //   P_inds.begin(),
-  // //   P_inds.end(),
-  // //   [&](uword ii) {
-  //   sub_block(ii, ii) = amplitude;
-  //   for(uword jj = ii + 1; jj < P; jj++) {
-  //     sub_block(ii, jj) = squaredExponentialFunction(
-  //       amplitude, 
-  //       length, 
-  //       ii, 
-  //       jj
-  //     );
-  //     
-  //     // if(sub_block(ii, jj) < kernel_subblock_threshold) {
-  //     //   sub_block(ii, jj) = 0.0;
-  //     //   sub_block(jj, ii) = 0.0;
-  //     //   break;
-  //     // }
-  //     sub_block(jj, ii) = sub_block(ii, jj);
-  //   }
-  // }
+  for(uword ii = 0; ii < P; ii++) {
+  // std::for_each(
+  //   std::execution::par,
+  //   P_inds.begin(),
+  //   P_inds.end(),
+  //   [&](uword ii) {
+    sub_block(ii, ii) = amplitude;
+    for(uword jj = ii + 1; jj < P; jj++) {
+      sub_block(ii, jj) = squaredExponentialFunction(
+        amplitude,
+        length,
+        ii,
+        jj
+      );
+
+      // if(sub_block(ii, jj) < kernel_subblock_threshold) {
+      //   sub_block(ii, jj) = 0.0;
+      //   sub_block(jj, ii) = 0.0;
+      //   break;
+      // }
+      sub_block(jj, ii) = sub_block(ii, jj);
+    }
+  }
+  
+  // sub_block = roundMatrix(sub_block, 8);
+  // sub_block.elem( find(sub_block < kernel_subblock_threshold) ).zeros();
+  
   
   // );
   return sub_block;
@@ -266,17 +269,16 @@ mat gp::constructCovarianceMatrix(uword n_k, mat kernel_sub_block) {
 };
 
 mat gp::smallerInversion(uword n_k, double noise, mat kernel_sub_block) {
-  mat Q(P, P), Z(P, P);
-  
-  Q = I_p + (n_k / noise) * kernel_sub_block;
-  Z = inv_sympd(Q);
-  return Z;
+  mat Q = I_p + (((double) n_k) / noise) * kernel_sub_block;
+  return inv_sympd(Q);
 }
 
 mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
-  
-  mat B(P, P), Z(P, P), cross_product(P, P), output(P, P);
+  mat B(P, P), Z(P, P), output(P, P);
   output.zeros();
+  Z.zeros();
+  B.zeros();
+  
   Z = smallerInversion(n_k, noise, kernel_sub_block);
   B = I_p - Z;
   
@@ -305,10 +307,10 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, double threshol
   bool not_symmetric = false, not_invertible = false, not_sympd = false;
   vec eigval(P);
   
-  C.elem( find(C < threshold) ).zeros();
+  // C.elem( find(C < threshold) ).zeros();
   
-  // 
-  // C = roundMatrix(C, n_places);
+
+  // C = roundMatrix(C, threshold);
   // 
   // not_sympd = ! C.is_sympd();
   // if(not_sympd) {
@@ -400,15 +402,16 @@ vec gp::sampleMeanFunction(vec mu_tilde, mat cov_tilde) {
   // return mu_tilde + stochasticity * chol_cov * P_vec;
   // chol_cov(P, P),
   
-  uvec nonrobust_values(P);
+  // uvec nonrobust_values(P);
   vec eigval;
   mat eigvec, eigval_mat(P, P), stochasticity = mvnrnd(zeros<vec>(P), eye(P, P));
   eigval_mat.zeros();
   
   eig_sym( eigval, eigvec, cov_tilde );
-  
-  nonrobust_values = find(eigval < 0.0);
-  eigval(nonrobust_values).fill(0.0);
+
+  // nonrobust_values = find(eigval < 0.0);
+  eigval.elem(find(eigval < 0.0) ).zeros();
+  // eigval.elem(nonrobust_values).fill(0.0);
   eigval_mat.diag() = arma::pow(eigval, 0.5);
   
   return mu_tilde + eigvec * eigval_mat * stochasticity;
@@ -432,18 +435,44 @@ void gp::sampleMeanPosterior(uword k, uword n_k, mat data) {
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
   first_product = firstCovProduct(n_k, noise(k), rel_cov_mat);
-  first_product.elem( find(first_product < matrix_precision) ).zeros();
+  // first_product.elem( find(first_product < matrix_precision) ).zeros();
 
-  final_product = n_k * (first_product * rel_cov_mat);
-  final_product.elem( find(final_product < matrix_precision) ).zeros();
+  final_product = ((double) n_k) * (first_product * rel_cov_mat);
+  // final_product.elem( find(final_product < matrix_precision) ).zeros();
   
   // Mean and covariance hyperparameter
-  mu_tilde = n_k * first_product * sample_mean;
+  mu_tilde = ((double) n_k) * first_product * sample_mean;
   cov_tilde = rel_cov_mat - final_product;
+  
+  // if(! cov_tilde.is_symmetric()) {
+  //   // Rcpp::Rcout << "\n\nNumber: " << matrixSaved << "\n" << cov_tilde;
+  // 
+  //   std::string y("cov_tilde");
+  //   y += matrixSaved;
+  //   y += ".csv";
+  //   cov_tilde.save(y, csv_ascii);
+  // 
+  //   std::string z("subblock");
+  //   z += matrixSaved;
+  //   z += ".csv";
+  //   rel_cov_mat.save(z, csv_ascii);
+  // 
+  //   std::string uu("final_product");
+  //   uu += matrixSaved;
+  //   uu += ".csv";
+  //   final_product.save(uu, csv_ascii);
+  // 
+  //   std::string vv("first_product");
+  //   vv += matrixSaved;
+  //   vv += ".csv";
+  //   first_product.save(vv, csv_ascii);
+  // 
+  //   matrixSaved += "i";
+  // }
   
   // Check that the covariance hyperparameter is numerically stable, add some 
   // small value to the diagonal if necessary
-  cov_tilde = covCheck(cov_tilde, false, true, matrix_precision);
+  // cov_tilde = covCheck(cov_tilde, false, true, matrix_precision);
   
   // Rcpp::Rcout << "\n\nCovariance matrix:\n" << cov_tilde;
   
