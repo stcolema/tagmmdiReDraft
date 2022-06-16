@@ -42,10 +42,24 @@ labels are as intended or should ``generateInitialLabels`` be called.}
 bound on the number of clusters).}
 }
 \value{
-A named list containing the sampled partitions, component weights and
-phi parameters, model fit measures and some details on the model call.
+A named list containing the sampled partitions, component weights,
+phi and mass parameters, model fit measures and some details on the model call.
 }
 \description{
 Runs a MCMC chain of a Bayesian mixture model. Essentially a
 wrapper to allow more intuitive inputs for the single dataset case of MDI.
+}
+\examples{
+N <- 100
+X <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
+
+R <- 100
+thin <- 5
+
+alpha <- 1
+K <- 10
+type <- "MVN"
+
+mcmc_out <- callMixtureModel(X, R, thin, type, K = K)
+
 }

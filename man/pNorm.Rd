@@ -4,14 +4,17 @@
 \alias{pNorm}
 \title{Multivariate Normal log-likelihood}
 \usage{
-pNorm(x, mu, Sigma)
+pNorm(x, mu, Sigma, is_sympd = TRUE)
 }
 \arguments{
 \item{x}{- vector; the sample to calculate the log likelihood of.}
 
 \item{mu}{- vector; the mean parameter of the MVN distribution.}
 
-\item{Sigma}{- matrix; the covariance matrix of the MVN distribution..}
+\item{Sigma}{- matrix; the covariance matrix of the MVN distribution.}
+
+\item{is_sympd}{- boolean; is the covariance matrix positive definite (
+calculations are faster if this is the case).}
 }
 \value{
 the normalised log-likelihood of x in a MVN distribution with 
