@@ -1,6 +1,5 @@
 
 # include <R_ext/Print.h>
-# include <RcppArmadillo.h>
 
 # include "logLikelihoods.h"
 # include "genericFunctions.h"

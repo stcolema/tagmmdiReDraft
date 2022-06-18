@@ -8,10 +8,7 @@
 // included dependencies
 // #define ARMA_WARN_LEVEL 0 // Turn off warnings that occur due to point errors.
 
-# include <RcppArmadillo.h>
 # include "density.h"
-# include "genericFunctions.h"
-# include "logLikelihoods.h"
 // # include "kernelFactory.h"
 
 using namespace arma ;

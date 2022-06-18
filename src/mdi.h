@@ -6,7 +6,6 @@
 
 // =============================================================================
 // included dependencies
-# include <RcppArmadillo.h>
 # include "logLikelihoods.h"
 # include "genericFunctions.h"
 # include "mixtureModel.h"

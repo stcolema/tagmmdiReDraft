@@ -6,9 +6,7 @@
 
 // =============================================================================
 // included dependencies
-# include <RcppArmadillo.h>
 # include "density.h"
-# include "genericFunctions.h"
 
 using namespace arma ;
 
