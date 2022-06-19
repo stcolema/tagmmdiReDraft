@@ -29,6 +29,7 @@ prepSimilarityMatricesForGGplot <- function(similarity_matrices,
   n_matrices <- length(similarity_matrices)
   
   all_symmetric_matrices <- TRUE
+  mismatched_dimensions <- FALSE
   for(ii in seq(1, n_matrices)) {
     all_symmetric_matrices <- isSymmetric.matrix(similarity_matrices[[ii]])
     if(all_symmetric_matrices) {
