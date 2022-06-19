@@ -40,6 +40,8 @@ prepSimilarityMatricesForGGplot <- function(similarity_matrices,
       mismatched_dimensions <- (N_i != N)
     }
     if((! all_symmetric_matrices) | mismatched_dimensions) {
+      cat("\nAll symmetric:", mismatched_dimensions)
+      cat("\nAll matching dimension:", all_symmetric_matrices)
       stop("Matrices must all be symmetric and of the same dimension.")
     }
   }
