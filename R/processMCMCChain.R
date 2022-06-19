@@ -48,7 +48,7 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
     stop("Wrong point estimate method given. Must be one of 'mean' or 'median'")
   
   # We burn the floor of burn / thin of these 
-  eff_burn <- floor(burn / thin)
+  eff_burn <- floor(burn / thin) + 1
   
   # We record only the floor of R / thin samples
   eff_R <- floor(R / thin) - eff_burn
