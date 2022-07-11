@@ -488,7 +488,7 @@ double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
   // N_vw = accu(rel_inds_l == rel_inds_m);
   
   N_vw = accu(labels.col(l) == labels.col(m));
-  rate = calcPhiRate(l, m);
+  // rate = calcPhiRate(l, m);
   weights = zeros<vec>(N_vw + 1);
   log_weights = calculatePhiShapeMixtureWeights(N_vw, rate);
   
@@ -553,19 +553,44 @@ arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(arma::uword N_vw,
     r_alpha_gamma_function = 0.0,
     N_vw_part = 0.0,
     beta_part = 0.0;
-  
-  vec log_weights(N_vw + 1);
+
+  vec N_vw_ones = regspace(0,  N_vw), r_ones, log_weights(N_vw + 1);
   log_weights.zeros();
+  // log_weights(0) = -1e6;
+  
+  vec N_vw_vec = cumsum(log(N_vw - N_vw_ones));
+  N_vw_vec(0) = 0.0;
+
+  vec r_log_factorial_vec = log(N_vw_ones);
+  r_log_factorial_vec(0) = 0.0;
+  r_log_factorial_vec = cumsum(r_log_factorial_vec);
   
   for(uword r = 0; r < (N_vw + 1); r++) {
-    for(uword ii = 0; ii < r; ii++) {
-      N_vw_part += std::log(N_vw - ii);
-      r_factorial += std::log(r - ii);
-    }
+    N_vw_vec = N_vw_vec(r);
+    r_factorial = r_log_factorial_vec(r);
+    
+    // N_vw_part = 0.0;
+    // r_factorial = 0.0;
+    // 
+    // if(r > 0) {
+    //   r_ones.reset();
+    //   r_ones.set_size(r);
+    //   r_ones = regspace(0, r - 1);
+    // }
+    // 
+    // N_vw_part = accu(log(N_vw - r_ones));
+    // r_factorial = accu(log(r - r_ones));
+    // 
+    // r_factorial = lgamma(r + 1);
+    // 
+    // for(uword ii = 0; ii < r; ii++) {
+    //   N_vw_part += std::log(N_vw - ii);
+    //   r_factorial += std::log(r - ii);
+    // }
     
     r_alpha_gamma_function = lgamma(r + phi_shape_prior);
     beta_part = (r + phi_shape_prior) * std::log(rate + phi_rate_prior);
-    log_weights(r) = N_vw_part - r_factorial+ r_alpha_gamma_function + beta_part;
+    log_weights(r) = N_vw_part - r_factorial + r_alpha_gamma_function + beta_part;
   }
   return log_weights;
 };
