@@ -68,7 +68,11 @@ public:
     L_inds,             // indices over views
     N_inds;             // indices over items
   
-  arma::vec phis, complete_likelihood_vec, mass;
+  arma::vec phis,
+    mass, 
+    complete_likelihood_vec, 
+    N_ones, 
+    N_log_facctorial_vec;
   
   arma::umat 
     

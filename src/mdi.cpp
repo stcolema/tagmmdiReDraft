@@ -108,6 +108,12 @@ mdiModelAlt::mdiModelAlt(
   
   N_inds = linspace< uvec >(0, N - 1, N);
   L_inds = linspace< uvec >(0, L - 1, L);
+  
+  // Quantities used in calculating phi shape
+  N_ones = regspace(0, N);
+  N_log_facctorial_vec = log(N_ones);
+  N_log_facctorial_vec(0) = 0.0;
+  N_log_facctorial_vec = cumsum(N_log_facctorial_vec);
 
   // The members of each cluster across datasets. Each slice is a binary matrix
   // of the members of the kth class across the datasets.
@@ -554,19 +560,40 @@ arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(arma::uword N_vw,
     N_vw_part = 0.0,
     beta_part = 0.0;
 
-  vec N_vw_ones = regspace(0,  N_vw), r_ones, log_weights(N_vw + 1);
+  vec N_vw_ones(N_vw + 1), 
+    N_vw_vec(N_vw + 1),
+    r_log_factorial_vec(N_vw + 1),
+    log_weights(N_vw + 1);
   log_weights.zeros();
   // log_weights(0) = -1e6;
   
-  vec N_vw_vec = cumsum(log(N_vw - N_vw_ones));
-  N_vw_vec(0) = 0.0;
+  // Rcpp::Rcout << "\n\nIn weights function.\n";
+  
+  N_vw_ones = regspace(0,  N_vw);
+  // N_vw_vec = log(N_vw - N_vw_ones);
+  // N_vw_vec(N_vw) = 0.0;
+  // N_vw_vec = cumsum(N_vw_vec);
 
-  vec r_log_factorial_vec = log(N_vw_ones);
-  r_log_factorial_vec(0) = 0.0;
-  r_log_factorial_vec = cumsum(r_log_factorial_vec);
+  r_log_factorial_vec = N_log_facctorial_vec.subvec(0, N_vw);
+  
+  // r_log_factorial_vec = log(N_vw_ones);
+  // r_log_factorial_vec(0) = 0.0;
+  // r_log_factorial_vec = cumsum(r_log_factorial_vec);
+  
+  // Rcpp::Rcout << "\nReach for loop in weights.\n";
   
   for(uword r = 0; r < (N_vw + 1); r++) {
-    N_vw_vec = N_vw_vec(r);
+    
+    // Rcpp::Rcout << "\nr: " << r;
+    // Rcpp::Rcout << "\nN_vw_vec:\n" << N_vw_vec.t();
+    // Rcpp::Rcout << "\n\nr_log_factorial_vec:\n" << r_log_factorial_vec.t();
+    N_vw_part = 0.0;
+    
+    for(int ii = 0; ii < r; ii++) {
+      N_vw_part += log(N_vw - ii);
+    }
+
+    // N_vw_part = N_vw_vec(r);
     r_factorial = r_log_factorial_vec(r);
     
     // N_vw_part = 0.0;
@@ -592,6 +619,8 @@ arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(arma::uword N_vw,
     beta_part = (r + phi_shape_prior) * std::log(rate + phi_rate_prior);
     log_weights(r) = N_vw_part - r_factorial + r_alpha_gamma_function + beta_part;
   }
+  // Rcpp::Rcout << "\nCalculated weights.\n";
+  
   return log_weights;
 };
 
