@@ -6,7 +6,6 @@
 
 // =============================================================================
 // included dependencies
-# include <RcppArmadillo.h>
 # include "density.h"
 # include "outlierComponent.h"
 # include "densityFactory.h"

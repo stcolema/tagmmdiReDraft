@@ -6,7 +6,6 @@
 
 // =============================================================================
 // included dependencies
-# include <RcppArmadillo.h>
 # include "outlierComponent.h"
 
 using namespace arma ;

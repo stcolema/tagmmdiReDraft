@@ -6,12 +6,9 @@
 
 // =============================================================================
 // included dependencies
-// #define ARMA_WARN_LEVEL 1 // Turn off warnings that occur due to point errors.
+// #define ARMA_WARN_LEVEL 0 // Turn off warnings that occur due to point errors.
 
-# include <RcppArmadillo.h>
 # include "density.h"
-# include "genericFunctions.h"
-# include "logLikelihoods.h"
 // # include "kernelFactory.h"
 
 using namespace arma ;
@@ -42,11 +39,12 @@ public:
   
   bool logNormPriorUsed = true, use_log_norm_proposal = true;
   uword sampleHypersFrequency = 5, samplingCount = 0;
+  std::string matrixSaved = "i";
   
   double
     
-    kernel_subblock_threshold = 1e-5,
-    
+    // kernel_subblock_threshold = 1e-12,
+    matrix_precision = 8, //  1e-08,
     amplitude_proposal_window = 0.025,
     length_proposal_window = 0.025,
     noise_proposal_window = 0.025;
@@ -63,7 +61,7 @@ public:
   
   vec amplitude, length, noise, cov_log_det, zero_vec;
   umat density_members;
-  mat scale, mu, cov_comb_log_det, time_difference_mat, I_p;
+  mat scale, mu, cov_comb_log_det, time_difference_mat, I_p, time_diff_mat;
   cube kernel_sub_block;
   field < uvec > repeated_time_indices;
   field < vec > repeated_mean_vector, flattened_component_data;
@@ -110,7 +108,7 @@ public:
   // Sampling and calculations related to the covarianc function/matrix
   void sampleHyperParameters();
   mat calculateKthComponentKernelSubBlock(double amplitude, double length,
-                                          double kernel_subblock_threshold = 1e-16);
+                                          double kernel_subblock_threshold = 1e-12);
   void calculateKernelSubBlock();
   mat constructCovarianceMatrix(uword n_k, mat kernel_sub_block);
   mat invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block);
@@ -121,7 +119,8 @@ public:
       mat C, 
       bool checkSymmetry = false, 
       bool checkStability = true, 
-      int n_places = 8
+      double threshold = 1e-12
+      // int n_places = 8
   );
   
   // Sample and calulcate objects related to sampling the mean posterior function

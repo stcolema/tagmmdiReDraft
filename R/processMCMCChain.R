@@ -48,7 +48,7 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
     stop("Wrong point estimate method given. Must be one of 'mean' or 'median'")
   
   # We burn the floor of burn / thin of these 
-  eff_burn <- floor(burn / thin)
+  eff_burn <- floor(burn / thin) + 1
   
   # We record only the floor of R / thin samples
   eff_R <- floor(R / thin) - eff_burn
@@ -58,14 +58,16 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
   
   new_output <- mcmc_output
 
+  new_output$mass <- mcmc_output$mass[-dropped_indices, , drop = F]
   if(multiple_views) {
     # The information sharing parameters
     new_output$phis <- mcmc_output$phis[-dropped_indices, , drop = F]
   }
     
   # The model fit
-  new_output$complete_likelihood <- mcmc_output$complete_likelihood[-dropped_indices, , drop = F]
-
+  new_output$complete_likelihood <- mcmc_output$complete_likelihood[-dropped_indices] # , , drop = F]
+  new_output$evidence <- mcmc_output$evidence[-dropped_indices[-eff_burn]]
+  
   # The allocations and allocation probabilities
   new_output$allocations <- mcmc_output$allocations[-dropped_indices, , , drop = F]
   

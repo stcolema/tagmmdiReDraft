@@ -17,7 +17,7 @@ Description: Integrative clustering and semi-supervised prediction.
   This package includes a C++ implementation of both semi- and 
   un-supervised Multiple Dataset Integration, an extension of Bayesian mixture models
   to the integrative (multiple dataset) setting.
-Imports: Rcpp (>= 1.0.6), RcppArmadillo, RcppParallel
+Imports: Rcpp (>= 1.0.6), RcppParallel, ggplot2, stringr, tidyr
 LinkingTo: Rcpp, RcppArmadillo, testthat, RcppParallel
 Suggests: xml2
 SystemRequirements: GNU make

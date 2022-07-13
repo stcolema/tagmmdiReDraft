@@ -6,6 +6,7 @@
 
 // =============================================================================
 // included dependencies
+// #define ARMA_WARN_LEVEL 0 // Turn off warnings that occur due to point errors.
 # include <RcppArmadillo.h>
 
 using namespace arma ;

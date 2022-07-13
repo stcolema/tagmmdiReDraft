@@ -6,7 +6,6 @@
 
 // =============================================================================
 // included dependencies
-# include <RcppArmadillo.h>
 # include "logLikelihoods.h"
 # include "genericFunctions.h"
 # include "mixtureModel.h"
@@ -50,7 +49,7 @@ public:
     
     // Prior hyperparameters for MDI phi parameters
     phi_shape_prior = 1.0,
-    phi_rate_prior = 0.2,
+    phi_rate_prior = 0.1,
     
     // Model fit
     complete_likelihood = 0.0;
@@ -69,7 +68,11 @@ public:
     L_inds,             // indices over views
     N_inds;             // indices over items
   
-  arma::vec phis, complete_likelihood_vec, mass;
+  arma::vec phis,
+    mass, 
+    complete_likelihood_vec, 
+    N_ones, 
+    N_log_facctorial_vec;
   
   arma::umat 
     

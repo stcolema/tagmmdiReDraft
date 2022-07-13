@@ -61,10 +61,10 @@ double mvtLogLikelihood(arma::vec x, arma::vec mu, arma::mat Sigma, double nu) {
 }
 
 
-double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma) {
-  bool cov_is_sympd = Sigma.is_sympd();
+double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma, bool is_sympd) {
+  // bool cov_is_sympd = Sigma.is_sympd();
   
-  if(cov_is_sympd) {
+  if(is_sympd) {
     return -0.5 * (
         log(2 * M_PI) 
         + arma::log_det_sympd(Sigma) 

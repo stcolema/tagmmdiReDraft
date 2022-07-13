@@ -19,7 +19,6 @@
 #' labels are as intended or should ``generateInitialLabels`` be called.
 #' @return A named list containing the sampled partitions, component weights and
 #' phi parameters, model fit measures and some details on the model call.
-#'  @importFrom parallel parLapply
 #' @export
 runMCMCChains <- function(X,
                           n_chains,

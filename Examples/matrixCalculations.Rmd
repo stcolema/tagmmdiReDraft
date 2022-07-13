@@ -131,4 +131,26 @@ naive_answer <- naive_answer %*% C[, 1:D]
 
 approxEqual(final_answer_2, naive_answer)
 
+
+naive_cov_tilde <- matrix(0, D, D)
+for(ii in seq(1, D)) {
+  for(jj in seq(1, D)) {
+    naive_cov_tilde[ii, jj] <- C[ii, jj] - C[ii, ] %*% C_inv %*% C[, jj]
+  }
+}
+naive_cov_tilde2 <- A - C[1:D, ] %*% C_inv %*% C[, 1:D]
+my_cov_tilde <- A - n * (my_product(sigma, A) %*% A)
+
+head(my_cov_tilde)
+head(naive_cov_tilde)
+
+all((final_answer_2 - naive_answer)**2 < min(0.01 * c(final_answer_2, naive_answer)))
+
+all((my_cov_tilde - naive_cov_tilde)**2 < min(0.01 * c(my_cov_tilde, naive_cov_tilde)))
+all((naive_cov_tilde2 - naive_cov_tilde)**2 < min(0.01 * c(naive_cov_tilde2, naive_cov_tilde)))
+
+all((my_cov_tilde - naive_cov_tilde2)**2 < 1e-15)
+all((my_cov_tilde - naive_cov_tilde)**2 < 1e-15)
+
+
 ```

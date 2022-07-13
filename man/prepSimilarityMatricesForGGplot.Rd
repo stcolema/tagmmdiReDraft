@@ -30,3 +30,11 @@ Given a list of symmatric similarity matrices, converts them
 to the correct formatting for ggplot2, optionally giving all a common
 ordering.
 }
+\examples{
+plot_df <- prepSimilarityMatricesForGGplot(my_psms)
+plot_df |> 
+  ggplot(aes(x = x, y= y, fill = Entry)) + 
+    geom_tile() + 
+    facet_wrap(~Chain) + 
+    scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
+}

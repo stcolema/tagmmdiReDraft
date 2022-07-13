@@ -18,6 +18,7 @@ A list of ``X``, the fracitonation data from a LOPIT experiment,
  arbitrarily with a ``1`` as these will be sampled again within the wrapper 
  of ``callMDI``) and ``class_key`` which maps the numeric representation of 
  organelles back to the original naming.
+ @importFrom Biobase exprs fData
 }
 \description{
 Prepares a mass spectrometry experiment (as stored in 

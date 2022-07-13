@@ -42,11 +42,33 @@ labels are as intended or should ``generateInitialLabels`` be called.}
 bound on the number of clusters in each dataset).}
 }
 \value{
-A named list containing the sampled partitions, component weights and
-phi parameters, model fit measures and some details on the model call.
+A named list containing the sampled partitions, component weights,
+phi and mass parameters, model fit measures and some details on the model call.
 }
 \description{
 Runs a MCMC chain of the integrative clustering method,
 Multiple Dataset Integration (MDI), to L datasets. It is recommended that
 L < 5.
+}
+\examples{
+
+N <- 100
+X <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
+Y <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
+data_modelled <- list(X, Y)
+
+R <- 100
+thin <- 5
+
+alpha <- c(1, 1)
+K <- c(10, 15)
+labels <- matrix(0, nrow = N, ncol = 2)
+labels[, 1] <- generateInitialUnsupervisedLabels(N, alpha[1], K[1])
+labels[, 2] <- generateInitialUnsupervisedLabels(N, alpha[1], K[2])
+
+fixed <- matrix(0, nrow = N, ncol = 2)
+types <- c("MVN", "G")
+
+mcmc_out <- callMDI(data_modelled, R, thin, labels, fixed, types, K, alpha)
+
 }
