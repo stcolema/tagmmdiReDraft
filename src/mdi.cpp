@@ -643,8 +643,8 @@ void mdiModelAlt::updatePhis() {
       
       // Find the parameters based on the likelihood
       rate = calcPhiRate(l, m);
-      shape = samplePhiShape(l, m, rate);
-      // shape = 1 + accu(labels.col(l) == labels.col(m));
+      // shape = samplePhiShape(l, m, rate);
+      shape = 1 + accu(labels.col(l) == labels.col(m));
       
       // Rcpp::Rcout << "\n\nShape:" << shape;
       // Rcpp::Rcout << "\nRate:" << rate;
