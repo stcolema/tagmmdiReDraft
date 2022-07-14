@@ -877,6 +877,97 @@ void mdiModelAlt::updateLabels() {
   
   bool multipleUnfixedComponents = true;
   
+  // // The other component considered
+  // uword k_prime = 0;
+  // 
+  // // Random uniform number
+  // double u = 0.0,
+  //   
+  //   // The current likelihood
+  //   curr_score = 0.0,
+  //   
+  //   // The competitor
+  //   alt_score = 0.0,
+  //   
+  //   // The accpetance probability
+  //   accept = 1.0,
+  //   log_accept = 0.0,
+  //   
+  //   // The weight of the kth component if we do accept the swap
+  //   old_weight = 0.0;
+  // 
+  // // Vector of entries equal to 1/(K - 1) (as we exclude the current label) and
+  // // its cumulative sum, used to sample another label to consider swapping.
+  // vec K_inv, K_inv_cum;
+  // 
+  // umat swapped_labels(N, L);
+  
+  
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+      updateLabelsViewL(l);
+    }
+  );
+  
+  // for(uword l = 0; l < L; l++) {
+  //   
+  //   multipleUnfixedComponents = (K_unfixed(l) > 1);
+  //   if(multipleUnfixedComponents) {
+  //     updateLabelsViewL(l);
+  //   }
+  // }
+    //   // K_inv = ones<vec>(K(l) - 1) * 1 / (K(l) - 1);
+    //   K_inv = ones<vec>(K_unfixed(l) - 1) * (1.0 / (double)(K_unfixed(l) - 1));
+    //   K_inv_cum = cumsum(K_inv);
+    //   
+    //   // The score associated with the current labelling
+    //   curr_score = calcScore(l, labels);
+    //   
+    //   for(uword k = K_fixed(l); k < K(l); k++) {
+    //     
+    //     // Select another label randomly
+    //     k_prime = sampleLabel(k, K_inv_cum) + K_fixed(l);
+    //     
+    //     // The label matrix updated with the swapped labels
+    //     swapped_labels = swapLabels(l, k, k_prime);
+    //     
+    //     // The score for the swap
+    //     alt_score = calcScore(l, swapped_labels);
+    //     
+    //     // The log acceptance probability
+    //     log_accept = alt_score - curr_score;
+    //     
+    //     if(log_accept < 0) {
+    //       accept = std::exp(log_accept);
+    //     }
+    //     
+    //     // If we accept the label swap, update labels, weights and score
+    //     if(randu() < accept) {
+    //       
+    //       // Update the current score
+    //       curr_score = alt_score;
+    //       labels = swapped_labels;
+    //       
+    //       // Update the component weights
+    //       old_weight = w(k, l);
+    //       w(k, l) = w(k_prime, l);
+    //       w(k_prime, l) = old_weight;
+    //     }
+    //   } 
+    // }
+};
+
+void mdiModelAlt::updateLabelsViewL(uword l) {
+  
+  bool multipleUnfixedComponents = (K_unfixed(l) > 1);
+  
+  if(! multipleUnfixedComponents) {
+    return;
+  }
+  
   // The other component considered
   uword k_prime = 0;
   
@@ -902,48 +993,42 @@ void mdiModelAlt::updateLabels() {
   
   umat swapped_labels(N, L);
   
-  for(uword l = 0; l < L; l++) {
+  // K_inv = ones<vec>(K(l) - 1) * 1 / (K(l) - 1);
+  K_inv = ones<vec>(K_unfixed(l) - 1) * (1.0 / (double)(K_unfixed(l) - 1));
+  K_inv_cum = cumsum(K_inv);
+  
+  // The score associated with the current labelling
+  curr_score = calcScore(l, labels);
+  
+  for(uword k = K_fixed(l); k < K(l); k++) {
     
-    multipleUnfixedComponents = (K_unfixed(l) > 1);
-    if(multipleUnfixedComponents) {
-      // K_inv = ones<vec>(K(l) - 1) * 1 / (K(l) - 1);
-      K_inv = ones<vec>(K_unfixed(l) - 1) * (1.0 / (double)(K_unfixed(l) - 1));
-      K_inv_cum = cumsum(K_inv);
-      
-      // The score associated with the current labelling
-      curr_score = calcScore(l, labels);
-      
-      for(uword k = K_fixed(l); k < K(l); k++) {
-        
-        // Select another label randomly
-        k_prime = sampleLabel(k, K_inv_cum) + K_fixed(l);
-        
-        // The label matrix updated with the swapped labels
-        swapped_labels = swapLabels(l, k, k_prime);
-        
-        // The score for the swap
-        alt_score = calcScore(l, swapped_labels);
-        
-        // The log acceptance probability
-        log_accept = alt_score - curr_score;
-        
-        if(log_accept < 0) {
-          accept = std::exp(log_accept);
-        }
-        
-        // If we accept the label swap, update labels, weights and score
-        if(randu() < accept) {
-          
-          // Update the current score
-          curr_score = alt_score;
-          labels = swapped_labels;
-          
-          // Update the component weights
-          old_weight = w(k, l);
-          w(k, l) = w(k_prime, l);
-          w(k_prime, l) = old_weight;
-        }
-      } 
+    // Select another label randomly
+    k_prime = sampleLabel(k, K_inv_cum) + K_fixed(l);
+    
+    // The label matrix updated with the swapped labels
+    swapped_labels = swapLabels(l, k, k_prime);
+    
+    // The score for the swap
+    alt_score = calcScore(l, swapped_labels);
+    
+    // The log acceptance probability
+    log_accept = alt_score - curr_score;
+    
+    if(log_accept < 0) {
+      accept = std::exp(log_accept);
     }
-  }
+    
+    // If we accept the label swap, update labels, weights and score
+    if(randu() < accept) {
+      
+      // Update the current score
+      curr_score = alt_score;
+      labels = swapped_labels;
+      
+      // Update the component weights
+      old_weight = w(k, l);
+      w(k, l) = w(k_prime, l);
+      w(k_prime, l) = old_weight;
+    }
+  } 
 };

@@ -211,6 +211,7 @@ public:
   // Check if labels should be swapped to improve correlation of clustering
   // across datasets via random sampling.
   void updateLabels();
+  void updateLabelsViewL(uword l);
 
 };
 
