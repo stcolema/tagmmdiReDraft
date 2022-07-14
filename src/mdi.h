@@ -72,7 +72,7 @@ public:
     mass, 
     complete_likelihood_vec, 
     N_ones, 
-    N_log_facctorial_vec;
+    N_log_factorial_vec;
   
   arma::umat 
     
@@ -144,7 +144,7 @@ public:
   
   // Calculate the log-weights of the mixture of Gammas the shape is sampled 
   // from
-  arma::vec calculatePhiShapeMixtureWeights(arma::uword N_vw, double rate);
+  arma::vec calculatePhiShapeMixtureWeights(int N_vw, double rate);
   
   // Sample the shape parameter of the phi posterior distribution from a mixture 
   // of Gammas
