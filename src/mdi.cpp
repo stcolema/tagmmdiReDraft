@@ -245,8 +245,6 @@ void mdiModelAlt::initialisePhis() {
     }
   }
   
-  Rcpp::Rcout << "\nPhi map:\n" << phi_ind_map;
-  
   // We use the transpose a surprising amount to ensure correct typing
   phi_indicator_t = phi_indicator.t();
   
