@@ -509,7 +509,7 @@ arma::vec mdiModelAlt::calculatePhiShapeMixtureWeights(
     r_alpha_gamma_function = lgamma(r + phi_shape_prior);
     beta_part = (r + phi_shape_prior) * std::log(rate + phi_rate_prior);
     // log_weights(r) = N_vw_part - r_factorial + r_alpha_gamma_function + beta_part;
-    log_weights(r) = log_n_choose_r + r_alpha_gamma_function + beta_part;
+    log_weights(r) = log_n_choose_r + r_alpha_gamma_function - beta_part;
   }
   return log_weights;
 };
