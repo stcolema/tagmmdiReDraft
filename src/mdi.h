@@ -141,6 +141,8 @@ public:
   
   // The rate for the phi coefficient between the lth and mth datasets.
   double calcPhiRate(uword lstar, uword mstar);
+  double calcPhiRateNaive(uword view_i, uword view_j);
+  double calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, uvec current_ks);
   
   // Calculate the log-weights of the mixture of Gammas the shape is sampled 
   // from

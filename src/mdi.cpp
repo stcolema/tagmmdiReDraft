@@ -292,7 +292,7 @@ double mdiModelAlt::calcWeightRate(uword lstar, uword kstar) {
   // level, but to allow K_l != K_m I suspect it will be different for each
   // dataset (I haven't done the maths though) and thus the objects might be
   // awkward
-  uword n_used;
+  uword n_used = 0;
   uvec relevant_inds;
   vec weight_products, phi_products;
   umat relevant_combinations;
@@ -329,6 +329,65 @@ double mdiModelAlt::calcWeightRate(uword lstar, uword kstar) {
   
   return rate;
 };
+
+double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, uvec current_ks) {
+  double rate = 0.0;
+  uvec weight_ind(L);
+  weight_ind.zeros();
+  
+  for(uword l = 0; l < L; l++) {
+    rate *= w(current_ks(l), l);
+  }
+  for(uword l = 0; l < L - 1; l++) {
+    for(uword m = l + 1; m < L; m++) {
+      if(m != view_j) {
+        rate *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
+      }
+    }
+  }
+  for(uword l = 0; l < view_j - 1; l++) {
+    rate *= (1.0 + phis(phi_ind_map(l, view_j)) * (current_ks(l) == current_ks(view_j)));
+  }
+  return rate;
+};
+
+double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
+  bool update_current_flag = false;
+  uword K_comb = prod(K), curr_ind = 0;
+  double rate = 0.0;
+  uvec update_flags(L), weight_ind(L), K_cumprod(L), backwards_inds(L);
+  update_flags.zeros();
+  weight_ind.zeros();
+  backwards_inds = regspace<uvec>(L - 2, -1, 0);
+  uvec K_rel(L);
+  K_rel.zeros();
+  K_rel(span(1, L - 1)) = K(span(0, L - 2));
+  
+  K_cumprod = cumprod(K_rel);
+  K_cumprod(0) = 1;
+  
+  update_flags(L - 1) = 1;
+  
+  for(uword ii = 0; ii < K_comb; ii++) {
+    
+    rate += calcPhiRateNaiveSingleIteration(view_i, view_j, weight_ind);
+    
+    for(uword l = 0; l < L; l++) {
+      if(l == 0) {
+        weight_ind(l)++;
+      } else {
+        if((ii % K_cumprod(l) == 0) && (ii != 0)) {
+          weight_ind(l)++;
+        }
+      }
+      if(weight_ind(l) == K(l)) {
+        weight_ind(l) = 0;
+      }
+    }
+    
+  }
+  return rate;
+}
 
 // The rate for the phi coefficient between the lth and mth datasets.
 double mdiModelAlt::calcPhiRate(uword lstar, uword mstar) {
@@ -401,7 +460,7 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
     N_k(k, l) = accu(members_lk);
     
     // The hyperparameters
-    shape = 1 + N_k(k, l);
+    shape = 1.0 + N_k(k, l);
     rate = calcWeightRate(l, k);
     
     // Sample a new weight
@@ -730,7 +789,7 @@ mat mdiModelAlt::calculateUpweights(uword l) {
       
       for(uword k = 0; k < K(l); k++) {
         
-        matching_labels = (labels.col(m) == k);
+        matching_labels = 1.0 * (labels.col(m) == k);
         
         // Recall that the map assumes l < m; so account for that
         if(l < m) {
