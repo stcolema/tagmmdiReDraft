@@ -331,9 +331,10 @@ double mdiModelAlt::calcWeightRate(uword lstar, uword kstar) {
 };
 
 double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, uvec current_ks) {
-  double rate = 0.0;
-  uvec weight_ind(L);
-  weight_ind.zeros();
+  double rate = 1.0;
+
+  // Rcpp::Rcout << "\nView i: " << view_i << "\nView j: " << view_j;
+  // Rcpp::Rcout << "\ncurrent_ks:\n" << current_ks.t();
   
   for(uword l = 0; l < L; l++) {
     rate *= w(current_ks(l), l);
@@ -352,40 +353,109 @@ double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, 
 };
 
 double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
+  // Rcpp::Rcout << "\nCalculate phi rate.\n";
   bool update_current_flag = false;
-  uword K_comb = prod(K), curr_ind = 0;
+  uword K_comb = prod(K), curr_ind = 0, l = 0;
   double rate = 0.0;
-  uvec update_flags(L), weight_ind(L), K_cumprod(L), backwards_inds(L);
+  uvec update_flags(L), weight_ind(L), K_cumprod(L - 1), backwards_inds(L), for_loop_inds(L);
   update_flags.zeros();
   weight_ind.zeros();
-  backwards_inds = regspace<uvec>(L - 2, -1, 0);
-  uvec K_rel(L);
+  // backwards_inds = regspace<uvec>(L - 2, -1, 0);
+  uvec K_rel(L), K_rel_cum(L - 1);
   K_rel.zeros();
-  K_rel(span(1, L - 1)) = K(span(0, L - 2));
+  K_rel_cum.zeros();
+  K_rel = K;
   
-  K_cumprod = cumprod(K_rel);
-  K_cumprod(0) = 1;
+  for_loop_inds = regspace<uvec>(0,  1,  L - 1);
   
-  update_flags(L - 1) = 1;
+  bool shed_j = K(view_i) < K(view_j);
+  if(shed_j) {
+    K_rel.shed_row(view_j);
+    for_loop_inds.shed_row(view_j);
+  } else {
+    K_rel.shed_row(view_i);
+    for_loop_inds.shed_row(view_i);
+  }
+  
+  // Rcpp::Rcout << "\nFor loop indices:\n" << for_loop_inds.t();
+  
+  // Rcpp::Rcout << "\nRelative cumulative object.\n";
+  // Rcpp::Rcout << "\nK: " << K_rel.t();
+  // We have shed an entry and we do not need the final entry for the cumulative check
+  K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
+  K_rel_cum(0) = 1;
+  
+  
+  // Rcpp::Rcout << "\nRelative cumulative object.\n";
+  // Rcpp::Rcout << "\nK_rel_cum:\n" << K_rel_cum.t();
+  
+  K_cumprod = cumprod(K_rel_cum);
+  // K_rel_cum(0) = 1;
+  // K_cumprod(0) = 1;
+  K_comb = prod(K_rel);
+  
+  // Rcpp::Rcout << "\nRelative cumulative object declared and calculated.\n" << K_cumprod.t() << "\n";
+  // Rcpp::Rcout << "\nNumber of iterations: " << K_comb;
+  // Rcpp::stop("stopped");
+  // return 0.0;
+    // update_flags(L - 1) = 1;
   
   for(uword ii = 0; ii < K_comb; ii++) {
     
+    // Rcpp::Rcout << "\nIn long loop. ii: " << ii << "\n";
+    // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
     rate += calcPhiRateNaiveSingleIteration(view_i, view_j, weight_ind);
     
-    for(uword l = 0; l < L; l++) {
-      if(l == 0) {
+    // Rcpp::Rcout << "\nFirst rate calculated.\n";
+    
+    // We have to hold the index for view_i and view_j the same
+    // for(uword l = 0; l < (L - 1); l++) {
+    for(uword jj = 0; jj < (L - 1); jj++) {
+      l = for_loop_inds(jj);
+      
+      // Rcpp::Rcout << "\njj: " << jj;
+      // Rcpp::Rcout << "\nl: " << l;
+
+    // for(auto & l : for_loop_inds) {
+      if(jj == 0) {
+        // Rcpp::Rcout << "\njj = 0 IF statement";
+        
         weight_ind(l)++;
+        // Rcpp::Rcout << "\nweight_ind:\n" << weight_ind;
+        
       } else {
-        if((ii % K_cumprod(l) == 0) && (ii != 0)) {
+        // Rcpp::Rcout << "\nK_cumprod:\n" << K_cumprod.t();
+        
+        if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
+          // Rcpp::Rcout << "\nIn K mod ii IF statement.";
+          
           weight_ind(l)++;
+          if(shed_j && (l == view_i)) {
+            weight_ind(view_j)++;
+          } 
+          if(! shed_j && (l == view_j)) {
+            weight_ind(view_i)++;
+          }
         }
       }
       if(weight_ind(l) == K(l)) {
+        // Rcpp::Rcout << "\nReset IF statement.";
+        
         weight_ind(l) = 0;
+        if(shed_j && (l == view_i)) {
+          weight_ind(view_j) = 0;
+        } 
+        if(! shed_j && (l == view_j)) {
+          weight_ind(view_i) = 0;
+        }
+        
       }
     }
     
   }
+  
+  rate *= v;
+  
   return rate;
 }
 
@@ -585,7 +655,9 @@ void mdiModelAlt::updatePhis() {
     for(uword m = l + 1; m < L; m++) {
       
       // Find the parameters based on the likelihood
-      rate = calcPhiRate(l, m);
+      // rate = calcPhiRate(l, m);
+      rate = calcPhiRateNaive(l, m);
+      
       shape = samplePhiShape(l, m, rate);
       // shape = 1 + accu(labels.col(l) == labels.col(m));
       
