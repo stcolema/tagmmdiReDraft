@@ -129,6 +129,8 @@ public:
   // Calculate the rate parameter of the gamma distribution for the component 
   // weights
   double calcWeightRate(uword lstar, uword kstar);
+  double calcWeightRateNaiveSingleIteration(uword k, uword v, uvec current_ks);
+  double calcWeightRateNaive(uword k, uword v);
   
   // Update the cluster weights
   void updateWeights();
