@@ -111,7 +111,7 @@ Rcpp::List runAltMDI(arma::uword R,
     // Rcpp::Rcout << "\nUpdate normalising constant.";
     
     // Rcpp::Rcout << "\n\nNormalising constant.";
-    my_mdi.updateNormalisingConst();
+    my_mdi.updateNormalisingConstantNaive();
     
     // Rcpp::Rcout << "\nSample strategic latent variable.";
     
@@ -140,6 +140,8 @@ Rcpp::List runAltMDI(arma::uword R,
     // Rcpp::Rcout << "\nUpdate allocation.";
     
     my_mdi.updateAllocation();
+
+    // Rcpp::Rcout << "\nSwap labels.";
     
     // Try and swap labels within datasets to improve the correlation between 
     // clusterings across datasets

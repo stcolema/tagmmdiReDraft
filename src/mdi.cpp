@@ -62,12 +62,12 @@ mdiModelAlt::mdiModelAlt(
   N_k.set_size(K_max, L);
   N_k.zeros();
   
-  // We want to track which combinations should be unweighed and by what phi.
-  // This object will be used in calculating the normalising constant (Z), the
-  // cluster weights (gammas) and the correlation coefficient (phis)
-  // along with the phi_indicator matrix.
-  comb_inds.set_size(K_to_the_L, L);
-  comb_inds.zeros();
+  // // We want to track which combinations should be unweighed and by what phi.
+  // // This object will be used in calculating the normalising constant (Z), the
+  // // cluster weights (gammas) and the correlation coefficient (phis)
+  // // along with the phi_indicator matrix.
+  // comb_inds.set_size(K_to_the_L, L);
+  // comb_inds.zeros();
   
   // Concentration mass for each view
   mass.set_size(L);
@@ -160,12 +160,12 @@ void mdiModelAlt::initialisePhis() {
   
   uword k = 0, col_ind = 0;
   
-  // We want to track which combinations should be unweighed and by what phi.
-  // This object will be used in calculating the normalising constant (Z), the
-  // cluster weights (gammas) and the correlation coefficient (phis)
-  // along with the phi_indicator matrix.
-  comb_inds.set_size(K_to_the_L, L);
-  comb_inds.zeros();
+  // // We want to track which combinations should be unweighed and by what phi.
+  // // This object will be used in calculating the normalising constant (Z), the
+  // // cluster weights (gammas) and the correlation coefficient (phis)
+  // // along with the phi_indicator matrix.
+  // comb_inds.set_size(K_to_the_L, L);
+  // comb_inds.zeros();
   
   // The gammas combine in a form like (letting g denote gamma)
   // g_{11} g_{12} ... g_{1L}
@@ -183,40 +183,40 @@ void mdiModelAlt::initialisePhis() {
   one_to_K = linspace<uvec>(0, K_max - 1, K_max);
   one_to_L = linspace<uvec>(0, L - 1, L);
   
-  // The matrix used to construct the rate for sampling the cluster weights
-  KL_powers.set_size(L);
-  for(uword l = 0; l < L; l++) {
-    KL_powers(l) = std::pow(K_max, l);
-    for(uword i = 0; i < K_to_the_L; i++){
-      
-      // We want the various combinations of the different gammas / cluster weights.
-      // This format makes it relatively easy to figure out the upscaling too
-      // (see phi_indicator below).
-      k = ((double) i / (double) KL_powers(l));
-      k = k % K_max;
-      comb_inds(i, l) = k;
-    }
-  }
-  
-  // Drop any rows that contain weights for clusters that shouldn't be 
-  // modelled (i.e. if unique K_l are used)
-  for(uword l = 0; l < L; l++) {
-    rows_to_shed = find(comb_inds.col(l) >= K(l));
-    comb_inds.shed_rows(rows_to_shed);
-  }
-  
-  // The final number of combinations
-  n_combinations = comb_inds.n_rows;
-  
-  // Now construct a matrix to record which phis are upweighing which weight
-  // products, via an indicator matrix. This matrix has a column for each phi
-  // (ncol = LC2) and a row for each combination (nrow = n_combinations).
-  // This is working with the combi_inds object above. That indicated which 
-  // weights to use, this indicates the corresponding up weights (e.g.,
-  // we'd expect the first row to be all ones as all weights are for the first
-  // component in each dataset, similarly for the last row).
-  phi_indicator.set_size(n_combinations, LC2);
-  phi_indicator.zeros();
+  // // The matrix used to construct the rate for sampling the cluster weights
+  // KL_powers.set_size(L);
+  // for(uword l = 0; l < L; l++) {
+  //   KL_powers(l) = std::pow(K_max, l);
+  //   for(uword i = 0; i < K_to_the_L; i++){
+  //     
+  //     // We want the various combinations of the different gammas / cluster weights.
+  //     // This format makes it relatively easy to figure out the upscaling too
+  //     // (see phi_indicator below).
+  //     k = ((double) i / (double) KL_powers(l));
+  //     k = k % K_max;
+  //     comb_inds(i, l) = k;
+  //   }
+  // }
+  // 
+  // // Drop any rows that contain weights for clusters that shouldn't be 
+  // // modelled (i.e. if unique K_l are used)
+  // for(uword l = 0; l < L; l++) {
+  //   rows_to_shed = find(comb_inds.col(l) >= K(l));
+  //   comb_inds.shed_rows(rows_to_shed);
+  // }
+  // 
+  // // The final number of combinations
+  // n_combinations = comb_inds.n_rows;
+  // 
+  // // Now construct a matrix to record which phis are upweighing which weight
+  // // products, via an indicator matrix. This matrix has a column for each phi
+  // // (ncol = LC2) and a row for each combination (nrow = n_combinations).
+  // // This is working with the combi_inds object above. That indicated which 
+  // // weights to use, this indicates the corresponding up weights (e.g.,
+  // // we'd expect the first row to be all ones as all weights are for the first
+  // // component in each dataset, similarly for the last row).
+  // phi_indicator.set_size(n_combinations, LC2);
+  // phi_indicator.zeros();
   
   // Rcpp::Rcout << "\n\nPhi indicator declared.";
   
@@ -233,7 +233,7 @@ void mdiModelAlt::initialisePhis() {
   // Iterate over dataset pairings
   for(uword l = 0; l < (L - 1); l++) {
     for(uword m = l + 1; m < L; m++) {
-      phi_indicator.col(col_ind) = (comb_inds.col(l) == comb_inds.col(m));
+      // phi_indicator.col(col_ind) = (comb_inds.col(l) == comb_inds.col(m));
       
       // Record which column index maps to which phi
       phi_ind_map(m, l) = col_ind;
@@ -245,11 +245,11 @@ void mdiModelAlt::initialisePhis() {
     }
   }
   
-  // We use the transpose a surprising amount to ensure correct typing
-  phi_indicator_t = phi_indicator.t();
-  
-  // And we often multiply by doubles, so convert to a matrix of doubles.
-  phi_indicator_t_mat = conv_to<mat>::from(phi_indicator_t);
+  // // We use the transpose a surprising amount to ensure correct typing
+  // phi_indicator_t = phi_indicator.t();
+  // 
+  // // And we often multiply by doubles, so convert to a matrix of doubles.
+  // phi_indicator_t_mat = conv_to<mat>::from(phi_indicator_t);
   
 };
 
@@ -277,58 +277,58 @@ void mdiModelAlt::initialiseMixtures() {
 };
 
 
-double mdiModelAlt::calcWeightRate(uword lstar, uword kstar) {
-  // The rate for the (k, l)th cluster weight is the sum across all of the clusters
-  // in each dataset (excluding the lth) of the product of the kth cluster
-  // weight in each of the L datasets (excluding the lth) upweigthed by
-  // the pairwise correlation across all LC2 dataset combinations.
-  
-  // The rate we return.
-  double rate = 0.0;
-  
-  // A chunk of these objects are used as our combinations matrix includes the
-  // information for k != kstar and l != lstar, so we can shed some data.
-  // Probably some of these can be dropped and calculated once at the class // [[Rcpp::export]]
-  // level, but to allow K_l != K_m I suspect it will be different for each
-  // dataset (I haven't done the maths though) and thus the objects might be
-  // awkward
-  uword n_used = 0;
-  uvec relevant_inds;
-  vec weight_products, phi_products;
-  umat relevant_combinations;
-  mat relevant_phis, phi_prod_mat;
-  
-  relevant_inds = find(comb_inds.col(lstar) == kstar);
-  relevant_combinations = comb_inds.rows(relevant_inds);
-  relevant_phis =  phi_indicator_t_mat.cols(relevant_inds);
-  n_used = relevant_combinations.n_rows;
-  
-  weight_products.ones(n_used);
-  phi_products.ones(n_used);
-  
-  // The phi products (should be a matrix of 0's and phis)
-  phi_prod_mat = relevant_phis.each_col() % phis;
-  
-  // Add 1 to each entry to have the object ready to be multiplied
-  phi_prod_mat++;
-  
-  // Vector of the products, this should have the \prod (1 + \phi_{lm} ind(k_l = k_m))
-  // ready to multiply by the weight products
-  phi_products = prod(phi_prod_mat, 0).t();
-  
-  vec w_l(K_max);
-  for(uword l = 0; l < L; l++) {
-    if(l != lstar){
-      w_l = w.col(l);
-      weight_products = weight_products % w_l.elem(relevant_combinations.col(l));
-    }
-  }
-  
-  // The rate for the gammas
-  rate = v * accu(weight_products % phi_products);
-  
-  return rate;
-};
+// double mdiModelAlt::calcWeightRate(uword lstar, uword kstar) {
+//   // The rate for the (k, l)th cluster weight is the sum across all of the clusters
+//   // in each dataset (excluding the lth) of the product of the kth cluster
+//   // weight in each of the L datasets (excluding the lth) upweigthed by
+//   // the pairwise correlation across all LC2 dataset combinations.
+//   
+//   // The rate we return.
+//   double rate = 0.0;
+//   
+//   // A chunk of these objects are used as our combinations matrix includes the
+//   // information for k != kstar and l != lstar, so we can shed some data.
+//   // Probably some of these can be dropped and calculated once at the class // [[Rcpp::export]]
+//   // level, but to allow K_l != K_m I suspect it will be different for each
+//   // dataset (I haven't done the maths though) and thus the objects might be
+//   // awkward
+//   uword n_used = 0;
+//   uvec relevant_inds;
+//   vec weight_products, phi_products;
+//   umat relevant_combinations;
+//   mat relevant_phis, phi_prod_mat;
+//   
+//   relevant_inds = find(comb_inds.col(lstar) == kstar);
+//   relevant_combinations = comb_inds.rows(relevant_inds);
+//   relevant_phis =  phi_indicator_t_mat.cols(relevant_inds);
+//   n_used = relevant_combinations.n_rows;
+//   
+//   weight_products.ones(n_used);
+//   phi_products.ones(n_used);
+//   
+//   // The phi products (should be a matrix of 0's and phis)
+//   phi_prod_mat = relevant_phis.each_col() % phis;
+//   
+//   // Add 1 to each entry to have the object ready to be multiplied
+//   phi_prod_mat++;
+//   
+//   // Vector of the products, this should have the \prod (1 + \phi_{lm} ind(k_l = k_m))
+//   // ready to multiply by the weight products
+//   phi_products = prod(phi_prod_mat, 0).t();
+//   
+//   vec w_l(K_max);
+//   for(uword l = 0; l < L; l++) {
+//     if(l != lstar){
+//       w_l = w.col(l);
+//       weight_products = weight_products % w_l.elem(relevant_combinations.col(l));
+//     }
+//   }
+//   
+//   // The rate for the gammas
+//   rate = v * accu(weight_products % phi_products);
+//   
+//   return rate;
+// };
 
 double mdiModelAlt::calcWeightRateNaiveSingleIteration(uword k, uword v, uvec current_ks) {
   uword l = 0;
@@ -566,59 +566,59 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
   return rate;
 }
 
-// The rate for the phi coefficient between the lth and mth datasets.
-double mdiModelAlt::calcPhiRate(uword lstar, uword mstar) {
-  
-  // The rate we return.
-  double rate = 0.0;
-  vec w_l;
-  
-  // A chunk of these objects are used as our combinations matrix includes the
-  // information for l = lstar and l = mstar, so we can shed some data.
-  uword n_used;
-  uvec relevant_inds;
-  vec weight_products, phi_products, relevant_phis;
-  umat relevant_combinations;
-  mat relevant_phi_inidicators, phi_prod_mat;
-  
-  relevant_inds = find(comb_inds.col(lstar) == comb_inds.col(mstar));
-  relevant_combinations = comb_inds.rows(relevant_inds);
-
-  // We only need the relevant phi indicators
-  relevant_phi_inidicators = phi_indicator_t_mat.cols(relevant_inds);
- 
-  // Drop phi_{lstar, mstar} from both the indicator matrix and the phis vector
-  relevant_phi_inidicators.shed_row(phi_ind_map(mstar, lstar));
-  relevant_phis = phis;
-  relevant_phis.shed_row(phi_ind_map(mstar, lstar));
-  
-  n_used = relevant_combinations.n_rows;
-  
-  weight_products.ones(n_used);
-  phi_products.ones(n_used);
-  
-  // The phi products (should be a matrix of 0's and phis)
-  phi_prod_mat = relevant_phi_inidicators.each_col() % relevant_phis;
-  
-  // Add 1 to each entry to have the object ready to be multiplied
-  phi_prod_mat++;
-  
-  // Vector of the products, this should have the \prod (1 + \phi_{lm} ind(k_l = k_m))
-  // ready to multiply by the weight products
-  phi_products = prod(phi_prod_mat, 0).t();
-
-  for(uword l = 0; l < L; l++) {
-    if(l != lstar){
-      w_l = w.col(l);
-      weight_products = weight_products % w_l.elem(relevant_combinations.col(l));
-    }
-  }
-  
-  // The rate for the gammas
-  rate = v * accu(weight_products % phi_products);
-  
-  return rate;
-};
+// // The rate for the phi coefficient between the lth and mth datasets.
+// double mdiModelAlt::calcPhiRate(uword lstar, uword mstar) {
+//   
+//   // The rate we return.
+//   double rate = 0.0;
+//   vec w_l;
+//   
+//   // A chunk of these objects are used as our combinations matrix includes the
+//   // information for l = lstar and l = mstar, so we can shed some data.
+//   uword n_used;
+//   uvec relevant_inds;
+//   vec weight_products, phi_products, relevant_phis;
+//   umat relevant_combinations;
+//   mat relevant_phi_inidicators, phi_prod_mat;
+//   
+//   relevant_inds = find(comb_inds.col(lstar) == comb_inds.col(mstar));
+//   relevant_combinations = comb_inds.rows(relevant_inds);
+// 
+//   // We only need the relevant phi indicators
+//   relevant_phi_inidicators = phi_indicator_t_mat.cols(relevant_inds);
+//  
+//   // Drop phi_{lstar, mstar} from both the indicator matrix and the phis vector
+//   relevant_phi_inidicators.shed_row(phi_ind_map(mstar, lstar));
+//   relevant_phis = phis;
+//   relevant_phis.shed_row(phi_ind_map(mstar, lstar));
+//   
+//   n_used = relevant_combinations.n_rows;
+//   
+//   weight_products.ones(n_used);
+//   phi_products.ones(n_used);
+//   
+//   // The phi products (should be a matrix of 0's and phis)
+//   phi_prod_mat = relevant_phi_inidicators.each_col() % relevant_phis;
+//   
+//   // Add 1 to each entry to have the object ready to be multiplied
+//   phi_prod_mat++;
+//   
+//   // Vector of the products, this should have the \prod (1 + \phi_{lm} ind(k_l = k_m))
+//   // ready to multiply by the weight products
+//   phi_products = prod(phi_prod_mat, 0).t();
+// 
+//   for(uword l = 0; l < L; l++) {
+//     if(l != lstar){
+//       w_l = w.col(l);
+//       weight_products = weight_products % w_l.elem(relevant_combinations.col(l));
+//     }
+//   }
+//   
+//   // The rate for the gammas
+//   rate = v * accu(weight_products % phi_products);
+//   
+//   return rate;
+// };
 
 void mdiModelAlt::updateWeightsViewL(uword l) {
   
@@ -817,44 +817,126 @@ void mdiModelAlt::updatePhis() {
 //   
 // };
 
-// Updates the normalising constant for the posterior
-void mdiModelAlt::updateNormalisingConst() {
+// // Updates the normalising constant for the posterior
+// void mdiModelAlt::updateNormalisingConst() {
+//   
+//   vec w_l;
+//   
+//   // A chunk of these objects are used as our combinations matrix includes the
+//   // information for l = lstar and l = mstar, so we can shed some data.
+//   vec weight_products, phi_products;
+//   mat phi_prod_mat;
+//   
+//   weight_products.ones(n_combinations);
+//   phi_products.ones(n_combinations);
+//   
+//   // The phi products (should be a matrix of 0's and phis)
+//   phi_prod_mat = phi_indicator_t_mat.each_col() % phis;
+//   
+//   // Add 1 to each entry to have the object ready to be multiplied
+//   phi_prod_mat++;
+//   
+//   // Vector of the products, this should have the \prod (1 + \phi_{lm} ind(k_l = k_m))
+//   // ready to multiply by the weight products
+//   phi_products = prod(phi_prod_mat, 0).t();
+//   
+//   
+//   for(uword l = 0; l < L; l++) {
+//     w_l = w.col(l);
+//     
+//     weight_products = weight_products % w_l.elem(comb_inds.col(l));
+//   }
+//   
+//   // The rate for the gammas
+//   Z = accu(weight_products % phi_products);
+// };
+
+double mdiModelAlt::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
+  uword l = 0;
+  double iter_value = 1.0;
   
-  vec w_l;
-  
-  // A chunk of these objects are used as our combinations matrix includes the
-  // information for l = lstar and l = mstar, so we can shed some data.
-  vec weight_products, phi_products;
-  mat phi_prod_mat;
-  
-  weight_products.ones(n_combinations);
-  phi_products.ones(n_combinations);
-  
-  // The phi products (should be a matrix of 0's and phis)
-  phi_prod_mat = phi_indicator_t_mat.each_col() % phis;
-  
-  // Add 1 to each entry to have the object ready to be multiplied
-  phi_prod_mat++;
-  
-  // Vector of the products, this should have the \prod (1 + \phi_{lm} ind(k_l = k_m))
-  // ready to multiply by the weight products
-  phi_products = prod(phi_prod_mat, 0).t();
-  
-  
-  for(uword l = 0; l < L; l++) {
-    w_l = w.col(l);
-    
-    weight_products = weight_products % w_l.elem(comb_inds.col(l));
+  // Rcpp::Rcout << "\nWeights:\n" << w;
+  // for(auto & l : for_loop_inds) {
+  for(uword jj = 0; jj < L; jj++) {
+    if(jj != v) {
+      iter_value *= w(current_ks(jj), jj);
+    }
   }
+  // Rcpp::Rcout << "\nNested views loop.";
+  for(uword l = 0; l < L - 1; l++) {
+    for(uword m = l + 1; m < L; m++) {
+      iter_value *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
+    }
+  }
+  return iter_value;
+};
+
+void mdiModelAlt::updateNormalisingConstantNaive() {
+  uword K_comb = 0, l = 0;
+  // double rate = 0.0;
+  uvec weight_ind(L), K_cumprod(L), K_rel(L), K_rel_cum(L);
   
-  // The rate for the gammas
-  Z = accu(weight_products % phi_products);
+  weight_ind.zeros();
+  
+  K_rel.zeros();
+  K_rel_cum.zeros();
+  K_rel = K;
+  
+  // Rcpp::Rcout << "\nRelative cumulative object.\n";
+  // Rcpp::Rcout << "\nK: " << K_rel.t();
+  // Rcpp::stop("stopped");
+  
+  // We have shed an entry and we do not need the final entry for the cumulative check
+  K_rel_cum(span(1, L - 1)) = K_rel(span(0, L - 2));
+  K_rel_cum(0) = 1;
+  
+  // Rcpp::Rcout << "\nRelative cumulative object.\n";
+  // Rcpp::Rcout << "\nK_rel_cum:\n" << K_rel_cum.t();
+  
+  K_cumprod = cumprod(K_rel_cum);
+  K_comb = prod(K_rel);
+  
+  // Rcpp::Rcout << "\nRelative cumulative object declared and calculated.\n" << K_cumprod.t() << "\n";
+  // Rcpp::Rcout << "\nNumber of iterations: " << K_comb;
+  // Rcpp::stop("stopped");
+  Z = 0.0;
+  
+  for(uword ii = 0; ii < K_comb; ii++) {
+    
+    // Rcpp::Rcout << "\nIn long loop. ii: " << ii << "\n";
+    // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
+    Z += calcNormalisingConstNaiveSingleIteration(weight_ind);
+    
+    // Rcpp::Rcout << "\nFirst rate calculated.\n";
+    
+    // We have to hold the index for view_i and view_j the same
+    // for(uword l = 0; l < (L - 1); l++) {
+    for(uword jj = 0; jj < L; jj++) {
+      
+      // for(auto & l : for_loop_inds) {
+      if(jj == 0) {
+        weight_ind(l)++;
+      } else {
+        if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
+          weight_ind(l)++;
+        }
+      }
+      if(weight_ind(l) == K(l)) {
+        // Rcpp::Rcout << "\nReset IF statement.";
+        
+        weight_ind(l) = 0;
+      }
+    }
+    
+  }
+   
+  // Z = rate;
 };
 
 void mdiModelAlt::sampleStrategicLatentVariable() {
   v = rGamma(N, Z);
   // v = randg(distr_param(N, 1.0 / Z));
-}
+};
 
 void mdiModelAlt::sampleFromPriors() {
   
@@ -1228,6 +1310,9 @@ void mdiModelAlt::updateLabelsViewL(uword l) {
     // The weight of the kth component if we do accept the swap
     old_weight = 0.0;
   
+  
+  uvec members_lk, members_lk_prime;
+  
   // Vector of entries equal to 1/(K - 1) (as we exclude the current label) and
   // its cumulative sum, used to sample another label to consider swapping.
   vec K_inv, K_inv_cum;
@@ -1266,10 +1351,31 @@ void mdiModelAlt::updateLabelsViewL(uword l) {
       curr_score = alt_score;
       labels = swapped_labels;
       
+      // Pass the new labels from the mixture level back to the MDI level.
+      mixtures[l]->labels = labels.col(l);
+      
       // Update the component weights
       old_weight = w(k, l);
       w(k, l) = w(k_prime, l);
       w(k_prime, l) = old_weight;
+      
+      members_lk = 1 * (labels.col(l) == k);
+      members_lk_prime = 1 * (labels.col(l) == k_prime);
+      
+      members.slice(l).col(k) = members_lk;
+      members.slice(l).col(k_prime) = members_lk_prime;
+      
+      N_k(k, l) = accu(members_lk);
+      N_k(k_prime, l) = accu(members_lk_prime);
+      
+      // Pass the allocation count down to the mixture
+      // (this is used in the parameter sampling)
+      mixtures[l]->members.col(k) = members_lk;
+      mixtures[l]->members.col(k_prime) = members_lk_prime;
+      
+      mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
+      
+      
     }
   } 
 };

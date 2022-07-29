@@ -160,7 +160,9 @@ public:
   // === Model parameters ======================================================
   
   // Updates the normalising constant for the posterior
-  void updateNormalisingConst();
+  // void updateNormalisingConst();
+  double calcNormalisingConstNaiveSingleIteration(uvec current_ks);
+  void updateNormalisingConstantNaive();
   
   // Sample a new value for the latent variable introduced to encourage nice 
   // posterior distributions
