@@ -350,33 +350,49 @@ double mdiModelAlt::calcWeightRateNaive(uword k, uword v) {
   double rate = 0.0;
   uvec weight_ind(L), K_cumprod(L - 1), for_loop_inds(L), K_rel(L), K_rel_cum(L - 1);
   
+  // We begin at the 0th component for each view and the kth for the view being 
+  // updated
   weight_ind.zeros();
   weight_ind(v) = k;
   
+  // The number of components in each view bar the vth
   K_rel.zeros();
   K_rel_cum.zeros();
   K_rel = K;
-  
-  for_loop_inds = regspace<uvec>(0,  1,  L - 1);
-  for_loop_inds.shed_row(v);
   K_rel.shed_row(v);
   
-  // We have shed an entry and we do not need the final entry for the cumulative check
+  // We will use this in the for loop to control accessing and updating of 
+  // weights
+  for_loop_inds = regspace<uvec>(0,  1,  L - 1);
+  for_loop_inds.shed_row(v);
+  
+  // We have shed an entry (leaving L-1) and we do not need the final entry for 
+  // the cumulative check as it should fill once
   K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
+  
+  // Set the 0th entry to 1.0 for the cummulative product
   K_rel_cum(0) = 1;
+  
+  // The cumulative product of the number of components in each view is used to
+  // control updating weight indices
   K_cumprod = cumprod(K_rel_cum);
+  
+  // This is the number of summations to perform
   K_comb = prod(K_rel);
+  
   for(uword ii = 0; ii < K_comb; ii++) {
     rate += calcWeightRateNaiveSingleIteration(k, v, weight_ind);
-    
-    // We have to hold the index for view_i and view_j the same
-    // for(uword l = 0; l < (L - 1); l++) {
     for(uword jj = 0; jj < (L - 1); jj++) {
+      // Which view is actually being updated (skipping the vth)
       l = for_loop_inds(jj);
+      
+      // If in first view we always update the weight index. Otherwise we check 
+      // if we are a multiple of the cumulative product of the number of 
+      // components in the preceding views and update the index if so.
       if(jj == 0) {
         weight_ind(l)++;
       } else {
-        if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
+        if((((ii + 1) % K_cumprod(jj)) == 0) && (ii != 0)) {
           weight_ind(l)++;
         }
       }
@@ -443,7 +459,8 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
       if(jj == 0) {
         weight_ind(l)++;
       } else {
-        if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
+        // if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
+        if((((ii + 1) % K_cumprod(jj)) == 0) && (ii != 0)) {
           weight_ind(l)++;
           if(shed_j && (l == view_i)) {
             weight_ind(view_j)++;
@@ -818,7 +835,8 @@ void mdiModelAlt::updateNormalisingConstantNaive() {
       if(jj == 0) {
         weight_ind(l)++;
       } else {
-        if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
+        // if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
+        if((((ii + 1) % K_cumprod(jj)) == 0) && (ii != 0)) {
           weight_ind(l)++;
         }
       }
