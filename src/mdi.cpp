@@ -331,35 +331,21 @@ void mdiModelAlt::initialiseMixtures() {
 // };
 
 double mdiModelAlt::calcWeightRateNaiveSingleIteration(uword k, uword v, uvec current_ks) {
-  uword l = 0;
   double rate = 1.0;
-  
-  // Rcpp::Rcout << "\nWeights:\n" << w;
-  // for(auto & l : for_loop_inds) {
-  for(uword jj = 0; jj < L; jj++) {
-    if(jj != v) {
-      rate *= w(current_ks(jj), jj);
+  for(uword l = 0; l < L; l++) {
+    if(l != v) {
+      rate *= w(current_ks(l), l);
     }
-    // l = for_loop_inds(jj);
-    
   }
-  // Rcpp::Rcout << "\nNested views loop.";
   for(uword l = 0; l < L - 1; l++) {
     for(uword m = l + 1; m < L; m++) {
-      // if(l == v) {
-      //   rate *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(m) == k));
-      // } else if(m == v) {
-      //   rate *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == k));
-      // } else {
-        rate *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
-      // }
+      rate *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
     }
   }
   return rate;
 };
 
 double mdiModelAlt::calcWeightRateNaive(uword k, uword v) {
-  // Rcpp::Rcout << "\nCalculate weight rate.\n";
   uword K_comb = 0, l = 0;
   double rate = 0.0;
   uvec weight_ind(L), K_cumprod(L - 1), for_loop_inds(L), K_rel(L), K_rel_cum(L - 1);
@@ -374,80 +360,37 @@ double mdiModelAlt::calcWeightRateNaive(uword k, uword v) {
   for_loop_inds = regspace<uvec>(0,  1,  L - 1);
   for_loop_inds.shed_row(v);
   K_rel.shed_row(v);
-
-  // Rcpp::Rcout << "\nRelative cumulative object.\n";
-  // Rcpp::Rcout << "\nK: " << K_rel.t();
-  // Rcpp::stop("stopped");
   
   // We have shed an entry and we do not need the final entry for the cumulative check
   K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
   K_rel_cum(0) = 1;
-  
-  // Rcpp::Rcout << "\nRelative cumulative object.\n";
-  // Rcpp::Rcout << "\nK_rel_cum:\n" << K_rel_cum.t();
-
   K_cumprod = cumprod(K_rel_cum);
   K_comb = prod(K_rel);
-  
-  // Rcpp::Rcout << "\nRelative cumulative object declared and calculated.\n" << K_cumprod.t() << "\n";
-  // Rcpp::Rcout << "\nNumber of iterations: " << K_comb;
-  // Rcpp::stop("stopped");
-
   for(uword ii = 0; ii < K_comb; ii++) {
-    
-    // Rcpp::Rcout << "\nIn long loop. ii: " << ii << "\n";
-    // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
     rate += calcWeightRateNaiveSingleIteration(k, v, weight_ind);
-    
-    // Rcpp::Rcout << "\nFirst rate calculated.\n";
     
     // We have to hold the index for view_i and view_j the same
     // for(uword l = 0; l < (L - 1); l++) {
     for(uword jj = 0; jj < (L - 1); jj++) {
-      if(jj == v) {
-        continue;
-      }
       l = for_loop_inds(jj);
-      
-      // Rcpp::Rcout << "\njj: " << jj;
-      // Rcpp::Rcout << "\nl: " << l;
-      
-      // for(auto & l : for_loop_inds) {
       if(jj == 0) {
-        // Rcpp::Rcout << "\njj = 0 IF statement";
-        
         weight_ind(l)++;
-        // Rcpp::Rcout << "\nweight_ind:\n" << weight_ind;
-        
       } else {
-        // Rcpp::Rcout << "\nK_cumprod:\n" << K_cumprod.t();
-        
         if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
-          // Rcpp::Rcout << "\nIn K mod ii IF statement.";
-          
           weight_ind(l)++;
         }
       }
       if(weight_ind(l) == K(l)) {
-        // Rcpp::Rcout << "\nReset IF statement.";
-        
         weight_ind(l) = 0;
       }
     }
-    
   }
-  
   rate *= v;
-  
   return rate;
-}
+};
 
 double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, uvec current_ks) {
   double rate = 1.0;
-
-  // Rcpp::Rcout << "\nView i: " << view_i << "\nView j: " << view_j;
-  // Rcpp::Rcout << "\ncurrent_ks:\n" << current_ks.t();
-  
   for(uword l = 0; l < L; l++) {
     rate *= w(current_ks(l), l);
   }
@@ -465,20 +408,18 @@ double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, 
 };
 
 double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
-  // Rcpp::Rcout << "\nCalculate phi rate.\n";
+  bool shed_j = K(view_i) < K(view_j);
   uword K_comb = prod(K), l = 0;
   double rate = 0.0;
-  uvec weight_ind(L), K_cumprod(L - 1), backwards_inds(L), for_loop_inds(L);
+  uvec weight_ind(L), K_cumprod(L - 1), backwards_inds(L), for_loop_inds(L), K_rel(L), K_rel_cum(L - 1);
   weight_ind.zeros();
-  // backwards_inds = regspace<uvec>(L - 2, -1, 0);
-  uvec K_rel(L), K_rel_cum(L - 1);
+  
   K_rel.zeros();
   K_rel_cum.zeros();
   K_rel = K;
   
   for_loop_inds = regspace<uvec>(0,  1,  L - 1);
   
-  bool shed_j = K(view_i) < K(view_j);
   if(shed_j) {
     K_rel.shed_row(view_j);
     for_loop_inds.shed_row(view_j);
@@ -487,55 +428,22 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
     for_loop_inds.shed_row(view_i);
   }
   
-  // Rcpp::Rcout << "\nFor loop indices:\n" << for_loop_inds.t();
-  
-  // Rcpp::Rcout << "\nRelative cumulative object.\n";
-  // Rcpp::Rcout << "\nK: " << K_rel.t();
   // We have shed an entry and we do not need the final entry for the cumulative check
   K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
   K_rel_cum(0) = 1;
-  
-  
-  // Rcpp::Rcout << "\nRelative cumulative object.\n";
-  // Rcpp::Rcout << "\nK_rel_cum:\n" << K_rel_cum.t();
-  
   K_cumprod = cumprod(K_rel_cum);
-  // K_rel_cum(0) = 1;
-  // K_cumprod(0) = 1;
   K_comb = prod(K_rel);
-  
-  // Rcpp::Rcout << "\nRelative cumulative object declared and calculated.\n" << K_cumprod.t() << "\n";
-  // Rcpp::Rcout << "\nNumber of iterations: " << K_comb;
-
   for(uword ii = 0; ii < K_comb; ii++) {
-    
-    // Rcpp::Rcout << "\nIn long loop. ii: " << ii << "\n";
-    // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
     rate += calcPhiRateNaiveSingleIteration(view_i, view_j, weight_ind);
-    
-    // Rcpp::Rcout << "\nFirst rate calculated.\n";
     
     // We have to hold the index for view_i and view_j the same
     // for(uword l = 0; l < (L - 1); l++) {
     for(uword jj = 0; jj < (L - 1); jj++) {
       l = for_loop_inds(jj);
-      
-      // Rcpp::Rcout << "\njj: " << jj;
-      // Rcpp::Rcout << "\nl: " << l;
-
-    // for(auto & l : for_loop_inds) {
       if(jj == 0) {
-        // Rcpp::Rcout << "\njj = 0 IF statement";
-        
         weight_ind(l)++;
-        // Rcpp::Rcout << "\nweight_ind:\n" << weight_ind;
-        
       } else {
-        // Rcpp::Rcout << "\nK_cumprod:\n" << K_cumprod.t();
-        
         if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
-          // Rcpp::Rcout << "\nIn K mod ii IF statement.";
-          
           weight_ind(l)++;
           if(shed_j && (l == view_i)) {
             weight_ind(view_j)++;
@@ -546,8 +454,6 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
         }
       }
       if(weight_ind(l) == K(l)) {
-        // Rcpp::Rcout << "\nReset IF statement.";
-        
         weight_ind(l) = 0;
         if(shed_j && (l == view_i)) {
           weight_ind(view_j) = 0;
@@ -555,16 +461,12 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
         if(! shed_j && (l == view_j)) {
           weight_ind(view_i) = 0;
         }
-        
       }
     }
-    
   }
-  
   rate *= v;
-  
   return rate;
-}
+};
 
 // // The rate for the phi coefficient between the lth and mth datasets.
 // double mdiModelAlt::calcPhiRate(uword lstar, uword mstar) {
@@ -642,7 +544,6 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
     rate = calcWeightRateNaive(k, l);
     
     // Sample a new weight
-    // w(k, l) = rGamma((w_shape_prior / K(l)) + shape, w_rate_prior + rate);
     w(k, l) = rGamma((mass(l) / (double) K(l)) + shape, w_rate_prior + rate);
     
     // Pass the allocation count down to the mixture
@@ -1123,9 +1024,6 @@ double mdiModelAlt::sampleLabel(arma::uword k, arma::vec K_inv_cum) {
   
   // Need to account for the fixed labels
   // Need the non-fixed classes (e.g., we now need, K, K_fixed and K_unfixed)
-  // uvec fixed_classes = unique(labels(fixed_ind));
-  // uword K_fixed = length(fixed_classes)
-  
   
   // Select another label randomly
   double u = randu();
