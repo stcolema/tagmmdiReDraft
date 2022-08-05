@@ -368,9 +368,11 @@ double mdiModelAlt::calcWeightRateNaive(uword k, uword v) {
   
   // We have shed an entry (leaving L-1) and we do not need the final entry for 
   // the cumulative check as it should fill once
-  K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
+  if(L > 2) {
+    K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
+  }
   
-  // Set the 0th entry to 1.0 for the cummulative product
+  // Set the 0th entry to 1.0 for the cumulative product
   K_rel_cum(0) = 1;
   
   // The cumulative product of the number of components in each view is used to
@@ -380,7 +382,10 @@ double mdiModelAlt::calcWeightRateNaive(uword k, uword v) {
   // This is the number of summations to perform
   K_comb = prod(K_rel);
   
+  // Rcpp::Rcout << "\n\nWEIGHT RATE\nView: " << v << "\nComponent: " << k << "\n";
   for(uword ii = 0; ii < K_comb; ii++) {
+    // Rcpp::Rcout << "\n\ni: " << ii;
+    // Rcpp::Rcout << "\nWeight indices:\n " << weight_ind.t();
     rate += calcWeightRateNaiveSingleIteration(k, v, weight_ind);
     for(uword jj = 0; jj < (L - 1); jj++) {
       // Which view is actually being updated (skipping the vth)
@@ -424,7 +429,7 @@ double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, 
 };
 
 double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
-  bool shed_j = K(view_i) < K(view_j);
+  bool shed_j = K(view_i) < K(view_j), weight_updated = false;
   uword K_comb = prod(K), l = 0;
   double rate = 0.0;
   uvec weight_ind(L), K_cumprod(L - 1), backwards_inds(L), for_loop_inds(L), K_rel(L), K_rel_cum(L - 1);
@@ -445,30 +450,40 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
   }
   
   // We have shed an entry and we do not need the final entry for the cumulative check
-  K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
+  // K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
+  if(L > 2) {
+    K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
+  }
   K_rel_cum(0) = 1;
   K_cumprod = cumprod(K_rel_cum);
   K_comb = prod(K_rel);
+  
+  // Rcpp::Rcout << "\n\nPHI RATE\nview i: " << view_i << "\nview j: " << view_j << "\n";
   for(uword ii = 0; ii < K_comb; ii++) {
+    // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
     rate += calcPhiRateNaiveSingleIteration(view_i, view_j, weight_ind);
     
     // We have to hold the index for view_i and view_j the same
     // for(uword l = 0; l < (L - 1); l++) {
     for(uword jj = 0; jj < (L - 1); jj++) {
+      weight_updated = false;
       l = for_loop_inds(jj);
+      // Rcpp::Rcout << "\nl: " << l;
       if(jj == 0) {
         weight_ind(l)++;
+        weight_updated = true;
       } else {
         // if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
         if((((ii + 1) % K_cumprod(jj)) == 0) && (ii != 0)) {
           weight_ind(l)++;
-          if(shed_j && (l == view_i)) {
-            weight_ind(view_j)++;
-          } 
-          if(! shed_j && (l == view_j)) {
-            weight_ind(view_i)++;
-          }
+          weight_updated = true;
         }
+      }
+      if(weight_updated && shed_j && (l == view_i)) {
+        weight_ind(view_j)++;
+      } 
+      if(weight_updated &&  (! shed_j) && (l == view_j)) {
+        weight_ind(view_i)++;
       }
       if(weight_ind(l) == K(l)) {
         weight_ind(l) = 0;
@@ -790,7 +805,7 @@ double mdiModelAlt::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
 };
 
 void mdiModelAlt::updateNormalisingConstantNaive() {
-  uword K_comb = 0, l = 0;
+  uword K_comb = 0;
   // double rate = 0.0;
   uvec weight_ind(L), K_cumprod(L), K_rel(L), K_rel_cum(L);
   
@@ -819,7 +834,10 @@ void mdiModelAlt::updateNormalisingConstantNaive() {
   // Rcpp::stop("stopped");
   Z = 0.0;
   
+  // Rcpp::Rcout << "\n\nNORMALISING CONSTANT\n";
   for(uword ii = 0; ii < K_comb; ii++) {
+    // Rcpp::Rcout << "\n\ni: " << ii;
+    // Rcpp::Rcout << "\neright indices:\n" << weight_ind.t();
     
     // Rcpp::Rcout << "\nIn long loop. ii: " << ii << "\n";
     // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
@@ -829,14 +847,14 @@ void mdiModelAlt::updateNormalisingConstantNaive() {
     
     // We have to hold the index for view_i and view_j the same
     // for(uword l = 0; l < (L - 1); l++) {
-    for(uword jj = 0; jj < L; jj++) {
+    for(uword l = 0; l < L; l++) {
       
       // for(auto & l : for_loop_inds) {
-      if(jj == 0) {
+      if(l == 0) {
         weight_ind(l)++;
       } else {
         // if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
-        if((((ii + 1) % K_cumprod(jj)) == 0) && (ii != 0)) {
+        if((((ii + 1) % K_cumprod(l)) == 0) && (ii != 0)) {
           weight_ind(l)++;
         }
       }
