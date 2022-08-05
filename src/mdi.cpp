@@ -573,7 +573,11 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
     // The hyperparameters
     shape = 1.0 + N_k(k, l);
     // rate = calcWeightRate(l, k);
-    rate = calcWeightRateNaive(k, l);
+    if(L > 1) {
+      rate = calcWeightRateNaive(k, l);
+    } else {
+      rate = 1.0;
+    }
     
     // Sample a new weight
     w(k, l) = rGamma((mass(l) / (double) K(l)) + shape, w_rate_prior + rate);
@@ -820,11 +824,10 @@ void mdiModelAlt::updateNormalisingConstantNaive() {
   // Rcpp::stop("stopped");
   
   // We have shed an entry and we do not need the final entry for the cumulative check
-  K_rel_cum(span(1, L - 1)) = K_rel(span(0, L - 2));
+  if(L > 1) {
+    K_rel_cum(span(1, L - 1)) = K_rel(span(0, L - 2));
+  }
   K_rel_cum(0) = 1;
-  
-  // Rcpp::Rcout << "\nRelative cumulative object.\n";
-  // Rcpp::Rcout << "\nK_rel_cum:\n" << K_rel_cum.t();
   
   K_cumprod = cumprod(K_rel_cum);
   K_comb = prod(K_rel);
@@ -837,7 +840,7 @@ void mdiModelAlt::updateNormalisingConstantNaive() {
   // Rcpp::Rcout << "\n\nNORMALISING CONSTANT\n";
   for(uword ii = 0; ii < K_comb; ii++) {
     // Rcpp::Rcout << "\n\ni: " << ii;
-    // Rcpp::Rcout << "\neright indices:\n" << weight_ind.t();
+    // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
     
     // Rcpp::Rcout << "\nIn long loop. ii: " << ii << "\n";
     // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
@@ -1159,7 +1162,9 @@ void mdiModelAlt::updateLabels() {
   // 
   // umat swapped_labels(N, L);
   
-  
+  if(L == 1) {
+    return;
+  }
   std::for_each(
     std::execution::par,
     L_inds.begin(),
@@ -1168,53 +1173,6 @@ void mdiModelAlt::updateLabels() {
       updateLabelsViewL(l);
     }
   );
-  
-  // for(uword l = 0; l < L; l++) {
-  //   
-  //   multipleUnfixedComponents = (K_unfixed(l) > 1);
-  //   if(multipleUnfixedComponents) {
-  //     updateLabelsViewL(l);
-  //   }
-  // }
-    //   // K_inv = ones<vec>(K(l) - 1) * 1 / (K(l) - 1);
-    //   K_inv = ones<vec>(K_unfixed(l) - 1) * (1.0 / (double)(K_unfixed(l) - 1));
-    //   K_inv_cum = cumsum(K_inv);
-    //   
-    //   // The score associated with the current labelling
-    //   curr_score = calcScore(l, labels);
-    //   
-    //   for(uword k = K_fixed(l); k < K(l); k++) {
-    //     
-    //     // Select another label randomly
-    //     k_prime = sampleLabel(k, K_inv_cum) + K_fixed(l);
-    //     
-    //     // The label matrix updated with the swapped labels
-    //     swapped_labels = swapLabels(l, k, k_prime);
-    //     
-    //     // The score for the swap
-    //     alt_score = calcScore(l, swapped_labels);
-    //     
-    //     // The log acceptance probability
-    //     log_accept = alt_score - curr_score;
-    //     
-    //     if(log_accept < 0) {
-    //       accept = std::exp(log_accept);
-    //     }
-    //     
-    //     // If we accept the label swap, update labels, weights and score
-    //     if(randu() < accept) {
-    //       
-    //       // Update the current score
-    //       curr_score = alt_score;
-    //       labels = swapped_labels;
-    //       
-    //       // Update the component weights
-    //       old_weight = w(k, l);
-    //       w(k, l) = w(k_prime, l);
-    //       w(k_prime, l) = old_weight;
-    //     }
-    //   } 
-    // }
 };
 
 void mdiModelAlt::updateLabelsViewL(uword l) {
