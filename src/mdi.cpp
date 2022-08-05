@@ -330,41 +330,41 @@ void mdiModelAlt::initialiseMixtures() {
 //   return rate;
 // };
 
-double mdiModelAlt::calcWeightRateNaiveSingleIteration(uword k, uword v, uvec current_ks) {
+double mdiModelAlt::calcWeightRateNaiveSingleIteration(uword k, uword l, uvec current_ks) {
   double rate = 1.0;
-  for(uword l = 0; l < L; l++) {
-    if(l != v) {
+  for(uword m = 0; m < L; m++) {
+    if(m != l) {
       rate *= w(current_ks(l), l);
     }
   }
-  for(uword l = 0; l < L - 1; l++) {
-    for(uword m = l + 1; m < L; m++) {
-      rate *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
+  for(uword m1 = 0; m1 < L - 1; m1++) {
+    for(uword m2 = m1 + 1; m2 < L; m2++) {
+      rate *= (1.0 + phis(phi_ind_map(m1, m2)) * (current_ks(m1) == current_ks(m2)));
     }
   }
   return rate;
 };
 
-double mdiModelAlt::calcWeightRateNaive(uword k, uword v) {
-  uword K_comb = 0, l = 0;
+double mdiModelAlt::calcWeightRateNaive(uword k, uword l) {
+  uword K_comb = 0, m = 0;
   double rate = 0.0;
   uvec weight_ind(L), K_cumprod(L - 1), for_loop_inds(L), K_rel(L), K_rel_cum(L - 1);
   
   // We begin at the 0th component for each view and the kth for the view being 
   // updated
   weight_ind.zeros();
-  weight_ind(v) = k;
+  weight_ind(l) = k;
   
   // The number of components in each view bar the vth
   K_rel.zeros();
   K_rel_cum.zeros();
   K_rel = K;
-  K_rel.shed_row(v);
+  K_rel.shed_row(l);
   
   // We will use this in the for loop to control accessing and updating of 
   // weights
   for_loop_inds = regspace<uvec>(0,  1,  L - 1);
-  for_loop_inds.shed_row(v);
+  for_loop_inds.shed_row(l);
   
   // We have shed an entry (leaving L-1) and we do not need the final entry for 
   // the cumulative check as it should fill once
@@ -382,27 +382,27 @@ double mdiModelAlt::calcWeightRateNaive(uword k, uword v) {
   // This is the number of summations to perform
   K_comb = prod(K_rel);
   
-  // Rcpp::Rcout << "\n\nWEIGHT RATE\nView: " << v << "\nComponent: " << k << "\n";
+  // Rcpp::Rcout << "\n\nWEIGHT RATE\nView: " << l << "\nComponent: " << k << "\n";
   for(uword ii = 0; ii < K_comb; ii++) {
     // Rcpp::Rcout << "\n\ni: " << ii;
     // Rcpp::Rcout << "\nWeight indices:\n " << weight_ind.t();
-    rate += calcWeightRateNaiveSingleIteration(k, v, weight_ind);
+    rate += calcWeightRateNaiveSingleIteration(k, l, weight_ind);
     for(uword jj = 0; jj < (L - 1); jj++) {
       // Which view is actually being updated (skipping the vth)
-      l = for_loop_inds(jj);
+      m = for_loop_inds(jj);
       
       // If in first view we always update the weight index. Otherwise we check 
       // if we are a multiple of the cumulative product of the number of 
       // components in the preceding views and update the index if so.
       if(jj == 0) {
-        weight_ind(l)++;
+        weight_ind(m)++;
       } else {
         if((((ii + 1) % K_cumprod(jj)) == 0) && (ii != 0)) {
-          weight_ind(l)++;
+          weight_ind(m)++;
         }
       }
-      if(weight_ind(l) == K(l)) {
-        weight_ind(l) = 0;
+      if(weight_ind(m) == K(l)) {
+        weight_ind(m) = 0;
       }
     }
   }
@@ -703,8 +703,8 @@ void mdiModelAlt::updatePhis() {
       // rate = calcPhiRate(l, m);
       rate = calcPhiRateNaive(l, m);
       
-      shape = samplePhiShape(l, m, rate);
-      // shape = 1 + accu(labels.col(l) == labels.col(m));
+      // shape = samplePhiShape(l, m, rate);
+      shape = 1 + accu(labels.col(l) == labels.col(m));
       
       phis(phi_ind_map(m, l)) = rGamma(
         phi_shape_prior + shape, 
@@ -791,9 +791,9 @@ double mdiModelAlt::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
   // Rcpp::Rcout << "\nWeights:\n" << w;
   // for(auto & l : for_loop_inds) {
   for(uword jj = 0; jj < L; jj++) {
-    if(jj != v) {
+    // if(jj != v) {
       iter_value *= w(current_ks(jj), jj);
-    }
+    // }
   }
   // Rcpp::Rcout << "\nNested views loop.";
   for(uword l = 0; l < L - 1; l++) {
