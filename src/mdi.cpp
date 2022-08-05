@@ -703,8 +703,8 @@ void mdiModelAlt::updatePhis() {
       // rate = calcPhiRate(l, m);
       rate = calcPhiRateNaive(l, m);
       
-      // shape = samplePhiShape(l, m, rate);
-      shape = 1 + accu(labels.col(l) == labels.col(m));
+      shape = samplePhiShape(l, m, rate);
+      // shape = 1 + accu(labels.col(l) == labels.col(m));
       
       phis(phi_ind_map(m, l)) = rGamma(
         phi_shape_prior + shape, 
