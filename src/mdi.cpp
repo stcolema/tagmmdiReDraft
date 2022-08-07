@@ -224,6 +224,7 @@ void mdiModelAlt::initialisePhis() {
   // triangular matrix of unsigned ints
   phi_ind_map.set_size(L, L);
   phi_ind_map.zeros();
+  phi_ind_map.diag().fill(100);
   
   // Column index is, for some pair of datasets l and m,
   // \sum_{i = 0}^{l} (L - i - 1) + (m - l - 1). As this is awkward, let's
@@ -330,22 +331,24 @@ void mdiModelAlt::initialiseMixtures() {
 //   return rate;
 // };
 
-double mdiModelAlt::calcWeightRateNaiveSingleIteration(uword k, uword l, uvec current_ks) {
-  double rate = 1.0;
-  for(uword m = 0; m < L; m++) {
-    if(m != l) {
-      rate *= w(current_ks(l), l);
+double mdiModelAlt::calcWeightRateNaiveSingleIteration(uword kstar, 
+                                                       uword lstar, 
+                                                       uvec current_ks) {
+  double output = 1.0;
+  for(uword l = 0; l < L; l++) {
+    if(l != lstar) {
+      output *= w(current_ks(l), l);
     }
   }
-  for(uword m1 = 0; m1 < L - 1; m1++) {
-    for(uword m2 = m1 + 1; m2 < L; m2++) {
-      rate *= (1.0 + phis(phi_ind_map(m1, m2)) * (current_ks(m1) == current_ks(m2)));
+  for(uword l = 0; l < L - 1; l++) {
+    for(uword m = m + 1; m < L; m++) {
+      output *= (1.0 + phis(phi_ind_map(l, m)) * (current_ks(l) == current_ks(m)));
     }
   }
-  return rate;
+  return output;
 };
 
-double mdiModelAlt::calcWeightRateNaive(uword k, uword l) {
+double mdiModelAlt::calcWeightRateNaive(uword kstar, uword lstar) {
   uword K_comb = 0, m = 0;
   double rate = 0.0;
   uvec weight_ind(L), K_cumprod(L - 1), for_loop_inds(L), K_rel(L), K_rel_cum(L - 1);
@@ -353,28 +356,25 @@ double mdiModelAlt::calcWeightRateNaive(uword k, uword l) {
   // We begin at the 0th component for each view and the kth for the view being 
   // updated
   weight_ind.zeros();
-  weight_ind(l) = k;
+  weight_ind(lstar) = kstar;
   
   // The number of components in each view bar the vth
   K_rel.zeros();
-  K_rel_cum.zeros();
+  K_rel_cum.ones();
   K_rel = K;
-  K_rel.shed_row(l);
+  K_rel.shed_row(lstar);
   
   // We will use this in the for loop to control accessing and updating of 
   // weights
   for_loop_inds = regspace<uvec>(0,  1,  L - 1);
-  for_loop_inds.shed_row(l);
+  for_loop_inds.shed_row(lstar);
   
   // We have shed an entry (leaving L-1) and we do not need the final entry for 
   // the cumulative check as it should fill once
   if(L > 2) {
     K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
   }
-  
-  // Set the 0th entry to 1.0 for the cumulative product
-  K_rel_cum(0) = 1;
-  
+ 
   // The cumulative product of the number of components in each view is used to
   // control updating weight indices
   K_cumprod = cumprod(K_rel_cum);
@@ -386,7 +386,7 @@ double mdiModelAlt::calcWeightRateNaive(uword k, uword l) {
   for(uword ii = 0; ii < K_comb; ii++) {
     // Rcpp::Rcout << "\n\ni: " << ii;
     // Rcpp::Rcout << "\nWeight indices:\n " << weight_ind.t();
-    rate += calcWeightRateNaiveSingleIteration(k, l, weight_ind);
+    rate += calcWeightRateNaiveSingleIteration(kstar, lstar, weight_ind);
     for(uword jj = 0; jj < (L - 1); jj++) {
       // Which view is actually being updated (skipping the vth)
       m = for_loop_inds(jj);
@@ -401,7 +401,7 @@ double mdiModelAlt::calcWeightRateNaive(uword k, uword l) {
           weight_ind(m)++;
         }
       }
-      if(weight_ind(m) == K(l)) {
+      if(weight_ind(m) == K(m)) {
         weight_ind(m) = 0;
       }
     }
@@ -411,21 +411,21 @@ double mdiModelAlt::calcWeightRateNaive(uword k, uword l) {
 };
 
 double mdiModelAlt::calcPhiRateNaiveSingleIteration(uword view_i, uword view_j, uvec current_ks) {
-  double rate = 1.0;
+  double output = 1.0;
   for(uword l = 0; l < L; l++) {
-    rate *= w(current_ks(l), l);
+    output *= w(current_ks(l), l);
   }
   for(uword l = 0; l < L - 1; l++) {
     for(uword m = l + 1; m < L; m++) {
       if(m != view_j) {
-        rate *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
+        output *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
       }
     }
   }
   for(uword l = 0; l < view_j - 1; l++) {
-    rate *= (1.0 + phis(phi_ind_map(l, view_j)) * (current_ks(l) == current_ks(view_j)));
+    output *= (1.0 + phis(phi_ind_map(l, view_j)) * (current_ks(l) == current_ks(view_j)));
   }
-  return rate;
+  return output;
 };
 
 double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
@@ -436,7 +436,7 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
   weight_ind.zeros();
   
   K_rel.zeros();
-  K_rel_cum.zeros();
+  K_rel_cum.ones();
   K_rel = K;
   
   for_loop_inds = regspace<uvec>(0,  1,  L - 1);
@@ -454,7 +454,6 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
   if(L > 2) {
     K_rel_cum(span(1, L - 2)) = K_rel(span(0, L - 3));
   }
-  K_rel_cum(0) = 1;
   K_cumprod = cumprod(K_rel_cum);
   K_comb = prod(K_rel);
   
@@ -464,7 +463,6 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
     rate += calcPhiRateNaiveSingleIteration(view_i, view_j, weight_ind);
     
     // We have to hold the index for view_i and view_j the same
-    // for(uword l = 0; l < (L - 1); l++) {
     for(uword jj = 0; jj < (L - 1); jj++) {
       weight_updated = false;
       l = for_loop_inds(jj);
@@ -556,9 +554,10 @@ double mdiModelAlt::calcPhiRateNaive(uword view_i, uword view_j) {
 
 void mdiModelAlt::updateWeightsViewL(uword l) {
   
-  double shape = 0.0, rate = 0.0;
+  double shape = 0.0, rate = 0.0, posterior_shape = 0.0, posterior_rate = 0.0;
   uvec members_lk(N);
   
+  // Rcpp::Rcout << "\n\nl: " << l;
   for(uword k = 0; k < K(l); k++) {
     
     // Find how many labels have the value of k. We used to consider which
@@ -579,8 +578,15 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
       rate = 1.0;
     }
     
+    // Rcpp::Rcout << "\nk: " << k;
+    // Rcpp::Rcout << "\nShape: " << shape - 1 << "\n";
+    // Rcpp::Rcout << "\nRate: " << rate << "\n";
+    
+    
     // Sample a new weight
-    w(k, l) = rGamma((mass(l) / (double) K(l)) + shape, w_rate_prior + rate);
+    posterior_shape = (mass(l) / (double) K(l)) + shape;
+    posterior_rate = w_rate_prior + rate;
+    w(k, l) = rGamma(posterior_shape, posterior_rate);
     
     // Pass the allocation count down to the mixture
     // (this is used in the parameter sampling)
@@ -606,11 +612,6 @@ void mdiModelAlt::updateWeights() {
   //     updateWeightsViewL(l);
   //   }
   // );
-  
-  // // If we only have one dataset, flip back to normalised weights
-  // if(L == 1) {
-  //   w = w / accu(w) ;
-  // }
   
 };
 
@@ -707,8 +708,8 @@ void mdiModelAlt::updatePhis() {
       // rate = calcPhiRate(l, m);
       rate = calcPhiRateNaive(l, m);
       
-      shape = samplePhiShape(l, m, rate);
-      // shape = 1 + accu(labels.col(l) == labels.col(m));
+      // shape = samplePhiShape(l, m, rate);
+      shape = 1 + accu(labels.col(l) == labels.col(m));
       
       phis(phi_ind_map(m, l)) = rGamma(
         phi_shape_prior + shape, 
@@ -792,14 +793,9 @@ double mdiModelAlt::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
   uword l = 0;
   double iter_value = 1.0;
   
-  // Rcpp::Rcout << "\nWeights:\n" << w;
-  // for(auto & l : for_loop_inds) {
   for(uword jj = 0; jj < L; jj++) {
-    // if(jj != v) {
-      iter_value *= w(current_ks(jj), jj);
-    // }
+    iter_value *= w(current_ks(jj), jj);
   }
-  // Rcpp::Rcout << "\nNested views loop.";
   for(uword l = 0; l < L - 1; l++) {
     for(uword m = l + 1; m < L; m++) {
       iter_value *= (1.0 + phis(phi_ind_map(m, l)) * (current_ks(l) == current_ks(m)));
@@ -810,82 +806,50 @@ double mdiModelAlt::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
 
 void mdiModelAlt::updateNormalisingConstantNaive() {
   uword K_comb = 0;
-  // double rate = 0.0;
   uvec weight_ind(L), K_cumprod(L), K_rel(L), K_rel_cum(L);
-  
   weight_ind.zeros();
-  
   K_rel.zeros();
-  K_rel_cum.zeros();
+  K_rel_cum.ones();
   K_rel = K;
   
-  // Rcpp::Rcout << "\nRelative cumulative object.\n";
-  // Rcpp::Rcout << "\nK: " << K_rel.t();
-  // Rcpp::stop("stopped");
-  
-  // We have shed an entry and we do not need the final entry for the cumulative check
+  // We do not need the final entry for the cumulative check
   if(L > 1) {
     K_rel_cum(span(1, L - 1)) = K_rel(span(0, L - 2));
   }
-  K_rel_cum(0) = 1;
-  
   K_cumprod = cumprod(K_rel_cum);
   K_comb = prod(K_rel);
-  
-  // Rcpp::Rcout << "\nRelative cumulative object declared and calculated.\n" << K_cumprod.t() << "\n";
-  // Rcpp::Rcout << "\nNumber of iterations: " << K_comb;
-  // Rcpp::stop("stopped");
   Z = 0.0;
   
   // Rcpp::Rcout << "\n\nNORMALISING CONSTANT\n";
   for(uword ii = 0; ii < K_comb; ii++) {
     // Rcpp::Rcout << "\n\ni: " << ii;
     // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
-    
-    // Rcpp::Rcout << "\nIn long loop. ii: " << ii << "\n";
-    // Rcpp::Rcout << "\nWeight indices:\n" << weight_ind.t();
     Z += calcNormalisingConstNaiveSingleIteration(weight_ind);
-    
-    // Rcpp::Rcout << "\nFirst rate calculated.\n";
-    
-    // We have to hold the index for view_i and view_j the same
-    // for(uword l = 0; l < (L - 1); l++) {
     for(uword l = 0; l < L; l++) {
-      
-      // for(auto & l : for_loop_inds) {
       if(l == 0) {
         weight_ind(l)++;
       } else {
-        // if((ii % K_cumprod(jj) == 0) && (ii != 0)) {
         if((((ii + 1) % K_cumprod(l)) == 0) && (ii != 0)) {
           weight_ind(l)++;
         }
       }
       if(weight_ind(l) == K(l)) {
-        // Rcpp::Rcout << "\nReset IF statement.";
-        
         weight_ind(l) = 0;
       }
     }
-    
   }
-   
-  // Z = rate;
 };
 
 void mdiModelAlt::sampleStrategicLatentVariable() {
   v = rGamma(N, Z);
-  // v = randg(distr_param(N, 1.0 / Z));
 };
 
 void mdiModelAlt::sampleFromPriors() {
-  
   // Sample from the prior distribution for the phis and weights
   sampleFromGlobalPriors();
   
   // Sample from the prior distribution for the view-specific mixtures
   sampleFromLocalPriors();
-  
 };
 
 void mdiModelAlt::sampleFromLocalPriors() {
@@ -894,13 +858,11 @@ void mdiModelAlt::sampleFromLocalPriors() {
   }
 };
 
-
 vec mdiModelAlt::samplePhiPrior(uword n_phis) {
   return rGamma(n_phis, phi_shape_prior , phi_rate_prior);
 };
 
 double mdiModelAlt::sampleWeightPrior(uword l) {
-  // return rGamma(w_shape_prior / K(l) , w_rate_prior);
   return rGamma(mass(l) / (double) K(l) , w_rate_prior);
 }
 
@@ -909,9 +871,7 @@ vec mdiModelAlt::sampleMassPrior() {
 }
 
 void mdiModelAlt::sampleFromGlobalPriors() {
-  
   mass = sampleMassPrior();
-  
   if(L > 1) {
     phis = samplePhiPrior(LC2);
     // phis = randg(LC2, distr_param(2.0 , 1.0 / 2));
@@ -949,7 +909,6 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
     
     new_log_likelihood = 0.0,
     new_log_prior = 0.0,
-    
     acceptance_ratio = 0.0;
   
   vec current_weights(K(l));
@@ -958,7 +917,6 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
   current_mass = mass(l);
   cur_log_likelihood = gammaLogLikelihood(current_weights, current_mass / (double) K(l), 1);
   cur_log_prior = gammaLogLikelihood(current_mass, mass_shape_prior, mass_rate_prior);
-  
   proposed_mass = proposeNewNonNegativeValue(current_mass,
     mass_proposal_window, 
     use_log_norm_proposal
@@ -968,7 +926,6 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
   } else {
     new_log_likelihood = gammaLogLikelihood(current_weights, proposed_mass / (double) K(l), 1);
     new_log_prior = gammaLogLikelihood(proposed_mass,  mass_shape_prior, mass_rate_prior);
-    
     acceptance_ratio = exp(
       new_log_likelihood
       + new_log_prior 
@@ -976,9 +933,7 @@ void mdiModelAlt::updateMassParameterViewL(uword l) {
       - cur_log_prior
     );
   }
-  
   accepted = metropolisAcceptanceStep(acceptance_ratio);
-  
   if(accepted) {
     mass(l) = proposed_mass;
   }
@@ -988,15 +943,11 @@ mat mdiModelAlt::calculateUpweights(uword l) {
   uvec matching_labels(N);
   mat upweights(N, K(l));
   upweights.zeros();
-  
   for(uword m = 0; m < L; m++) {
     
     if(m != l){
-      
       for(uword k = 0; k < K(l); k++) {
-        
         matching_labels = 1.0 * (labels.col(m) == k);
-        
         // Recall that the map assumes l < m; so account for that
         if(l < m) {
           upweights.col(k) = phis(phi_ind_map(m, l)) * conv_to<vec>::from(matching_labels);
@@ -1006,9 +957,8 @@ mat mdiModelAlt::calculateUpweights(uword l) {
       }
     }
   }
-  
+  // Upweights are (1 + \phi)
   upweights++;
-  
   return upweights;
 };
 
