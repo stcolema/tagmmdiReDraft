@@ -194,8 +194,8 @@ Rcpp::List runAltMDI(arma::uword R,
     // Rcpp::Rcout << r << "th iteration done.\n";
     // throw;
   }
-  Rcpp::Rcout << "\nNumber of times accepted: " << my_mdi.acceptance_count << "\nPossible acceptance: " <<
-    arma::accu(R * my_mdi.K);
+  // Rcpp::Rcout << "\nNumber of times accepted: " << my_mdi.acceptance_count << "\nPossible acceptance: " <<
+  //   arma::accu(R * my_mdi.K);
   
   return(
     List::create(
