@@ -145,7 +145,9 @@ Rcpp::List runAltMDI(arma::uword R,
     
     // Try and swap labels within datasets to improve the correlation between 
     // clusterings across datasets
-    my_mdi.updateLabels();
+    if((r + 1) %  10 == 0) {
+      my_mdi.updateLabels();
+    }
     
     if( save_this_iteration ) {
       save_ind++;
@@ -192,6 +194,8 @@ Rcpp::List runAltMDI(arma::uword R,
     // Rcpp::Rcout << r << "th iteration done.\n";
     // throw;
   }
+  Rcpp::Rcout << "\nNumber of times accepted: " << my_mdi.acceptance_count << "\nPossible acceptance: " <<
+    arma::accu(R * my_mdi.K);
   
   return(
     List::create(

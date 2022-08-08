@@ -29,7 +29,7 @@ public:
   
   bool use_log_norm_proposal = true;
   
-  uword N, L, K_max, K_prod, K_to_the_L, n_combinations, LC2 = 1;
+  uword N, L, K_max, K_prod, K_to_the_L, n_combinations, LC2 = 1, acceptance_count = 0;
 
   double 
     // Normalising constant
@@ -48,7 +48,7 @@ public:
     w_rate_prior = 2.0,
     
     // Prior hyperparameters for MDI phi parameters
-    phi_shape_prior = 1.0,
+    phi_shape_prior = 2.0,
     phi_rate_prior = 0.2,
     
     // Model fit
@@ -134,10 +134,10 @@ public:
   
   // Update the cluster weights
   void updateWeights();
-  void updateWeightsViewL(uword l);
+  void updateWeightsViewL(uword lstar);
   
   void updateMassParameters();
-  void updateMassParameterViewL(uword l);
+  void updateMassParameterViewL(uword lstar);
   
   // === Phis ==================================================================
   
@@ -148,7 +148,7 @@ public:
   
   // Calculate the log-weights of the mixture of Gammas the shape is sampled 
   // from
-  arma::vec calculatePhiShapeMixtureWeights(int N_vw, double rate);
+  arma::vec calculatePhiShapeMixtureWeights(int N_lm, double rate);
   
   // Sample the shape parameter of the phi posterior distribution from a mixture 
   // of Gammas
@@ -156,7 +156,8 @@ public:
   
   // Sample a new value for each phi parameter
   void updatePhis();
-  
+  void averagePhiUpdate(arma::uword l, arma::uword m, double rate);
+    
   // === Model parameters ======================================================
   
   // Updates the normalising constant for the posterior
@@ -205,19 +206,19 @@ public:
   // === Label swapping functions ==============================================
   
   // This is used to consider possible label swaps
-  double sampleLabel(arma::uword k, arma::vec K_inv_cum);
+  double sampleLabel(arma::uword kstar, arma::vec K_inv_cum);
   
   // Calculate the score for a given labelling setup
-  double calcScore(arma::uword l, arma::umat labels);
+  double calcScore(arma::uword lstar, arma::umat c);
   
   // Check if labels should be swapped to improve correlation of clustering
   // across datasets via random sampling.
-  arma::umat swapLabels(arma::uword l, arma::uword k, arma::uword k_prime);
+  arma::umat swapLabels(arma::uword lstar, arma::uword kstar, arma::uword k_prime);
   
   // Check if labels should be swapped to improve correlation of clustering
   // across datasets via random sampling.
   void updateLabels();
-  void updateLabelsViewL(uword l);
+  void updateLabelsViewL(uword lstar);
 
 };
 
