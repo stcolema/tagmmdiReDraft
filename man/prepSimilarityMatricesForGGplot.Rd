@@ -7,22 +7,23 @@
 prepSimilarityMatricesForGGplot(
   similarity_matrices,
   matrix_setting_order = 1,
-  use_common_ordering = TRUE
+  use_common_ordering = TRUE,
+  ignore_checks = FALSE
 )
 }
 \arguments{
 \item{similarity_matrices}{List of similarity matrices}
 
-\item{matrix_setting_order}{The matrix that defines the ordering of all 
+\item{matrix_setting_order}{The matrix that defines the ordering of all
 others, if a common ordering is used. Defaults to `1`.}
 
-\item{use_common_ordering}{Logical indicating if a common ordering should be 
+\item{use_common_ordering}{Logical indicating if a common ordering should be
 used. If false all matrices are ordered individually, defaults to `TRUE`.}
 }
 \value{
-A long data.frame containing columns `x` (the x-axis position of the 
-entry for geom_tile()), `y` (the y-axis position of the entry for 
-geom_tile()), `Entry` (value in similarity  matrix) and `Chain` (assumes 
+A long data.frame containing columns `x` (the x-axis position of the
+entry for geom_tile()), `y` (the y-axis position of the entry for
+geom_tile()), `Entry` (value in similarity  matrix) and `Chain` (assumes
 chains are ordered from one to the number of chains present).
 }
 \description{
@@ -32,9 +33,9 @@ ordering.
 }
 \examples{
 plot_df <- prepSimilarityMatricesForGGplot(my_psms)
-plot_df |> 
-  ggplot(aes(x = x, y= y, fill = Entry)) + 
-    geom_tile() + 
-    facet_wrap(~Chain) + 
-    scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
+plot_df |>
+  ggplot(aes(x = x, y = y, fill = Entry)) +
+  geom_tile() +
+  facet_wrap(~Chain) +
+  scale_fill_gradient(low = "#FFFFFF", high = "#146EB4")
 }
