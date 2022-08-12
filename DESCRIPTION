@@ -24,4 +24,4 @@ SystemRequirements: GNU make
 Encoding: UTF-8
 URL: https://github.com/stcolema/tagmmdiReDraft
 BugReports: https://github.com/stcolema/tagmmdiReDraft/issues
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1

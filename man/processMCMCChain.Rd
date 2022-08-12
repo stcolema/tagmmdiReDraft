@@ -4,7 +4,12 @@
 \alias{processMCMCChain}
 \title{Process MCMC chain}
 \usage{
-processMCMCChain(mcmc_output, burn, point_estimate_method = "median")
+processMCMCChain(
+  mcmc_output,
+  burn,
+  point_estimate_method = "median",
+  construct_psm = FALSE
+)
 }
 \arguments{
 \item{mcmc_output}{Output from ``batchSemiSupervisedMixtureModel``}
@@ -13,6 +18,10 @@ processMCMCChain(mcmc_output, burn, point_estimate_method = "median")
 
 \item{point_estimate_method}{Summary statistic used to define the point 
 estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.}
+
+\item{construct_psm}{Should PSMs be constructed in the unsupervised views. 
+Defaults to FALSE. If TRUE the PSM is constructed and this is used to infer 
+the point estimate rather than the sampled partitions.}
 }
 \value{
 A named list similar to the output of 

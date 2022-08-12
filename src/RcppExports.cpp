@@ -29,6 +29,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// createSimilarityMat
+arma::mat createSimilarityMat(arma::umat allocations);
+RcppExport SEXP _tagmReDraft_createSimilarityMat(SEXP allocationsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::umat >::type allocations(allocationsSEXP);
+    rcpp_result_gen = Rcpp::wrap(createSimilarityMat(allocations));
+    return rcpp_result_gen;
+END_RCPP
+}
 // squaredExponentialFunction
 double squaredExponentialFunction(double amplitude, double length, int i, int j);
 RcppExport SEXP _tagmReDraft_squaredExponentialFunction(SEXP amplitudeSEXP, SEXP lengthSEXP, SEXP iSEXP, SEXP jSEXP) {
@@ -128,6 +139,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_tagmReDraft_runAltMDI", (DL_FUNC) &_tagmReDraft_runAltMDI, 8},
+    {"_tagmReDraft_createSimilarityMat", (DL_FUNC) &_tagmReDraft_createSimilarityMat, 1},
     {"_tagmReDraft_squaredExponentialFunction", (DL_FUNC) &_tagmReDraft_squaredExponentialFunction, 4},
     {"_tagmReDraft_gammaLogLikelihood", (DL_FUNC) &_tagmReDraft_gammaLogLikelihood, 3},
     {"_tagmReDraft_invGammaLogLikelihood", (DL_FUNC) &_tagmReDraft_invGammaLogLikelihood, 3},

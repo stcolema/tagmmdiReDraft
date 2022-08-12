@@ -5,6 +5,9 @@
 #' @param burn The number of MCMC samples to drop as part of a burn in.
 #' @param point_estimate_method Summary statistic used to define the point 
 #' estimate. Must be ``'mean'`` or ``'median'``. ``'median'`` is the default.
+#' @param construct_psm Should PSMs be constructed in the unsupervised views. 
+#' Defaults to FALSE. If TRUE the PSM is constructed and this is used to infer 
+#' the point estimate rather than the sampled partitions.
 #' @returns A named list similar to the output of 
 #' ``batchSemiSupervisedMixtureModel`` with some additional entries:
 #'  * ``allocation_probability``: $(N x K)$ matrix. The point estimate of 
@@ -17,7 +20,10 @@
 #'  
 #' @export
 #' @importFrom stats median
-processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median") {
+#' @importFrom salso salso
+processMCMCChain <- function(mcmc_output, burn,
+  point_estimate_method = "median",
+  construct_psm = FALSE) {
   
   # Dimensions of the dataset
   N <- mcmc_output$N
@@ -76,6 +82,10 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
   new_output$prob <- vector("list", V)
   new_output$pred <- vector("list", V)
   
+  if(construct_psm) {
+    new_output$psm <- vector("list", V)
+  }
+  
   for(v in view_inds) {
     if(is_semisupervised[v]) {
       
@@ -91,6 +101,13 @@ processMCMCChain <- function(mcmc_output, burn, point_estimate_method = "median"
       
       new_output$prob[[v]] <- apply(.alloc_prob, 1, max)
       new_output$pred[[v]] <- apply(.alloc_prob, 1, which.max)
+    } else {
+      if(construct_psm) {
+        new_output$psm[[v]] <- .psm <- createSimilarityMat(new_output$allocations[ , , v])
+        new_output$pred[[v]] <- salso::salso(.psm)
+      } else {
+        new_output$pred[[v]] <- salso::salso(new_output$allocations[ , , v])
+      }
     }
   }
   
