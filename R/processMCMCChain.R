@@ -66,6 +66,7 @@ processMCMCChain <- function(mcmc_output, burn,
   new_output <- mcmc_output
 
   new_output$mass <- mcmc_output$mass[-dropped_indices, , drop = F]
+  new_output$weights <- mcmc_output$weights[-dropped_indices, , , drop = F]
   if (multiple_views) {
     # The information sharing parameters
     new_output$phis <- mcmc_output$phis[-dropped_indices, , drop = F]
