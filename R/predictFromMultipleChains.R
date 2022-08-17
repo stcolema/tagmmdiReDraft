@@ -159,7 +159,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
          # merged_outputs$pred[[v]] <- salso::salso(.psm)
        } 
        # else {
-       merged_outputs$pred[[v]] <- salso::salso(.alloc)
+       merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
        # }
      }
   }
