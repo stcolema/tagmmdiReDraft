@@ -156,10 +156,11 @@ predictFromMultipleChains <- function(mcmc_outputs,
      else {
        if(construct_psm) {
          merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
-         merged_outputs$pred[[v]] <- salso::salso(.psm)
-       } else {
-         merged_outputs$pred[[v]] <- salso::salso(.alloc)
-       }
+         # merged_outputs$pred[[v]] <- salso::salso(.psm)
+       } 
+       # else {
+       merged_outputs$pred[[v]] <- salso::salso(.alloc)
+       # }
      }
   }
 
