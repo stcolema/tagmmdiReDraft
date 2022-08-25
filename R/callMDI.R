@@ -122,7 +122,18 @@ callMDI <- function(X,
   mcmc_output$alpha <- alpha
 
   # Indicate if the model was semi-supervised or unsupervised
-  mcmc_output$Semisupervised <- apply(fixed, 2, function(x) any(x == 1))
+  mcmc_output$Semisupervised <- is_semisupervised <- apply(fixed, 2, function(x) any(x == 1))
+  mcmc_output$Overfitted <- list()
+  
+  for(v in seq(1, V)) {
+    mcmc_output$Overfitted[[v]] <- TRUE
+    if(is_semisupervised[[v]]) {
+      known_labels <- which(fixed[, v] == 1)
+      K_fix <- length(unique(initial_labels[known_labels, v]))
+      is_overfitted <- (K[v] > K_fix)
+      mcmc_output$Overfitted[[v]] <- is_overfitted
+    }
+  }
 
   # Record how long the algorithm took
   mcmc_output$Time <- time_taken

@@ -64,8 +64,9 @@ predictFromMultipleChains <- function(mcmc_outputs,
   # Indices for views
   view_inds <- seq(1, V)
 
-  # Is the output semisupervised
+  # Is the output semisupervised and overfitted
   is_semisupervised <- first_chain$Semisupervised
+  is_overfitted <- first_chain$Overfitted
 
   # What summary statistic is used to define our point estimates
   use_median <- point_estimate_method == "median"
@@ -86,6 +87,9 @@ predictFromMultipleChains <- function(mcmc_outputs,
 
   # Setup the output list
   merged_outputs <- list()
+  merged_outputs$Semisupervised <- is_semisupervised
+  merged_outputs$Overfitted <- is_overfitted
+  
   merged_outputs$allocations <- vector("list", V)
   merged_outputs$allocation_probability <- vector("list", V)
   merged_outputs$prob <- vector("list", V)
@@ -117,6 +121,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
   first_chain <- TRUE
   for (v in view_inds) {
     current_view_is_semi_supervised <- is_semisupervised[v]
+    current_view_is_overfitted <- is_overfitted[v]
     
     merged_outputs$allocation_probability[[v]] <- .alloc_prob <- matrix(
       0,
@@ -154,9 +159,12 @@ predictFromMultipleChains <- function(mcmc_outputs,
       .alloc_prob <- .alloc_prob / n_chains
 
       merged_outputs$allocation_probability[[v]] <- .alloc_prob
-
       merged_outputs$prob[[v]] <- .prob <- apply(.alloc_prob, 1, max)
       merged_outputs$pred[[v]] <- apply(.alloc_prob, 1, which.max)
+      
+      if(current_view_is_overfitted) {
+        merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
+      } 
     }
      else {
        # if(construct_psm) {

@@ -106,10 +106,8 @@ processMCMCChain <- function(mcmc_output, burn,
     } else {
       if (construct_psm) {
         new_output$psm[[v]] <- .psm <- createSimilarityMat(new_output$allocations[, , v])
-        new_output$pred[[v]] <- salso::salso(.psm)
-      } else {
-        new_output$pred[[v]] <- salso::salso(new_output$allocations[, , v])
-      }
+      } 
+      new_output$pred[[v]] <- suppressWarnings(salso::salso(new_output$allocations[, , v]))
     }
   }
 
