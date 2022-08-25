@@ -37,8 +37,12 @@ class gp : virtual public density
   
 public:
   
-  bool logNormPriorUsed = true, use_log_norm_proposal = true;
-  uword sampleHypersFrequencyBefore100 = 5, sampleHypersFrequencyBefore1000 = 10, sampleHypersFrequencyAfter1000 = 25, samplingCount = 0;
+  bool logNormPriorUsed = false, use_log_norm_proposal = true;
+  uword
+    sampleHypersFrequencyBefore100 = 2, 
+    sampleHypersFrequencyBefore1000 = 10, 
+    sampleHypersFrequencyAfter1000 = 25, 
+    samplingCount = 0;
   std::string matrixSaved = "i";
   
   double
@@ -94,9 +98,9 @@ public:
   double ampltiduePriorLogDensity(double x, bool logNorm = false);
   double lengthPriorLogDensity(double x, bool logNorm = false);
   
-  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-2);
-  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-2);
-  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 1e-2);
+  double sampleAmplitudePriorDistribution(bool logNorm = false, double threshold = 1e-5);
+  double sampleLengthPriorDistribution(bool logNorm = false, double threshold = 1e-5);
+  double sampleNoisePriorDistribution(bool logNorm = false, double threshold = 1e-5);
   
   void sampleKthComponentHyperParameterPrior(uword k, bool logNorm = false);
   void sampleHyperParameterPriors();
@@ -120,7 +124,6 @@ public:
       bool checkSymmetry = false, 
       bool checkStability = true, 
       double threshold = 1e-12
-      // int n_places = 8
   );
   
   // Sample and calulcate objects related to sampling the mean posterior function
@@ -140,8 +143,8 @@ public:
   
   // double proposeNewNonNegativeValue(double x, double window);
   double hyperParameterLogKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde, bool logNorm = false);
-  void sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
-  void sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
+  void sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde, double threshold = 1e-6);
+  void sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde, double threshold = 1e-6);
   void sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
   void sampleHyperParametersKthComponent(
       uword k, 
@@ -152,7 +155,7 @@ public:
   );
   
   double noiseLogKernel(uword n_k, double noise, vec mu, mat data);
-  void sampleNoise(uword k, uword n_k, mat component_data);
+  void sampleNoise(uword k, uword n_k, mat component_data, double threshold = 1e-6);
   
   // The log likelihood of a item belonging to each cluster
   vec itemLogLikelihood(vec item);

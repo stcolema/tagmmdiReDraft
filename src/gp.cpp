@@ -569,7 +569,8 @@ void gp::sampleLength(
     uword n_k, 
     vec mu_tilde, 
     vec sample_mean, 
-    mat cov_tilde
+    mat cov_tilde,
+    double threshold
 ) {
   bool accept = false;
   double 
@@ -594,7 +595,7 @@ void gp::sampleLength(
   );
   
   // new_length = std::exp(std::log(length(k) + randn() * length_proposal_window));
-  if(new_length < 1e-2) {
+  if(new_length < threshold) {
     return;
   }
   new_sub_block = calculateKthComponentKernelSubBlock(amplitude(k), new_length);
@@ -609,7 +610,7 @@ void gp::sampleLength(
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(new_cov_tilde, false, true, matrix_precision);
 
-  if(rcond(new_cov_tilde) < 1e-3) {
+  if(rcond(new_cov_tilde) < 1e-6) {
     return;
   }
   
@@ -648,7 +649,8 @@ void gp::sampleAmplitude(
     uword n_k, 
     vec mu_tilde, 
     vec sample_mean, 
-    mat cov_tilde
+    mat cov_tilde,
+    double threshold
   ) {
   bool accept = false;
   double 
@@ -671,8 +673,8 @@ void gp::sampleAmplitude(
     amplitude_proposal_window,
     use_log_norm_proposal
   );
-    // std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
-  if(new_amplitude < 1.0e-2) {
+  
+  if(new_amplitude < threshold) {
     return;
   }
   
@@ -685,7 +687,7 @@ void gp::sampleAmplitude(
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(new_cov_tilde, false, true, matrix_precision);
   
-  if(rcond(new_cov_tilde) < 1e-3) {
+  if(rcond(new_cov_tilde) < 1e-6) {
     return;
   }
   
@@ -750,12 +752,10 @@ double gp::noiseLogKernel(uword n_k, double noise, vec mean_vec, mat data) {
   prior_contribution += noisePriorLogDensity(noise, logNormPriorUsed); 
   
   score += prior_contribution;
-  // score += pNorm(log(noise), 0, 1);
-  // score += pHalfCauchy(noise, 0, 5);
   return score;
 };
 
-void gp::sampleNoise(uword k, uword n_k, mat component_data) {
+void gp::sampleNoise(uword k, uword n_k, mat component_data, double threshold) {
   bool accept = false;
   double 
       acceptance_prob = 0.0, 
@@ -769,7 +769,7 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data) {
     use_log_norm_proposal
   );
   
-  if(new_noise < 1.0e-2) {
+  if(new_noise < threshold) {
     return;
   }
   

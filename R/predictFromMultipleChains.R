@@ -142,6 +142,11 @@ predictFromMultipleChains <- function(mcmc_outputs,
         .alloc_prob <- .prev + .curr
       }
     }
+    
+    if(construct_psm) {
+      merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
+      # merged_outputs$pred[[v]] <- salso::salso(.psm)
+    } 
 
     if (current_view_is_semi_supervised) {
 
@@ -154,10 +159,10 @@ predictFromMultipleChains <- function(mcmc_outputs,
       merged_outputs$pred[[v]] <- apply(.alloc_prob, 1, which.max)
     }
      else {
-       if(construct_psm) {
-         merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
-         # merged_outputs$pred[[v]] <- salso::salso(.psm)
-       } 
+       # if(construct_psm) {
+       #   merged_outputs$psm[[v]] <- .psm <- createSimilarityMat(.alloc)
+       #   # merged_outputs$pred[[v]] <- salso::salso(.psm)
+       # } 
        # else {
        merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
        # }
