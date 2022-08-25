@@ -37,7 +37,7 @@ class gp : virtual public density
   
 public:
   
-  bool logNormPriorUsed = false, use_log_norm_proposal = true;
+  bool logNormPriorUsed = true, use_log_norm_proposal = true;
   uword
     sampleHypersFrequencyBefore100 = 2, 
     sampleHypersFrequencyBefore1000 = 10, 
@@ -46,6 +46,11 @@ public:
   std::string matrixSaved = "i";
   
   double
+    
+    // Prior hyperparameters
+    amplitude_prior_std_dev = 0.5,
+    length_prior_std_dev = 0.5,
+    noise_prior_std_dev = 0.5,
     
     // kernel_subblock_threshold = 1e-12,
     matrix_precision = 8, //  1e-08,

@@ -93,7 +93,7 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
 double gp::sampleAmplitudePriorDistribution(bool logNorm, double threshold) {
   double x = 0.0;
   if(logNorm) {
-    x = std::exp(randn< double >());
+    x = std::exp(randn< double >() * amplitude_prior_std_dev);
   } else {
     x = rHalfCauchy(0, 5);
   }
@@ -106,7 +106,7 @@ double gp::sampleAmplitudePriorDistribution(bool logNorm, double threshold) {
 double gp::noisePriorLogDensity(double x, bool logNorm) {
   double y = 0.0;
   if(logNorm) {
-    y = pNorm(log(x), 0, 1);
+    y = pNorm(log(x), 0, noise_prior_std_dev);
   } else {
     y = pHalfCauchy(x, 0, 5, true);
   }
@@ -116,7 +116,7 @@ double gp::noisePriorLogDensity(double x, bool logNorm) {
 double gp::ampltiduePriorLogDensity(double x, bool logNorm) {
   double y = 0.0;
   if(logNorm) {
-    y = pNorm(log(x), 0, 1);
+    y = pNorm(log(x), 0, amplitude_prior_std_dev);
   } else {
     y = pHalfCauchy(x, 0, 5, true);
   }
@@ -126,7 +126,7 @@ double gp::ampltiduePriorLogDensity(double x, bool logNorm) {
 double gp::lengthPriorLogDensity(double x, bool logNorm) {
   double y = 0.0;
   if(logNorm) {
-    y = pNorm(log(x), 0, 1);
+    y = pNorm(log(x), 0, length_prior_std_dev);
   } else {
     y = pHalfCauchy(x, 0, 5, true);
   }
@@ -136,7 +136,7 @@ double gp::lengthPriorLogDensity(double x, bool logNorm) {
 double gp::sampleLengthPriorDistribution(bool logNorm, double threshold) {
   double x = 0.0;
   if(logNorm) {
-    x = std::exp(randn< double >());
+    x = std::exp(randn< double >() * length_prior_std_dev);
   } else {
     x = rHalfCauchy(0, 5);
   }
@@ -149,7 +149,7 @@ double gp::sampleLengthPriorDistribution(bool logNorm, double threshold) {
 double gp::sampleNoisePriorDistribution(bool logNorm, double threshold) {
   double x = 0.0;
   if(logNorm) {
-    x = std::exp(randn< double >());
+    x = std::exp(randn< double >() * noise_prior_std_dev);
   } else {
     x = rHalfCauchy(0, 5);
   }
