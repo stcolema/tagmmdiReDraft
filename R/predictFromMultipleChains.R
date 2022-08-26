@@ -133,7 +133,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
       in_first_chain <- (ii == 1)
 
       if (in_first_chain) {
-        merged_outputs$allocations[[v]] <- .curr_chain$allocations[, , v, drop = TRUE]
+        merged_outputs$allocations[[v]] <- .alloc <- .curr_chain$allocations[, , v, drop = TRUE]
       } else {
         .prev <- merged_outputs$allocations[[v]]
         .current <- .curr_chain$allocations[, , v, drop = TRUE]
