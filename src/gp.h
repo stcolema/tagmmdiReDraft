@@ -48,10 +48,10 @@ public:
   double
     
     // Prior hyperparameters
-    amplitude_prior_std_dev = 0.75,
-    length_prior_std_dev = 0.75,
-    noise_prior_std_dev = 1.0, // 0.5,
-    acceptance_threshold = 1e-10,
+    amplitude_prior_std_dev = 0.50,
+    length_prior_std_dev = 0.50,
+    noise_prior_std_dev = 0.75, // 0.5,
+    acceptance_threshold = 1e-9,
     
     // kernel_subblock_threshold = 1e-12,
     matrix_precision = 8, //  1e-08,
