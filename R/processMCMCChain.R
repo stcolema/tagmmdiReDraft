@@ -104,11 +104,11 @@ processMCMCChain <- function(mcmc_output, burn,
       new_output$prob[[v]] <- apply(.alloc_prob, 1, max)
       new_output$pred[[v]] <- apply(.alloc_prob, 1, which.max)
     } else {
-      if (construct_psm) {
-        new_output$psm[[v]] <- .psm <- createSimilarityMat(new_output$allocations[, , v])
-      } 
       new_output$pred[[v]] <- suppressWarnings(salso::salso(new_output$allocations[, , v]))
     }
+    if (construct_psm) {
+      new_output$psm[[v]] <- .psm <- createSimilarityMat(new_output$allocations[, , v])
+    } 
   }
 
   # Record the applied burn in
