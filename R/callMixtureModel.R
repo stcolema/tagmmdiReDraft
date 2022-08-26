@@ -144,7 +144,6 @@ callMixtureModel <- function(X,
     is_overfitted <- (K > K_fix)
     mcmc_output$Overfitted <- is_overfitted
   }
-  
 
   # Record how long the algorithm took
   mcmc_output$Time <- time_taken

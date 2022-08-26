@@ -582,12 +582,7 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
     } else {
       rate = 1.0;
     }
-    
-    // Rcpp::Rcout << "\nk: " << k;
-    // Rcpp::Rcout << "\nShape: " << shape - 1 << "\n";
-    // Rcpp::Rcout << "\nRate: " << rate << "\n";
-    
-    
+
     // Sample a new weight
     posterior_shape = (mass(l) / (double) K(l)) + shape;
     posterior_rate = w_rate_prior + rate;
@@ -596,28 +591,24 @@ void mdiModelAlt::updateWeightsViewL(uword l) {
     // Pass the allocation count down to the mixture
     // (this is used in the parameter sampling)
     mixtures[l]->members.col(k) = members_lk;
-    
   }
-  
   mixtures[l]->N_k = N_k(span(0, K(l) - 1), l);
 }
 
 // Update the cluster weights
 void mdiModelAlt::updateWeights() {
   
-  for(uword l = 0; l < L; l++) {
-    updateWeightsViewL(l);
-  }
-
-  // std::for_each(
-  //   std::execution::par,
-  //   L_inds.begin(),
-  //   L_inds.end(),
-  //   [&](uword l) {
-  //     updateWeightsViewL(l);
-  //   }
-  // );
-  
+  // for(uword l = 0; l < L; l++) {
+  //   updateWeightsViewL(l);
+  // }
+  std::for_each(
+    std::execution::par,
+    L_inds.begin(),
+    L_inds.end(),
+    [&](uword l) {
+      updateWeightsViewL(l);
+    }
+  );
 };
 
 double mdiModelAlt::samplePhiShape(arma::uword l, arma::uword m, double rate) {
@@ -798,14 +789,17 @@ void mdiModelAlt::updatePhis() {
 
 double mdiModelAlt::calcNormalisingConstNaiveSingleIteration(uvec current_ks) {
   uword l = 0;
-  double iter_value = 1.0;
+  double iter_value = 1.0, log_iter_value = 0.0, same_label = 0.0;
   
   for(uword jj = 0; jj < L; jj++) {
     iter_value *= w(current_ks(jj), jj);
+    log_iter_value += log(w(current_ks(jj), jj));
   }
   for(uword l = 0; l < L - 1; l++) {
     for(uword m = l + 1; m < L; m++) {
-      iter_value *= (1.0 + phis(phi_map(m, l)) * (current_ks(l) == current_ks(m)));
+      same_label = 1.0 * (current_ks(l) == current_ks(m));
+      iter_value *= 1.0 + phis(phi_map(m, l)) * same_label;
+      // log_iter_value += log(1.0 + phis(phi_map(m, l)) * same_label);
     }
   }
   return iter_value;
@@ -922,17 +916,40 @@ void mdiModelAlt::updateMassParameterViewL(uword lstar) {
   
   current_weights = w(span(0, K(lstar) - 1), lstar);
   current_mass = mass(lstar);
-  cur_log_likelihood = gammaLogLikelihood(current_weights, current_mass / (double) K(lstar), 1);
-  cur_log_prior = gammaLogLikelihood(current_mass, mass_shape_prior, mass_rate_prior);
+  
+  // Log likelihood and log prior density
+  cur_log_likelihood = gammaLogLikelihood(
+    current_weights, 
+    current_mass / (double) K(lstar), 
+    1
+  );
+  
+  cur_log_prior = gammaLogLikelihood(
+    current_mass, 
+    mass_shape_prior, 
+    mass_rate_prior
+  );
+  
   proposed_mass = proposeNewNonNegativeValue(current_mass,
     mass_proposal_window, 
     use_log_norm_proposal
-  ); // current_mass + randn() * mass_proposal_window;
+  );
+  
   if(proposed_mass <= 0.0) {
     acceptance_ratio = 0.0;
   } else {
-    new_log_likelihood = gammaLogLikelihood(current_weights, proposed_mass / (double) K(lstar), 1);
-    new_log_prior = gammaLogLikelihood(proposed_mass,  mass_shape_prior, mass_rate_prior);
+    new_log_likelihood = gammaLogLikelihood(
+      current_weights, 
+      proposed_mass / (double) K(lstar), 
+      1.0
+    );
+    
+    new_log_prior = gammaLogLikelihood(
+      proposed_mass,  
+      mass_shape_prior, 
+      mass_rate_prior
+    );
+    
     acceptance_ratio = exp(
       new_log_likelihood
       + new_log_prior 

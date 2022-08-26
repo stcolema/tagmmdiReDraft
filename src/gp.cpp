@@ -93,7 +93,7 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
 double gp::sampleAmplitudePriorDistribution(bool logNorm, double threshold) {
   double x = 0.0;
   if(logNorm) {
-    x = std::exp(randn< double >() * amplitude_prior_std_dev);
+    x = std::exp(randn< double >());
   } else {
     x = rHalfCauchy(0, 5);
   }
@@ -106,7 +106,7 @@ double gp::sampleAmplitudePriorDistribution(bool logNorm, double threshold) {
 double gp::noisePriorLogDensity(double x, bool logNorm) {
   double y = 0.0;
   if(logNorm) {
-    y = pNorm(log(x), 0, noise_prior_std_dev);
+    y = pNorm(log(x), 0, 1);
   } else {
     y = pHalfCauchy(x, 0, 5, true);
   }
@@ -116,7 +116,7 @@ double gp::noisePriorLogDensity(double x, bool logNorm) {
 double gp::ampltiduePriorLogDensity(double x, bool logNorm) {
   double y = 0.0;
   if(logNorm) {
-    y = pNorm(log(x), 0, amplitude_prior_std_dev);
+    y = pNorm(log(x), 0, 1);
   } else {
     y = pHalfCauchy(x, 0, 5, true);
   }
@@ -126,7 +126,7 @@ double gp::ampltiduePriorLogDensity(double x, bool logNorm) {
 double gp::lengthPriorLogDensity(double x, bool logNorm) {
   double y = 0.0;
   if(logNorm) {
-    y = pNorm(log(x), 0, length_prior_std_dev);
+    y = pNorm(log(x), 0, 1);
   } else {
     y = pHalfCauchy(x, 0, 5, true);
   }
@@ -136,7 +136,7 @@ double gp::lengthPriorLogDensity(double x, bool logNorm) {
 double gp::sampleLengthPriorDistribution(bool logNorm, double threshold) {
   double x = 0.0;
   if(logNorm) {
-    x = std::exp(randn< double >() * length_prior_std_dev);
+    x = std::exp(randn< double >());
   } else {
     x = rHalfCauchy(0, 5);
   }
@@ -149,7 +149,7 @@ double gp::sampleLengthPriorDistribution(bool logNorm, double threshold) {
 double gp::sampleNoisePriorDistribution(bool logNorm, double threshold) {
   double x = 0.0;
   if(logNorm) {
-    x = std::exp(randn< double >() * noise_prior_std_dev);
+    x = std::exp(randn< double >());
   } else {
     x = rHalfCauchy(0, 5);
   }
@@ -336,23 +336,18 @@ mat gp::covCheck(mat C, bool checkSymmetry, bool checkStability, double threshol
       new_cov.diag() = C.diag();
       C = new_cov;
     }
-    // if(not_symmetric_my_check) {
-    //   Rcpp::Rcout << "\nNot symmetric. Reconstructing from upper right triangular matrix.\n";
-    //   Rcpp::Rcout << C.submat(0, 0, 4, 4);
-    // }
-    // 
   }
   
   // If our covariance matrix is poorly behaved (i.e. non-invertible), add a 
   // small constant to the diagonal entries
   if(checkStability) {
     eigval = eig_sym( C );
-    not_invertible = min(eigval) < 1e-6;
+    not_invertible = min(eigval) < 1e-10;
     
     mat small_identity = I_p;
     if(not_invertible) {
       // Rcpp::Rcout << "\nNot numerical stable for inversion. Add constant to diagonal.\n";
-      small_identity *= 1e-6;
+      small_identity *= 1e-9;
       C += small_identity;
     }
   }
@@ -595,7 +590,7 @@ void gp::sampleLength(
   );
   
   // new_length = std::exp(std::log(length(k) + randn() * length_proposal_window));
-  if(new_length < threshold) {
+  if(new_length < 1e-2) {
     return;
   }
   new_sub_block = calculateKthComponentKernelSubBlock(amplitude(k), new_length);
@@ -610,7 +605,7 @@ void gp::sampleLength(
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(new_cov_tilde, false, true, matrix_precision);
 
-  if(rcond(new_cov_tilde) < 1e-6) {
+  if(rcond(new_cov_tilde) < 1e-3) {
     return;
   }
   
@@ -673,8 +668,8 @@ void gp::sampleAmplitude(
     amplitude_proposal_window,
     use_log_norm_proposal
   );
-  
-  if(new_amplitude < threshold) {
+    // std::exp(std::log(amplitude(k) + randn() * amplitude_proposal_window));
+  if(new_amplitude < 1.0e-2) {
     return;
   }
   
@@ -687,7 +682,7 @@ void gp::sampleAmplitude(
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(new_cov_tilde, false, true, matrix_precision);
   
-  if(rcond(new_cov_tilde) < 1e-6) {
+  if(rcond(new_cov_tilde) < 1e-3) {
     return;
   }
   
@@ -752,6 +747,8 @@ double gp::noiseLogKernel(uword n_k, double noise, vec mean_vec, mat data) {
   prior_contribution += noisePriorLogDensity(noise, logNormPriorUsed); 
   
   score += prior_contribution;
+  // score += pNorm(log(noise), 0, 1);
+  // score += pHalfCauchy(noise, 0, 5);
   return score;
 };
 
@@ -769,7 +766,7 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data, double threshold) {
     use_log_norm_proposal
   );
   
-  if(new_noise < threshold) {
+  if(new_noise < 1.0e-2) {
     return;
   }
   

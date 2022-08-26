@@ -48,9 +48,10 @@ public:
   double
     
     // Prior hyperparameters
-    amplitude_prior_std_dev = 0.5,
-    length_prior_std_dev = 0.5,
-    noise_prior_std_dev = 0.5,
+    amplitude_prior_std_dev = 0.75,
+    length_prior_std_dev = 0.75,
+    noise_prior_std_dev = 1.0, // 0.5,
+    acceptance_threshold = 1e-10,
     
     // kernel_subblock_threshold = 1e-12,
     matrix_precision = 8, //  1e-08,
@@ -147,9 +148,30 @@ public:
   
   
   // double proposeNewNonNegativeValue(double x, double window);
-  double hyperParameterLogKernel(double hyper, vec mu_k, vec mu_tilde, mat cov_tilde, bool logNorm = false);
-  void sampleLength(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde, double threshold = 1e-6);
-  void sampleAmplitude(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde, double threshold = 1e-6);
+  double hyperParameterLogKernel(
+      double hyper, 
+      vec mu_k, 
+      vec mu_tilde, 
+      mat cov_tilde, 
+      bool logNorm = false
+    );
+  
+  void sampleLength(
+      uword k, 
+      uword n_k, 
+      vec mu_tilde, 
+      vec component_data, 
+      mat cov_tilde, 
+      double threshold = 1e-6
+  );
+  void sampleAmplitude(
+      uword k, 
+      uword n_k, 
+      vec mu_tilde, 
+      vec component_data, 
+      mat cov_tilde, 
+      double threshold = 1e-6
+  );
   void sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
   void sampleHyperParametersKthComponent(
       uword k, 
@@ -160,7 +182,12 @@ public:
   );
   
   double noiseLogKernel(uword n_k, double noise, vec mu, mat data);
-  void sampleNoise(uword k, uword n_k, mat component_data, double threshold = 1e-6);
+  void sampleNoise(
+      uword k, 
+      uword n_k, 
+      mat component_data, 
+      double threshold = 1e-6
+  );
   
   // The log likelihood of a item belonging to each cluster
   vec itemLogLikelihood(vec item);
