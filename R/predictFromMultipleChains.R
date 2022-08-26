@@ -122,7 +122,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
   for (v in view_inds) {
     current_view_is_semi_supervised <- is_semisupervised[v]
     current_view_is_overfitted <- is_overfitted[v]
-    
+
     merged_outputs$allocation_probability[[v]] <- .alloc_prob <- matrix(
       0,
       N,
