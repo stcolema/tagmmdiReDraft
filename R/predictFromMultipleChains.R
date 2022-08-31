@@ -176,6 +176,24 @@ predictFromMultipleChains <- function(mcmc_outputs,
        # }
      }
   }
+  
+  merged_outputs$fusion_probabilities <- vector("list", VC2)
+  VC2 <- choose(V, 2)
+  entry <- 0
+  names <- c()
+  for(v in seq(1, V - 1)) {
+    for(w in seq(v + 1, V)) {
+      name <- paste0("fused_items_", v, w)
+      names <- c(names, name)
+      entry <- entry + 1
+      merged_outputs$fusion_probabilities[[entry]] <- rep(0, N)
+      for(ii in seq(1, n_chains)) {
+        merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] +
+          colMeans(processed_chains[[ii]]$allocation_probabilities[[v]] == processed_chains[[ii]]$allocation_probabilities[[w]])
+      }
+    }
+  }
+  names(merged_outputs$fusion_probabilities) <- names
 
   merged_outputs
 }

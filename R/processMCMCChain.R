@@ -110,6 +110,22 @@ processMCMCChain <- function(mcmc_output, burn,
       new_output$psm[[v]] <- .psm <- createSimilarityMat(new_output$allocations[, , v])
     } 
   }
+  
+  if(multiple_views) {
+    new_output$fusion_probabilities <- vector("list", VC2)
+    VC2 <- choose(V, 2)
+    entry <- 0
+    names <- c()
+    for(v in seq(1, V - 1)) {
+      for(w in seq(v + 1, V)) {
+        name <- paste0("fused_items_", v, w)
+        names <- c(names, name)
+        entry <- entry + 1
+        new_output$fusion_probabilities[[entry]] <- colMeans(new_output$allocation_probabilities[[v]] == new_output$allocation_probabilities[[w]])
+      }
+    }
+    names(new_output$fusion_probabilities) <- names
+  }
 
   # Record the applied burn in
   new_output$burn <- burn
