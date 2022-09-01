@@ -177,8 +177,9 @@ predictFromMultipleChains <- function(mcmc_outputs,
      }
   }
   
-  merged_outputs$fusion_probabilities <- vector("list", VC2)
   VC2 <- choose(V, 2)
+  merged_outputs$fusion_probabilities <- vector("list", VC2)
+  
   entry <- 0
   names <- c()
   for(v in seq(1, V - 1)) {
@@ -189,8 +190,9 @@ predictFromMultipleChains <- function(mcmc_outputs,
       merged_outputs$fusion_probabilities[[entry]] <- rep(0, N)
       for(ii in seq(1, n_chains)) {
         merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] +
-          colMeans(processed_chains[[ii]]$allocation_probabilities[[v]] == processed_chains[[ii]]$allocation_probabilities[[w]])
+          calcFusionProbabiliy(processed_chains[[ii]], v, w)
       }
+      merged_outputs$fusion_probabilities[[entry]] <- merged_outputs$fusion_probabilities[[entry]] / n_chains
     }
   }
   names(merged_outputs$fusion_probabilities) <- names
