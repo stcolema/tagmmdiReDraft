@@ -85,7 +85,7 @@ processMCMCChain <- function(mcmc_output, burn,
   new_output$pred <- vector("list", V)
 
   if (construct_psm) {
-    new_output$psm <- vector("list", V)
+    new_output$psms <- vector("list", V)
   }
 
   for (v in view_inds) {
@@ -107,7 +107,7 @@ processMCMCChain <- function(mcmc_output, burn,
       new_output$pred[[v]] <- suppressWarnings(salso::salso(new_output$allocations[, , v]))
     }
     if (construct_psm) {
-      new_output$psm[[v]] <- .psm <- createSimilarityMat(new_output$allocations[, , v])
+      new_output$psms[[v]] <- createSimilarityMat(new_output$allocations[, , v])
     } 
   }
   

@@ -1,27 +1,30 @@
-#' @title Call Mixture Model
+#' @title Call mixture model
 #' @description Runs a MCMC chain of a Bayesian mixture model. Essentially a
 #' wrapper to allow more intuitive inputs for the single dataset case of MDI.
 #' @param X Data to cluster. Matrix with the N items to cluster held
 #' in rows.
-#' @param initial_labels Initial clustering. $N$-vector.
-#' @param fixed Which items are fixed in their initial label. $N$-vector.
 #' @param R The number of iterations in the sampler.
 #' @param thin The factor by which the samples generated are thinned, e.g. if
 #' ``thin=50`` only every 50th sample is kept.
-#' @param type Character vector indicating density type to use. 'MVN'
-#' (multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).
-#' @param K_max Integer indicating the number of components to include (the upper
+#' @param type Character vector indicating density type to use. 'G' (Gaussian 
+#' with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
+#' (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the 
+#' mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).
+#' @param K Integer indicating the number of components to include (the upper
 #' bound on the number of clusters).
+#' @param initial_labels Initial clustering. $N$-vector.
+#' @param fixed Which items are fixed in their initial label. $N$-vector.
 #' @param alpha The concentration parameter for the stick-breaking prior and the
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial
 #' labels are as intended or should ``generateInitialLabels`` be called.
 #' @return A named list containing the sampled partitions, component weights,
-#' phi and mass parameters, model fit measures and some details on the model call.
+#' and mass parameters, model fit measures and some details on the model call.
 #' @examples 
 #' N <- 100
-#' X <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
+#' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
 #' 
+#' # This R is much too low for real applications
 #' R <- 100
 #' thin <- 5
 #' 
@@ -90,7 +93,7 @@ callMixtureModel <- function(X,
   t_0 <- Sys.time()
 
   # Pull samples from the MDI model
-  mcmc_output <- runAltMDI(
+  mcmc_output <- runMDI(
     R,
     thin,
     X,

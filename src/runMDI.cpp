@@ -1,24 +1,24 @@
+// runMDI.cpp
+// =============================================================================
+// included dependencies
+# include "runMDI.h"
 
-# include <R_ext/Print.h>
-
-# include "logLikelihoods.h"
-# include "genericFunctions.h"
-# include "mdi.h"
-
-// [[Rcpp::depends(RcppArmadillo)]]
-
+// =============================================================================
+// namespace
 using namespace Rcpp ;
 using namespace arma ;
 
-// [[Rcpp::export]]
-Rcpp::List runAltMDI(arma::uword R,
-                     arma::uword thin,
-                     arma::field<arma::mat> Y,
-                     arma::uvec K,
-                     arma::uvec mixture_types,
-                     arma::uvec outlier_types,
-                     arma::umat labels,
-                     arma::umat fixed
+// =============================================================================
+// runMDI function implementation
+Rcpp::List runMDI(
+    arma::uword R,
+    arma::uword thin,
+    arma::field<arma::mat> Y,
+    arma::uvec K,
+    arma::uvec mixture_types,
+    arma::uvec outlier_types,
+    arma::umat labels,
+    arma::umat fixed
 ) {
   
   // Indicator if the current iteration should be recorded

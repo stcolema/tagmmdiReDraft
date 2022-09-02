@@ -8,6 +8,8 @@
 #' fixed. If the vth column has no 1's then this view is unsupervised.
 #' @param alpha The concentration parameter (vector).
 #' @param K The number of components modelled in each  view.
+#' @param labels_as_intended Logical indicating if ``labels`` is the intended 
+#' output.
 #' @return An N vector of labels.
 #' @export
 generateInitialLabels <- function(labels, fixed, K, alpha,

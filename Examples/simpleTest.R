@@ -1,23 +1,27 @@
 library(tagmReDraft)
 library(magrittr)
 library(mdiHelpR)
+library(ggplot2)
+
 set.seed(1)
 
 N <- 100
 X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = T) |> 
+  scale() |> 
   set_rownames(paste0("Person", seq(1, N)))
 Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = T) |> 
+  scale() |> 
   set_rownames(paste0("Person", seq(1, N)))
 truth <- c(rep(1, N / 2), rep(2, N / 2))
 data_modelled <- list(X, X, X)
 
 V <- length(data_modelled)
 R <- 2000
-thin <- 2
+thin <- 25
 burn <- 500
 
 alpha <- rep(1, V)
-K_max <- 4
+K_max <- 10
 K <- rep(K_max, V) # c(3, 3, 3)
 labels <- matrix(0, nrow = N, ncol = V)
 labels[, 1] <- generateInitialUnsupervisedLabels(N, alpha[1], K[1]) # c(rep(1, N / 2), rep(2, N / 2)) #
@@ -44,35 +48,25 @@ colMeans(pred_out$allocations[[1]] == pred_out$allocations[[2]]) |> boxplot()
 colMeans(pred_out$allocations[[1]] == pred_out$allocations[[3]]) |> boxplot()
 colMeans(pred_out$allocations[[2]] == pred_out$allocations[[3]]) |> boxplot()
 
-
-
 new_out <- processMCMCChains(mcmc_out, burn)
 
 new_out[[1]]$phis |> boxplot()
 new_out[[2]]$phis |> boxplot()
 new_out[[3]]$phis |> boxplot()
 
-boxplot(new_out$phis)
-
-boxplot(new_out$weights[, , 1])
-boxplot(new_out$weights[, , 2])
-boxplot(new_out$weights[, , 3])
-
-new_out$allocations[,,1] |> mdiHelpR::createSimilarityMat() |> pheatmap::pheatmap()
-new_out$allocations[,,2] |> mdiHelpR::createSimilarityMat() |> pheatmap::pheatmap()
-new_out$allocations[,,3] |> mdiHelpR::createSimilarityMat() |> pheatmap::pheatmap()
-
+boxplot(pred_out$weights[[1]])
+boxplot(pred_out$weights[[2]])
+boxplot(pred_out$weights[[3]])
 
 psms <- list()
-psms[[1]] <- mdiHelpR::createSimilarityMat(new_out$allocations[ , , 1])
-psms[[2]] <- mdiHelpR::createSimilarityMat(new_out$allocations[ , , 2])
-psms[[3]] <- mdiHelpR::createSimilarityMat(new_out$allocations[ , , 3])
+psms[[1]] <- pred_out$psm[[1]] # mdiHelpR::createSimilarityMat(new_out$allocations[ , , 1])
+psms[[2]] <- pred_out$psm[[2]] # mdiHelpR::createSimilarityMat(new_out$allocations[ , , 2])
+psms[[3]] <- pred_out$psm[[3]] # mdiHelpR::createSimilarityMat(new_out$allocations[ , , 3])
 
 cl1 <- mcclust::maxpear(psms[[1]])$cl
-cl2 <- mcclust::maxpear(psms[[2]])$cl
-cl3 <- mcclust::maxpear(psms[[3]])$cl
+cl2 <- pred_out$pred[[2]] # mcclust::maxpear(psms[[2]])$cl
+cl3 <- pred_out$pred[[3]] # mcclust::maxpear(psms[[3]])$cl
 
-library(ggplot2)
 psm_df <- tagmReDraft::prepSimilarityMatricesForGGplot(psms)
 psm_df |>
   ggplot(aes(x = x, y= y, fill = Entry)) +

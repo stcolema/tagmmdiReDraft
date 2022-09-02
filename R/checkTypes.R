@@ -3,7 +3,10 @@
 #' are the correct format.
 #' @param types Density types passed to ``callMDI``. Should be a vector of
 #' strings. Viable options are ``'MVN'``, ``'TAGM'`` and ``'C'``.
-#' @return NULL
+#' @return No return value, called for side effects.
+#' @examples 
+#' types <- c("GP", "MVN", C")
+#' checkTypes(types)
 checkTypes <- function(types) {
   
   allowed_types <- c("MVN", "TAGM", "C", "G", "GP", "TAGPM")

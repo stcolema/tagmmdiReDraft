@@ -8,13 +8,14 @@
 #' @param order_by_protein_name Logical indicating if output should be ordered
 #' by protein name. Defaults to ``FALSE``.
 #' @return A list of ``X``, the fracitonation data from a LOPIT experiment, 
-#'  ``fixed``, the matrix indicating which labels are observed,  
-#'  ``initial_labels``, the matrix of the initial labels to be input into 
-#'  ``runMCMCChains`` (note that ``"unknown"`` organelles are represented 
-#'  arbitrarily with a ``1`` as these will be sampled again within the wrapper 
-#'  of ``callMDI``) and ``class_key`` which maps the numeric representation of 
-#'  organelles back to the original naming.
-#'  @importFrom Biobase exprs fData
+#' ``fixed``, the matrix indicating which labels are observed,  
+#' ``initial_labels``, the matrix of the initial labels to be input into 
+#' ``runMCMCChains`` (note that ``"unknown"`` organelles are represented 
+#' arbitrarily with a ``1`` as these will be sampled again within the wrapper 
+#' of ``callMDI``) and ``class_key`` which maps the numeric representation of 
+#' organelles back to the original naming.
+#' @importFrom Biobase exprs fData
+#' @importFrom pRoloc getMarkerClasses
 #' @export
 prepareMSObject <- function(MS_object, order_by_protein_name = FALSE) {
   

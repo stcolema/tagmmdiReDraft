@@ -1,14 +1,17 @@
-#' @title Generate initial labels
-#' @description For V views, generate initial labels allowing for both 
-#' semi-supervised and unsupervised views.
-#' @param labels $N x V$ matrix of initial labels. The actual values passed only
-#' matter for semi-supervised views (i.e. the views for which some labels are 
-#' observed).
+#' @title Check fixed input
+#' @description Checks if the ``fixed`` input for ``callMDI`` has the expected 
+#' properties.
 #' @param fixed $N x V$ matrix indicating which labels are observed and hence 
 #' fixed. If the vth column has no 1's then this view is unsupervised.
-#' @param alpha The concentration parameter (vector).
-#' @param K The number of components modelled in each  view.
-#' @return NULL
+#' @param N The number of items being clustered.
+#' @param V The number of views being modelled.
+#' @return No return value, called for side effects.
+#' @examples 
+#' N <- 100
+#' V <- 3
+#' fixed <- matrix(0, N, V)
+#' checkFixedInput(fixed, N, V)
+#' 
 checkFixedInput <- function(fixed, N, V) {
 
   not_a_matrix <- ! is.matrix(fixed)

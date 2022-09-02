@@ -1,18 +1,19 @@
-#' @title Call MDI
+#' @title Call Multiple Dataset Integration
 #' @description Runs a MCMC chain of the integrative clustering method,
-#' Multiple Dataset Integration (MDI), to L datasets. It is recommended that
-#' L < 5.
+#' Multiple Dataset Integration (MDI), to V datasets.
 #' @param X Data to cluster. List of matrices with the N items to cluster held
 #' in rows.
-#' @param initial_labels Initial clustering. $N x L$ matrix.
-#' @param fixed Which items are fixed in their initial label. $N x L$ matrix.
 #' @param R The number of iterations in the sampler.
 #' @param thin The factor by which the samples generated are thinned, e.g. if
 #' ``thin=50`` only every 50th sample is kept.
-#' @param type Character vector indicating density type to use. 'MVN'
-#' (multivariate normal), 'TAGM' (t-adjust Gaussian mixture) or 'C' (categorical).
-#' @param K_max Vector indicating the number of components to include (the upper
+#' @param types Character vector indicating density types to use. 'G' (Gaussian 
+#' with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
+#' (t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the 
+#' mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).
+#' @param K Vector indicating the number of components to include (the upper
 #' bound on the number of clusters in each dataset).
+#' @param initial_labels Initial clustering. $N x V$ matrix.
+#' @param fixed Which items are fixed in their initial label. $N x V$ matrix.
 #' @param alpha The concentration parameter for the stick-breaking prior and the
 #' weights in the model.
 #' @param initial_labels_as_intended Logical indicating if the passed initial 
@@ -22,32 +23,33 @@
 #' @examples 
 #' 
 #' N <- 100
-#' X <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
-#' Y <- matrix(c(rnorm(100, 0, 1), rnorm(100, 3, 1)), ncol = 2)
+#' X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+#' Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+#' 
+#' truth <- c(rep(1, N / 2), rep(2, N / 2))
 #' data_modelled <- list(X, Y)
 #' 
+#' V <- length(data_modelled)
+#' 
+#' # This R is much too low for real applications
 #' R <- 100
 #' thin <- 5
+#' burn <- 10
 #' 
-#' alpha <- c(1, 1)
-#' K <- c(10, 15)
-#' labels <- matrix(0, nrow = N, ncol = 2)
-#' labels[, 1] <- generateInitialUnsupervisedLabels(N, alpha[1], K[1])
-#' labels[, 2] <- generateInitialUnsupervisedLabels(N, alpha[1], K[2])
+#' K_max <- 10
+#' K <- rep(K_max, V) 
+#' types <- rep("G", V)
 #' 
-#' fixed <- matrix(0, nrow = N, ncol = 2)
-#' types <- c("MVN", "G")
-#' 
-#' mcmc_out <- callMDI(data_modelled, R, thin, labels, fixed, types, K, alpha)
+#' mcmc_out <- callMDI(data_modelled, R, thin, types, K = K)
 #' 
 #' @export
 callMDI <- function(X,
                     R,
                     thin,
-                    initial_labels,
-                    fixed,
                     types,
-                    K,
+                    K = NULL,
+                    initial_labels = NULL,
+                    fixed = NULL,
                     alpha = NULL,
                     initial_labels_as_intended = FALSE) {
 
@@ -66,6 +68,23 @@ callMDI <- function(X,
   # The number of measurements in each view
   P <- lapply(X, ncol)
 
+  # If no upper bound on K is passed set K to half of N
+  if(is.null(K)) {
+    K <- rep(floor(N / 2), V)
+  }
+  
+  no_labels_passed <- is.null(initial_labels)
+  if(no_labels_passed) {
+    initial_labels <- matrix(1, N, V)
+    if(initial_labels_as_intended) {
+      stop("Cannot fail to pass initial labels and pass ``initial_labels_as_intended=TRUE``.")
+    }
+  }
+  
+  if(is.null(fixed)) {
+    fixed <- matrix(0, N, V)
+  }
+  
   # Check that the matrix indicating observed labels is correctly formatted.
   checkFixedInput(fixed, N, V)
 
@@ -73,8 +92,9 @@ callMDI <- function(X,
   density_types <- translateTypes(types)
   outlier_types <- setupOutlierComponents(types)
 
-  if(is.null(alpha))
+  if(is.null(alpha)) {
     alpha <- rep(1, V)
+  }
   
   # Generate initial labels. Uses the stick-breaking prior if unsupervised,
   # proportions of observed classes is semi-supervised.
@@ -87,7 +107,7 @@ callMDI <- function(X,
   t_0 <- Sys.time()
   
   # Pull samples from the MDI model
-  mcmc_output <- runAltMDI(
+  mcmc_output <- runMDI(
     R,
     thin,
     X,

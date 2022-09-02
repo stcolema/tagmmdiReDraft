@@ -10,6 +10,9 @@ checkDataCorrectInput(X)
 \item{X}{Data passed to ``callMDI``. Should be a list of matrices each with 
 N items held in rows.}
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 Internal function that checks the data passed to ``callMDI`` is
 the correct format.

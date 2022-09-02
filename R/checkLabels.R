@@ -3,7 +3,12 @@
 #' type.
 #' @param labels Vector of initial labels for a view in ``callMDI``.
 #' @param K Number of components modelled.
-#' @return NULL
+#' @return No return value, called for side effects.
+#' @examples 
+#' N <- 20
+#' K <- 3
+#' labels <- sample(seq(1, K), replace = TRUE, size = N)
+#' checkLabels(labels, K)
 checkLabels <- function(labels, K) {
   
   not_numeric <- any(!is.numeric(labels))
@@ -33,7 +38,6 @@ checkLabels <- function(labels, K) {
   if (labels_not_integers) {
     stop("Labels must be integers, not doubles.")
   }
-  
   
   n_initial_components <- length(unique(labels))
   highest_labels <- max(labels)

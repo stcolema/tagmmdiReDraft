@@ -17,6 +17,9 @@ fixed. If the vth column has no 1's then this view is unsupervised.}
 \item{K}{The number of components modelled in each  view.}
 
 \item{alpha}{The concentration parameter (vector).}
+
+\item{labels_as_intended}{Logical indicating if ``labels`` is the intended 
+output.}
 }
 \value{
 An N vector of labels.

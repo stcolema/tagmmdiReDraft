@@ -10,6 +10,9 @@ checkTypes(types)
 \item{types}{Density types passed to ``callMDI``. Should be a vector of
 strings. Viable options are ``'MVN'``, ``'TAGM'`` and ``'C'``.}
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 Internal function that checks the types passed to ``callMDI`` 
 are the correct format.
