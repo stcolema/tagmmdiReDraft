@@ -48,8 +48,7 @@ public:
   double
     
     // Prior hyperparameters
-    amplitude_prior_std_dev = 0.50,
-    length_prior_std_dev = 0.50,
+    hyper_prior_std_dev = 0.75,
     noise_prior_std_dev = 0.75, // 0.5,
     acceptance_threshold = 1e-9,
     
