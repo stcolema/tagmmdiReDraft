@@ -23,7 +23,7 @@ prepareMSObject <- function(MS_object, order_by_protein_name = FALSE) {
   experiment_data <- Biobase::fData(MS_object)
   
   if(order_by_protein_name) {
-    experiment_data <- Biobase::fData(Barylyuk2020ToxoLopit)[order(row.names(Barylyuk2020ToxoLopit)), ]
+    experiment_data <- Biobase::fData(MS_object)[order(row.names(MS_object)), ]
     X <- X[order(row.names(X)), ]
   }
   organelles <- experiment_data[, "markers"]
