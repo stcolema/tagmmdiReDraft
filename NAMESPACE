@@ -4,8 +4,11 @@ exportPattern("^[[:alpha:]]+")
 
 # Export statements
 export(calcAllocProb)
+export(calcFusionProbabiliy)
+export(calcFusionProbabiliyAllViews)
 export(callMDI)
 export(callMixtureModel)
+export(createSimilarityMat)
 export(findOrder)
 export(generateInitialLabels)
 export(generateInitialSemiSupervisedLabels)
@@ -50,4 +53,3 @@ importFrom(tidyr, pivot_longer)
 
 ## salso for unsupervised point estimate
 importFrom(salso, salso)
-useDynLib(tagmReDraft)
