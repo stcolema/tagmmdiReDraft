@@ -760,44 +760,32 @@ void gp::sampleNoise(uword k, uword n_k, mat component_data, double threshold) {
 // === Log-likelihoods =========================================================
 // The log likelihood of a item belonging to each cluster.
 arma::vec gp::itemLogLikelihood(arma::vec item) {
-  
   double exponent = 0.0;
   arma::vec ll(K), dist_to_mean(P);
   mat noise_matrix(P, P), inverse_noise_matrix(P, P);
   ll.zeros();
   dist_to_mean.zeros();
-  
-  for(arma::uword k = 0; k < K; k++){
-    // The exponent part of the MVN pdf
-    dist_to_mean = item - mu.col(k);
-    for(uword p = 0; p < P; p++) {
-      // Normal log likelihood
-      ll(k) += -0.5 *(
-        log(2.0 * M_PI) 
-        + log(noise(k)) 
-        + std::pow(dist_to_mean(p), 2.0) / noise(k)
-      );
+  std::for_each(
+    std::execution::par,
+    K_inds.begin(),
+    K_inds.end(),
+    [&](uword k) {
+      ll(k) = logLikelihood(item, k);
     }
-  }
+  );
   return(ll);
 };
 
 // The log likelihood of a item belonging to a specific cluster.
 double gp::logLikelihood(arma::vec item, arma::uword k) {
-  
-  double ll = 0.0;
-  arma::vec dist_to_mean(P);
-  dist_to_mean.zeros();
-  
-  // The exponent part of the MVN pdf
-  dist_to_mean = item - mu.col(k);
+  double ll = 0.0, dist_to_mean = 0.0, exponent = 0.0;
   for(uword p = 0; p < P; p++) {
     // Normal log likelihood
-    ll += -0.5 *(
-      log(2 * M_PI) 
-    + log(noise(k)) 
-    + std::pow(dist_to_mean(p), 2.0) / noise(k)
-    );
+    dist_to_mean = std::pow(item(p) - mu(p, k), 2.0);
+    exponent = dist_to_mean * noise(k);
+    
+    // Normal log likelihood
+    ll += -0.5 *(log(noise(k)) + exponent + (double) P * log(2.0 * M_PI));
   }
   return(ll);
 };
