@@ -38,7 +38,7 @@ Rcpp::List runMDI(
   }
   
   // mdiModel my_mdi(X, mixture_types, K, labels, fixed);
-  mdiModelAlt my_mdi(X, mixture_types, outlier_types, K, labels, fixed);
+  mdi my_mdi(X, mixture_types, outlier_types, K, labels, fixed);
   
   N = my_mdi.N;
   

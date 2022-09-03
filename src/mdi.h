@@ -21,7 +21,7 @@ using namespace Rcpp ;
 using namespace arma ;
 
 
-class mdiModelAlt {
+class mdi {
   
 private:
   
