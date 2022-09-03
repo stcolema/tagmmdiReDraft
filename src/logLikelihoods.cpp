@@ -84,5 +84,5 @@ double pNorm(arma::vec x, arma::vec mu, arma::mat Sigma, bool is_sympd) {
 }
 
 double pNorm(double x, double mu, double sigma_2) {
-  return -0.5 * (log(sigma_2) + pow(x - mu, 2.0) / sigma_2);
+  return -0.5 * (log(2.0 * M_PI) + log(sigma_2) + pow(x - mu, 2.0) / sigma_2);
 }

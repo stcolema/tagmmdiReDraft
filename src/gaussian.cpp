@@ -133,11 +133,13 @@ double gaussian::logLikelihood(arma::vec item, arma::uword k) {
   
   // The exponent part of the gaussian pdf
   for(uword p = 0; p < P; p++) {
-    dist_to_mean = std::pow(item(p) - mu(p, k), 2.0);
-    exponent = dist_to_mean * precisions(p, k);
-  
-    // Normal log likelihood
-    ll += -0.5 *(log_std_devs(p, k) + exponent + (double) P * log(2.0 * M_PI));
+    ll += pNorm(item(p), mu(p, k), std_devs(p, k));
+    
+    // dist_to_mean = std::pow(item(p) - mu(p, k), 2.0);
+    // exponent = dist_to_mean * precisions(p, k);
+    // 
+    // // Normal log likelihood
+    // ll += -0.5 *(log_std_devs(p, k) + exponent + (double) P * log(2.0 * M_PI));
   }
   
   return(ll);

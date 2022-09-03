@@ -765,14 +765,15 @@ arma::vec gp::itemLogLikelihood(arma::vec item) {
   mat noise_matrix(P, P), inverse_noise_matrix(P, P);
   ll.zeros();
   dist_to_mean.zeros();
-  std::for_each(
-    std::execution::par,
-    K_inds.begin(),
-    K_inds.end(),
-    [&](uword k) {
-      ll(k) = logLikelihood(item, k);
-    }
-  );
+  // std::for_each(
+  //   std::execution::par,
+  //   K_inds.begin(),
+  //   K_inds.end(),
+  //   [&](uword k) {
+  for(uword k = 0; k < K; k++) {  
+    ll(k) = logLikelihood(item, k);
+  }
+  // );
   return(ll);
 };
 
@@ -780,12 +781,14 @@ arma::vec gp::itemLogLikelihood(arma::vec item) {
 double gp::logLikelihood(arma::vec item, arma::uword k) {
   double ll = 0.0, dist_to_mean = 0.0, exponent = 0.0;
   for(uword p = 0; p < P; p++) {
-    // Normal log likelihood
-    dist_to_mean = std::pow(item(p) - mu(p, k), 2.0);
-    exponent = dist_to_mean * noise(k);
+    ll += pNorm(item(p), mu(p, k), noise(k));
     
-    // Normal log likelihood
-    ll += -0.5 *(log(noise(k)) + exponent + (double) P * log(2.0 * M_PI));
+    // // Normal log likelihood
+    // dist_to_mean = std::pow(item(p) - mu(p, k), 2.0);
+    // exponent = dist_to_mean * noise(k);
+    // 
+    // // Normal log likelihood
+    // ll += -0.5 *(log(noise(k)) + exponent + (double) P * log(2.0 * M_PI));
   }
   return(ll);
 };
