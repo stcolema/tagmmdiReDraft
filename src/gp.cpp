@@ -93,9 +93,9 @@ gp::gp(arma::uword _K, arma::uvec _labels, arma::mat _X) :
 double gp::noisePriorLogDensity(double x, bool logNorm) {
   double y = 0.0;
   if(logNorm) {
-    y = pNorm(log(x), 0, noise_prior_std_dev);
+    y = pNorm(log(x), 0.0, noise_prior_std_dev);
   } else {
-    y = pHalfCauchy(x, 0, 5, true);
+    y = pHalfCauchy(x, 0.0, 5.0, true);
   }
   return y;
 }
@@ -103,9 +103,9 @@ double gp::noisePriorLogDensity(double x, bool logNorm) {
 double gp::ampltiduePriorLogDensity(double x, bool logNorm) {
   double y = 0.0;
   if(logNorm) {
-    y = pNorm(log(x), 0, hyper_prior_std_dev);
+    y = pNorm(log(x), 0.0, hyper_prior_std_dev);
   } else {
-    y = pHalfCauchy(x, 0, 5, true);
+    y = pHalfCauchy(x, 0.0, 5.0, true);
   }
   return y;
 }
@@ -113,9 +113,9 @@ double gp::ampltiduePriorLogDensity(double x, bool logNorm) {
 double gp::lengthPriorLogDensity(double x, bool logNorm) {
   double y = 0.0;
   if(logNorm) {
-    y = pNorm(log(x), 0, hyper_prior_std_dev);
+    y = pNorm(log(x), 0.0, hyper_prior_std_dev);
   } else {
-    y = pHalfCauchy(x, 0, 5, true);
+    y = pHalfCauchy(x, 0.0, 5.0, true);
   }
   return y;
 }
@@ -125,7 +125,7 @@ double gp::sampleLengthPriorDistribution(bool logNorm, double threshold) {
   if(logNorm) {
     x = std::exp(randn< double >() * hyper_prior_std_dev);
   } else {
-    x = rHalfCauchy(0, 5);
+    x = rHalfCauchy(0.0, 5.0);
   }
   if(x < threshold) {
     x = sampleLengthPriorDistribution(logNorm, threshold);
@@ -138,7 +138,7 @@ double gp::sampleAmplitudePriorDistribution(bool logNorm, double threshold) {
   if(logNorm) {
     x = std::exp(randn< double >() * hyper_prior_std_dev);
   } else {
-    x = rHalfCauchy(0, 5);
+    x = rHalfCauchy(0.0, 5.0);
   }
   if(x < threshold) {
     x = sampleAmplitudePriorDistribution(logNorm, threshold);
@@ -151,7 +151,7 @@ double gp::sampleNoisePriorDistribution(bool logNorm, double threshold) {
   if(logNorm) {
     x = std::exp(randn< double >() * noise_prior_std_dev);
   } else {
-    x = rHalfCauchy(0, 5);
+    x = rHalfCauchy(0.0, 5.0);
   }
   // x = std::exp(randn< double >());
   if(x < threshold) {
@@ -273,17 +273,16 @@ mat gp::firstCovProduct(uword n_k, double noise, mat kernel_sub_block) {
 
 
 mat gp::invertComponentCovariance(uword n_k, double noise, mat kernel_sub_block) {
-
   mat J(n_k, n_k), Q_k(P, P), Z_k(P, P), I_NkP(n_k * P, n_k * P);
   J.ones();
   Q_k.zeros();
   Z_k.zeros();
 
   I_NkP = eye(n_k * P, n_k * P);
-  Q_k = I_p + (n_k / noise) * kernel_sub_block;
+  Q_k = I_p + ( (double)  n_k / noise) * kernel_sub_block;
   // Z_k = smallerInversion(n_k, noise, kernel_sub_block);
   Z_k = inv_sympd(Q_k);
-  return (1.0 / noise) * I_NkP - (1.0 / (n_k * noise)) * kron(J, I_p - Z_k);
+  return (1.0 / noise) * I_NkP - (1.0 / ((double) n_k * noise)) * kron(J, I_p - Z_k);
 };
 
 
@@ -349,7 +348,7 @@ vec gp::posteriorMeanParameter(
   uword n = data.n_rows;
   vec mu_tilde(P), sample_mean(P); 
   sample_mean = sampleMean(data);
-  mu_tilde = n * first_product * sample_mean;
+  mu_tilde = (double) n * first_product * sample_mean;
   
   return mu_tilde;
 };
@@ -583,10 +582,10 @@ void gp::sampleLength(
   // The product of the covariance matrix and the inverse as used in sampling 
   // parameters.
   first_product = firstCovProduct(n_k, noise(k), new_sub_block);
-  final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
+  final_product = (double) n_k * (first_product.cols(P_inds) * new_sub_block);
   
   // new_mu_tilde = first_product_repeated * component_data;
-  new_mu_tilde = n_k * first_product * sample_mean;
+  new_mu_tilde = (double) n_k * first_product * sample_mean;
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(new_cov_tilde, false, true, matrix_precision);
 
@@ -617,12 +616,6 @@ void gp::sampleLength(
     length_acceptance_count(k)++;
   }
 };
-
-// double gp::proposeNewNonNegativeValue(double x, double window) {
-//   return rGamma(x * window, window);
-//   // return randg( distr_param( x * window, 1.0 / window) );
-//   // return std::exp(std::log(x) + randn() * window);
-// };
 
 void gp::sampleAmplitude(
     uword k, 
@@ -660,9 +653,9 @@ void gp::sampleAmplitude(
   
   new_sub_block = calculateKthComponentKernelSubBlock(new_amplitude, length(k));
   first_product = firstCovProduct(n_k, noise(k), new_sub_block);
-  final_product = n_k * (first_product.cols(P_inds) * new_sub_block);
+  final_product = (double) n_k * (first_product.cols(P_inds) * new_sub_block);
 
-  new_mu_tilde = n_k * first_product * sample_mean;
+  new_mu_tilde = (double) n_k * first_product * sample_mean;
   
   new_cov_tilde = new_sub_block - final_product;
   new_cov_tilde = covCheck(new_cov_tilde, false, true, matrix_precision);
@@ -730,10 +723,7 @@ double gp::noiseLogKernel(uword n_k, double noise, vec mean_vec, mat data) {
     score += pNorm(data.row(n).t(), mean_vec, noise * I_p, true);
   }
   prior_contribution += noisePriorLogDensity(noise, logNormPriorUsed); 
-  
   score += prior_contribution;
-  // score += pNorm(log(noise), 0, 1);
-  // score += pHalfCauchy(noise, 0, 5);
   return score;
 };
 
@@ -783,7 +773,7 @@ arma::vec gp::itemLogLikelihood(arma::vec item) {
     for(uword p = 0; p < P; p++) {
       // Normal log likelihood
       ll(k) += -0.5 *(
-        log(2 * M_PI) 
+        log(2.0 * M_PI) 
         + log(noise(k)) 
         + std::pow(dist_to_mean(p), 2.0) / noise(k)
       );
