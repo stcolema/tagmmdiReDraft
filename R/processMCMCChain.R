@@ -76,8 +76,10 @@ processMCMCChain <- function(mcmc_output, burn,
   new_output$complete_likelihood <- mcmc_output$complete_likelihood[-dropped_indices] # , , drop = F]
   new_output$evidence <- mcmc_output$evidence[-dropped_indices[-eff_burn]]
 
-  # The allocations and allocation probabilities
+  # The allocations and outliers
   new_output$allocations <- mcmc_output$allocations[-dropped_indices, , , drop = F]
+  new_output$outliers <- mcmc_output$outliers[-dropped_indices, , , drop = F]
+  new_output$N_k <- mcmc_output$N_k[ , , -dropped_indices, drop = F]
 
   new_output$allocation_probability <- vector("list", V)
   new_output$allocation_probabilities <- vector("list", V)
