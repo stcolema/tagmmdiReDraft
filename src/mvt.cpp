@@ -18,7 +18,7 @@ mvt::mvt(arma::uvec _fixed, arma::mat _X) : outlierComponent(_fixed, _X) {
   
   // for use in the outlier distribution
   mat global_cov = findInvertibleGlobalCov();
-  global_mean = (mean(X, 0)).t();
+  global_mean = sampleMean(X);
   
   // Functions of the covariance relevant to the likelihood
   global_log_det = log_det(global_cov).real();
@@ -62,7 +62,7 @@ arma::mat mvt::findInvertibleGlobalCov(double threshold) {
   small_identity.zeros(), global_cov.zeros();
   
   small_identity.eye(P, P);
-  small_identity *= 1e-6;
+  small_identity *= 1e-10;
   
   // for use in the outlier distribution
   global_cov = 0.5 * arma::cov(X);

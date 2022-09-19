@@ -25,6 +25,7 @@ outlierComponent::outlierComponent(arma::uvec _fixed, arma::mat _X) {
   // Initialise the outlier likelihood vector
   outlier_likelihood = zeros< vec >(N);
   
+  updateWeights(non_outliers, outliers);
 };
 
 
@@ -43,7 +44,7 @@ void outlierComponent::updateWeights(uvec non_outliers, uvec outliers) {
   
   // Sample values for the weights
   // outlier_weight = rBeta(tau_2 + u, N + v - tau_2);
-  non_outlier_weight = rBeta(tau_1 + v, N + u - tau_1);
+  non_outlier_weight = rBeta(tau_1 + v, tau_2 + u);
   outlier_weight = 1.0 - non_outlier_weight;
   
   // Normalise these

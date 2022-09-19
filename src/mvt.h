@@ -7,6 +7,7 @@
 // =============================================================================
 // included dependencies
 # include "outlierComponent.h"
+# include "genericFunctions.h"
 
 using namespace arma ;
 
@@ -40,7 +41,7 @@ public:
   virtual ~mvt() { };
   
   // Calculate the likelihood of each item being an outlier
-  double calculateItemLogLikelihood(arma::vec x);
+  double calculateItemLogLikelihood(arma::vec x) override;
   
   arma::mat findInvertibleGlobalCov(double threshold = DBL_EPSILON);
   
