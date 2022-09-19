@@ -7,7 +7,7 @@
 checkDataCorrectInput(X)
 }
 \arguments{
-\item{X}{Data passed to ``callMDI``. Should be a list of matrices each with 
+\item{X}{Data passed to ``callMDI``. Should be a list of matrices each with
 N items held in rows.}
 }
 \value{
@@ -16,4 +16,11 @@ No return value, called for side effects.
 \description{
 Internal function that checks the data passed to ``callMDI`` is
 the correct format.
+}
+\examples{
+N <- 100
+X <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+Y <- matrix(c(rnorm(N, 0, 1), rnorm(N, 3, 1)), ncol = 2, byrow = TRUE)
+data_modelled <- list(X, Y)
+checkDataCorrectInput(data_modelled)
 }

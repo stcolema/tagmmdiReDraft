@@ -2,7 +2,7 @@
 % Please edit documentation in R/findOrder.R
 \name{findOrder}
 \alias{findOrder}
-\title{Prepare data for ggplot heatmap}
+\title{Find order}
 \usage{
 findOrder(X, dist = "euclidean", linkage = "complete")
 }
@@ -17,7 +17,7 @@ findOrder(X, dist = "euclidean", linkage = "complete")
 The order of the rows of X based on a hierarchical clustering.
 }
 \description{
-Find the ordering of the rows of X based on a hierarchical 
+Find the ordering of the rows of X based on a hierarchical
 clustering of X for linkage ``linkage`` and distance ``dist``.
 }
 \examples{
