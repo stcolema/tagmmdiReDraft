@@ -16,7 +16,7 @@ truth <- c(rep(1, N / 2), rep(2, N / 2))
 data_modelled <- list(X, X, X)
 
 V <- length(data_modelled)
-R <- 2000
+R <- 1000
 thin <- 25
 burn <- 500
 
@@ -35,7 +35,7 @@ labels[, 1] <- generateInitialSemiSupervisedLabels(c(rep(1, N / 2), rep(2, N / 2
 types <- rep("GP", V)
 
 # mcmc_out <- callMDI(data_modelled, R, thin, labels, fixed, types, K, alpha)
-mcmc_out <- runMCMCChains(data_modelled, 3, R, thin, labels, fixed, types, K, alpha)
+mcmc_out <- runMCMCChains(data_modelled, 3, R, thin, types, initial_labels = labels, fixed = fixed, K = K, alpha = alpha)
 
 pred_out <- predictFromMultipleChains(mcmc_out, burn, construct_psm = TRUE)
 boxplot(pred_out$phis)
