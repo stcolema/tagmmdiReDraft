@@ -22,8 +22,9 @@ outlierComponent::outlierComponent(arma::uvec _fixed, arma::mat _X) {
   N = X.n_rows;
   P = X.n_cols;
   
-  // Initialise the outlier likelihood vector
+  // Initialise the outlier log-likelihood vector
   outlier_likelihood = zeros< vec >(N);
+  outlier_likelihood.fill(-DBL_MAX);
   
   updateWeights(non_outliers, outliers);
 };
