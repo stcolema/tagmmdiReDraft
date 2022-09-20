@@ -54,9 +54,15 @@ public:
     // Sequence of integers that we iterate over
     N_inds,
     P_inds,
-    K_inds;
+    K_inds,
+    
+    // Acceptance count of MH sampled parameters
+    acceptance_count = zeros< uvec >(0);
   
-  vec ll, likelihood;
+  vec ll, likelihood,
+  
+    // Used in recording GP hyperparameters
+    hypers  = zeros< vec >(0);
   
   mat X, X_t;
   

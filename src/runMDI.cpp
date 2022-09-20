@@ -65,16 +65,21 @@ Rcpp::List runMDI(
   weight_record.zeros();
   
   // field<mat> alloc(L);
-  field<cube> alloc(L);
+  field< vec > acceptance_count(L);
+  field < mat >  hyper_record(L);
+  field< cube > alloc(L);
   
   // Progress p(n_saved, display_progress);
   
   for(uword l = 0; l < L; l++) {
     // alloc(l) = zeros<mat>(N, K(l));
     alloc(l) = zeros<cube>(N, K(l), n_saved);
-    
+    hyper_record(l) = zeros< mat >(n_saved, 3 * K(l));
+    acceptance_count(l) = zeros< vec >(3 * K(l));
   }
 
+  // Rcpp::Rcout << "\nDeclaration completed.";
+  
   // Save the initial values for each object
   for(uword l = 0; l < L; l++) {
     // urowvec labels_l = my_mdi.labels.col(l).t();
@@ -90,6 +95,14 @@ Rcpp::List runMDI(
     
     // Save the complete likelihood
     // likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
+    
+    
+    if(mixture_types(l) == 3) {
+      // Rcpp::Rcout << "\nRecord initial hypers and acceptance count.";
+      hyper_record(l).row(save_ind) = my_mdi.mixtures[l]->density_ptr->hypers.t();
+      // acceptance_count(l) = my_mdi.mixtures[l]->density_ptr->acceptance_count.t();
+    }
+    
   }
   
   likelihood_record(save_ind) = my_mdi.complete_likelihood;
@@ -175,6 +188,11 @@ Rcpp::List runMDI(
         // Save the complete likelihood
         // Rcpp::Rcout << "\nSave model likelihood.";
         // likelihood_record(save_ind, l) = my_mdi.mixtures[l]->complete_likelihood;
+        
+        if(mixture_types(l) == 3) {
+          hyper_record(l).row(save_ind) = my_mdi.mixtures[l]->density_ptr->hypers.t();
+          // acceptance_count(l) = conv_to< vec >::from(my_mdi.mixtures[l]->density_ptr->acceptance_count).t() / r;
+        }
       }
       
       evidence(save_ind - 1) = my_mdi.Z;
@@ -197,6 +215,13 @@ Rcpp::List runMDI(
   // Rcpp::Rcout << "\nNumber of times accepted: " << my_mdi.acceptance_count << "\nPossible acceptance: " <<
   //   arma::accu(R * my_mdi.K);
   
+  for(uword l = 0; l < L; l++) {
+    if(mixture_types(l) == 3) {
+      
+      acceptance_count(l) = conv_to< vec >::from(my_mdi.mixtures[l]->density_ptr->acceptance_count) / ( 0.2 * (double) R );
+    }
+  }
+  
   return(
     List::create(
       Named("allocations") = class_record,
@@ -207,7 +232,9 @@ Rcpp::List runMDI(
       Named("allocation_probabilities") = alloc,
       Named("N_k") = N_k_record,
       Named("complete_likelihood") = likelihood_record,
-      Named("evidence") = evidence
+      Named("evidence") = evidence,
+      Named("hyper_record") = hyper_record,
+      Named("acceptance_count") = acceptance_count
     )
   );
   

@@ -85,6 +85,17 @@ mixtureModel::mixtureModel(
   // Initialise the outlier component (default is empty)
   initialiseOutlierComponent(outlier_type);
   
+  acceptance_count.set_size(0);
+  hypers.set_size(0);
+  if(mixture_type == 3) {
+    acceptance_count.set_size(3 * K);
+    acceptance_count.zeros();
+    hypers.set_size(3 * K);
+    hypers.zeros();
+  }
+  density_ptr->acceptance_count = acceptance_count;
+  density_ptr->hypers = hypers;
+  
 };
 
 void mixtureModel::updateItemAllocation(
@@ -142,11 +153,11 @@ void mixtureModel::updateAllocation(
   // this does nothing
   updateOutlierWeights();
   
-  // for (auto& n : unfixed_ind) {
-  std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
+  for (auto& n : unfixed_ind) {
+  // std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
     updateItemAllocation(n, log_weights, log_upweigths.col(n));
   }
-  );
+  // );
   
   observed_likelihood = accu(observed_likelihood_vec);
   complete_likelihood = accu(complete_likelihood_vec);
