@@ -47,11 +47,6 @@ void outlierComponent::updateWeights(uvec non_outliers, uvec outliers) {
   // outlier_weight = rBeta(tau_2 + u, N + v - tau_2);
   non_outlier_weight = rBeta(tau_1 + v, tau_2 + u);
   outlier_weight = 1.0 - non_outlier_weight;
-  
-  // Normalise these
-  // non_outlier_weight = non_outlier_weight / (non_outlier_weight + outlier_weight);
-  // outlier_weight = outlier_weight / (non_outlier_weight + outlier_weight);
-  // 
 };
 
 arma::uword outlierComponent::sampleOutlier(double non_outlier_likelihood_n,
@@ -62,7 +57,7 @@ arma::uword outlierComponent::sampleOutlier(double non_outlier_likelihood_n,
   
   arma::vec outlier_prob(2);
   outlier_prob.zeros();
-  
+
   // The likelihood of the point in the current cluster and in the outlier 
   // subcomponent
   outlier_prob(0) = non_outlier_likelihood_n + log(non_outlier_weight);
