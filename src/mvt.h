@@ -8,6 +8,7 @@
 // included dependencies
 # include "outlierComponent.h"
 # include "genericFunctions.h"
+# include "logLikelihoods.h"
 
 using namespace arma ;
 
@@ -30,7 +31,7 @@ public:
   vec global_mean;
   
   // The dataset covariance
-  mat global_cov_inv;
+  mat global_cov, global_cov_inv;
   
   using outlierComponent::outlierComponent;
   
