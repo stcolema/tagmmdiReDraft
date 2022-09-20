@@ -68,15 +68,6 @@ NULL
 #' return Sample from HalfCauchy(mu, scale).
 NULL
 
-#' title The Half-Cauchy Distribution
-#' description Calculates the pdf of the Half-Cauchy distribution for value x.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' param x Value to calculate the probability density of.
-#' param mu Location parameter.
-#' param scale Scale parameter.
-#' return Sample from HalfCauchy(mu, scale).
-NULL
-
 #' title The Beta Distribution
 #' description Random generation from the Beta distribution.
 #' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.
@@ -112,24 +103,6 @@ NULL
 #' param i Time point (unsigned integer)
 #' param j Time point (unsigned integer)
 #' return Squared exponential metric of (i, j)
-NULL
-
-#' title Sample mean
-#' description calculate the sample mean of a matrix X.
-#' param X Matrix
-#' return Vector of the column means of X.
-NULL
-
-#' title Calculate sample covariance
-#' description Returns the unnormalised sample covariance. Required as
-#' arma::cov() does not work for singletons.
-#' param data Data in matrix format
-#' param sample_mean Sample mean for data
-#' param n The number of samples in data
-#' param n_col The number of columns in data
-#' return One of the parameters required to calculate the posterior of the
-#'  Multivariate normal with uknown mean and covariance (the unnormalised
-#'  sample covariance).
 NULL
 
 #' @title Propose new non-negative value
@@ -177,15 +150,6 @@ NULL
 #' @return Sample from HalfCauchy(mu, scale).
 NULL
 
-#' @title The Half-Cauchy Distribution
-#' @description Calculates the pdf of the Half-Cauchy distribution for value x.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' @param x Value to calculate the probability density of.
-#' @param mu Location parameter.
-#' @param scale Scale parameter.
-#' @return Sample from HalfCauchy(mu, scale).
-NULL
-
 #' @title The Beta Distribution
 #' @description Random generation from the Beta distribution.
 #' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.
@@ -207,17 +171,6 @@ NULL
 #' @return Sample from Beta(a, b).
 NULL
 
-#' @title Calculate sample covariance
-#' @description Returns the unnormalised sample covariance. Required as
-#' arma::cov() does not work for singletons.
-#' @param data Data in matrix format
-#' @param sample_mean Sample mean for data
-#' @param n The number of samples in data
-#' @param n_col The number of columns in data
-#' @return One of the parameters required to calculate the posterior of the
-#'  Multivariate normal with uknown mean and covariance (the unnormalised
-NULL
-
 #' @title Metropolis acceptance step
 #' @description Given a probaility, randomly accepts by sampling from a uniform 
 #' distribution.
@@ -232,12 +185,6 @@ NULL
 #' @param precision double of the tolerance of disagreement between x and y.
 #' @return bool indicating if the absolute difference between x and y is less 
 #' than precision.
-NULL
-
-#' @title Sample mean
-#' @description calculate the sample mean of a matrix X.
-#' @param X Matrix
-#' @return Vector of the column means of X.
 NULL
 
 #' @title Round matrix
@@ -272,6 +219,37 @@ squaredExponentialFunction <- function(amplitude, length, i, j) {
     .Call(`_tagmReDraft_squaredExponentialFunction`, amplitude, length, i, j)
 }
 
+#' @title Sample mean
+#' @description calculate the sample mean of a matrix X.
+#' @param X Matrix
+#' @return Vector of the column means of X.
+sampleMean <- function(X) {
+    .Call(`_tagmReDraft_sampleMean`, X)
+}
+
+#' @title Calculate sample covariance
+#' @description Returns the unnormalised sample covariance. Required as
+#' arma::cov() does not work for singletons.
+#' @param data Data in matrix format
+#' @param sample_mean Sample mean for data
+#' @param n The number of samples in data
+#' @param n_col The number of columns in data
+#' @return One of the parameters required to calculate the posterior of the
+#'  Multivariate normal with unknown mean and covariance (the unnormalised
+#'  sample covariance).
+calcSampleCov <- function(data, sample_mean, N, P) {
+    .Call(`_tagmReDraft_calcSampleCov`, data, sample_mean, N, P)
+}
+
+#' title The Half-Cauchy Distribution
+#' description Calculates the pdf of the Half-Cauchy distribution for value x.
+#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+#' param x Value to calculate the probability density of.
+#' param mu Location parameter.
+#' param scale Scale parameter.
+#' return Sample from HalfCauchy(mu, scale).
+NULL
+
 #' @title Gamma log-likelihood
 #' @description The log-likelihood of each element of a vector in a Gamma 
 #' distribution parametrised with a shape and rate.
@@ -289,6 +267,15 @@ NULL
 #' @param sigma_2 - double; the standard deviation of the Gaussian distribution.
 #' @return the normalised log-likelihood of x in a Gaussian distribution with 
 #' parameters mu, sigma_2.
+NULL
+
+#' @title The Half-Cauchy Distribution
+#' @description Calculates the pdf of the Half-Cauchy distribution for value x.
+#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
+#' @param x Value to calculate the probability density of.
+#' @param mu Location parameter.
+#' @param scale Scale parameter.
+#' @return Sample from HalfCauchy(mu, scale).
 NULL
 
 #' @title Gamma log-likelihood
@@ -366,6 +353,18 @@ mvtLogLikelihood <- function(x, mu, Sigma, nu) {
 #' parameters mu, Sigma.
 pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
     .Call(`_tagmReDraft_pNorm`, x, mu, Sigma, is_sympd)
+}
+
+#' @title Multivariate normal log-likelihood for diagonal covariance matrix
+#' @description The log-likelihood function for a vector in a Gaussian density 
+#' with a diagonal covariance matrix
+#' @param x - vec; the sample to calculate the log likelihood of.
+#' @param mu - vec; the mean parameter of the Gaussian distribution.
+#' @param sigma_2 - vec; the standard deviation of the Gaussian distribution.
+#' @return the normalised log-likelihood of x in a Gaussian distribution with 
+#' parameters mu, sigma_2.
+gaussianLogLikelihood <- function(x, mu, std_dev) {
+    .Call(`_tagmReDraft_gaussianLogLikelihood`, x, mu, std_dev)
 }
 
 #' @title Call Multiple Dataset Integration
