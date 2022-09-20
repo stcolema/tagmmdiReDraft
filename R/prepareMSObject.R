@@ -66,8 +66,9 @@ prepareMSObject <- function(MS_object, order_by_protein_name = FALSE) {
   
   # Return the prepared objects
   list(X = X, 
-       fixed = fixed,
-       initial_labels = initial_labels,
-       class_key = class_key
+    fixed = fixed,
+    initial_labels = initial_labels,
+    class_key = class_key,
+    K = K
   )
 }
