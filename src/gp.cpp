@@ -219,28 +219,27 @@ mat gp::calculateKthComponentKernelSubBlock(double amplitude,
   mat sub_block(P, P);
   sub_block.zeros();
   
-  // sub_block = std::log(amplitude) + (1.0 / length) * time_diff_mat;
-  // sub_block = exp(sub_block);
+  sub_block = std::log(amplitude) + (1.0 / length) * time_diff_mat;
+  sub_block = exp(sub_block);
   
-  
-  for(uword ii = 0; ii < P; ii++) {
-    sub_block(ii, ii) = amplitude;
-    for(uword jj = ii + 1; jj < P; jj++) {
-      sub_block(ii, jj) = squaredExponentialFunction(
-        amplitude,
-        length,
-        ii,
-        jj
-      );
-
-      if(sub_block(ii, jj) < kernel_subblock_threshold) {
-        sub_block(ii, jj) = 0.0;
-        sub_block(jj, ii) = 0.0;
-        // break;
-      }
-      sub_block(jj, ii) = sub_block(ii, jj);
-    }
-  }
+  // for(uword ii = 0; ii < P; ii++) {
+  //   sub_block(ii, ii) = amplitude;
+  //   for(uword jj = ii + 1; jj < P; jj++) {
+  //     sub_block(ii, jj) = squaredExponentialFunction(
+  //       amplitude,
+  //       length,
+  //       ii,
+  //       jj
+  //     );
+  // 
+  //     if(sub_block(ii, jj) < kernel_subblock_threshold) {
+  //       sub_block(ii, jj) = 0.0;
+  //       sub_block(jj, ii) = 0.0;
+  //       // break;
+  //     }
+  //     sub_block(jj, ii) = sub_block(ii, jj);
+  //   }
+  // }
   
   return sub_block;
 };
