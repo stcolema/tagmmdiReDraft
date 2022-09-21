@@ -12,21 +12,22 @@ data("E14TG2aR")
 my_data <- prepareMSObject(E14TG2aR)
 
 
-X <- list(my_data$X)
+X <- list(scale(my_data$X))
 initial_labels <- my_data$initial_labels
 fixed <- my_data$fixed
 K <- my_data$K
 
 R <- 15000
-thin <- 50
+thin <- 100
 burn <- 5000
-n_chains <- 5
+n_chains <- 4
 
 mcmc <- runMCMCChains(X, n_chains, R, thin,
   types = "TAGPM",
   K = K,
   initial_labels = initial_labels,
-  fixed = fixed
+  fixed = fixed,
+  proposal_windows = list(c(0.7, 0.5, 0.15))
 )
 
 
@@ -46,6 +47,16 @@ which(colMeans(ensemble_mcmc$outliers[[1]]) > 0.5) |>
 
 which(colMeans(ensemble_mcmc2$outliers[[1]]) > 0.5) |>
   length()
+
+ensemble_mcmc$hypers[[1]]$amplitude |> 
+  log() |>
+  boxplot(main = "E14TG2aR: Sampled log amplitude")
+ensemble_mcmc$hypers[[1]]$length |> 
+  log() |>
+  boxplot(main = "E14TG2aR: Sampled log length")
+ensemble_mcmc$hypers[[1]]$noise |> 
+  log() |>
+  boxplot(main = "E14TG2aR: Sampled log noise")
 
 mcmc[[1]]$acceptance_count[[1]]
 mcmc[[1]]$hyper_record[[1]] |> boxplot()

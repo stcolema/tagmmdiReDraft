@@ -148,6 +148,8 @@ public:
   void sampleParameters(arma::umat members, arma::uvec non_outliers);
   
   
+  void receiveHyperParametersProposalWindows(vec proposal_windows);
+  
   // double proposeNewNonNegativeValue(double x, double window);
   double hyperParameterLogKernel(
       double hyper, 

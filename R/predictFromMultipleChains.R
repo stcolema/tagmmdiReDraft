@@ -86,6 +86,9 @@ predictFromMultipleChains <- function(mcmc_outputs,
   # The type of mixture model used
   types <- first_chain$types
 
+  # Flag indicating if model contains GP
+  gp_used <- types %in% c("GP", "TAGPM")
+  
   # The prior on the concentration
   alpha <- first_chain$alpha
 
@@ -149,6 +152,9 @@ predictFromMultipleChains <- function(mcmc_outputs,
   merged_outputs$types <- types
   merged_outputs$alpha <- alpha
 
+  # Hyperparameters for GPs
+  merged_outputs$hypers <- vector("list", V)
+  
   # The mass hyper parameter of the component weights and the phi parameters for
   # MDI
   merged_outputs$phis <- do.call(rbind, lapply(processed_chains, function(x) x$phis))
@@ -176,7 +182,7 @@ predictFromMultipleChains <- function(mcmc_outputs,
 
   merged_outputs$weights <- list()
   for (v in view_inds) {
-    merged_outputs$weights[[v]] <- do.call(rbind, lapply(processed_chains, function(x) x$weights[-dropped_indices, , v, drop = TRUE]))
+    merged_outputs$weights[[v]] <- do.call(rbind, lapply(processed_chains, function(x) x$weights[, , v, drop = TRUE]))
   }
 
   first_chain <- TRUE
@@ -237,6 +243,14 @@ predictFromMultipleChains <- function(mcmc_outputs,
       }
     } else {
       merged_outputs$pred[[v]] <- suppressWarnings(salso::salso(.alloc))
+    }
+    
+    if(gp_used[v]) {
+      merged_outputs$hypers[[v]]$amplitude <- do.call(rbind, lapply(processed_chains, function(x) x$hypers[[v]]$amplitude))
+      merged_outputs$hypers[[v]]$length <- do.call(rbind, lapply(processed_chains, function(x) x$hypers[[v]]$length))
+      merged_outputs$hypers[[v]]$noise <- do.call(rbind, lapply(processed_chains, function(x) x$hypers[[v]]$noise))
+    } else {
+      # merged_outputs$hypers[[v]] <- NULL
     }
   }
 

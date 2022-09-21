@@ -56,6 +56,9 @@ processMCMCChain <- function(mcmc_output, burn,
 
   # The type of mixture model used
   types <- mcmc_output$types
+  
+  # Flag indicating if model contains GP
+  gp_used <- types %in% c("GP", "TAGPM")
 
   # Indices for views
   view_inds <- seq(1, V)
@@ -131,6 +134,11 @@ processMCMCChain <- function(mcmc_output, burn,
     }
     if (construct_psm) {
       new_output$psms[[v]] <- createSimilarityMat(new_output$allocations[, , v])
+    } 
+    if(gp_used[v]) {
+      new_output$hypers[[v]]$amplitude <- new_output$hypers[[v]]$amplitude[-dropped_indices , ]
+      new_output$hypers[[v]]$length <- new_output$hypers[[v]]$length[-dropped_indices , ]
+      new_output$hypers[[v]]$noise <- new_output$hypers[[v]]$noise[-dropped_indices , ]
     } 
   }
   

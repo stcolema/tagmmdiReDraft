@@ -382,8 +382,9 @@ gaussianLogLikelihood <- function(x, mu, std_dev) {
 #' items being clustered, columns to views.
 #' @param fixed Binary matrix of the items that are fixed in their initial
 #' label.
+#' @param proposal_windows List/field of vectors
 #' @return Named list of the different quantities drawn by the sampler.
-runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed) {
-    .Call(`_tagmReDraft_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed)
+runMDI <- function(R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows) {
+    .Call(`_tagmReDraft_runMDI`, R, thin, Y, K, mixture_types, outlier_types, labels, fixed, proposal_windows)
 }
 

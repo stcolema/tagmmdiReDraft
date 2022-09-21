@@ -13,12 +13,13 @@ using namespace arma ;
 Rcpp::List runMDI(
     arma::uword R,
     arma::uword thin,
-    arma::field<arma::mat> Y,
+    arma::field< arma::mat > Y,
     arma::uvec K,
     arma::uvec mixture_types,
     arma::uvec outlier_types,
     arma::umat labels,
-    arma::umat fixed
+    arma::umat fixed,
+    arma::field< arma::vec > proposal_windows
 ) {
   
   // Indicator if the current iteration should be recorded
@@ -39,6 +40,12 @@ Rcpp::List runMDI(
   
   // mdiModel my_mdi(X, mixture_types, K, labels, fixed);
   mdi my_mdi(X, mixture_types, outlier_types, K, labels, fixed);
+  
+  for(uword l = 0; l < L; l++) {
+    if(mixture_types[l] == 3) {
+      my_mdi.mixtures[l]->density_ptr->receiveHyperParametersProposalWindows(proposal_windows[l]);
+    }
+  }
   
   N = my_mdi.N;
   
@@ -233,7 +240,7 @@ Rcpp::List runMDI(
       Named("N_k") = N_k_record,
       Named("complete_likelihood") = likelihood_record,
       Named("evidence") = evidence,
-      Named("hyper_record") = hyper_record,
+      Named("hypers") = hyper_record,
       Named("acceptance_count") = acceptance_count
     )
   );

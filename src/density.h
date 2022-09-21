@@ -62,7 +62,8 @@ public:
   vec ll, likelihood,
   
     // Used in recording GP hyperparameters
-    hypers  = zeros< vec >(0);
+    proposal_windows = zeros< vec >(0),
+    hypers = zeros< vec >(0);
   
   mat X, X_t;
   
@@ -88,6 +89,8 @@ public:
   virtual arma::vec itemLogLikelihood(arma::vec x) = 0;
   virtual double logLikelihood(arma::vec x, arma::uword k) = 0;
 
+  virtual void receiveHyperParametersProposalWindows(vec proosal_windows) {};
+  
 };
 
 #endif /* DENSITY_H */

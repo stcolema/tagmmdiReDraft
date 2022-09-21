@@ -500,6 +500,12 @@ void gp::sampleParameters(arma::umat members, arma::uvec non_outliers) {
 
 // === Hyper-parameters ========================================================
 
+void gp::receiveHyperParametersProposalWindows(vec proposal_windows) {
+  amplitude_proposal_window = proposal_windows[0];
+  length_proposal_window = proposal_windows[1];
+  noise_proposal_window = proposal_windows[2];
+}
+
 // Need to sample the hyperparameter and recalculate the mu tilde / cov tilde
 double gp::hyperParameterLogKernel(
     double hyper, 
