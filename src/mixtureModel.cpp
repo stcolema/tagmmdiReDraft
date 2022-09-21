@@ -153,11 +153,11 @@ void mixtureModel::updateAllocation(
   // this does nothing
   updateOutlierWeights();
   
-  for (auto& n : unfixed_ind) {
-  // std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
+  // for (auto& n : unfixed_ind) {
+  std::for_each(std::execution::par, N_inds.begin(), N_inds.end(), [&] (uword n) {
     updateItemAllocation(n, log_weights, log_upweigths.col(n));
   }
-  // );
+  );
   
   observed_likelihood = accu(observed_likelihood_vec);
   complete_likelihood = accu(complete_likelihood_vec);
