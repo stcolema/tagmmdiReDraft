@@ -165,7 +165,7 @@ public:
       vec mu_tilde, 
       vec component_data, 
       mat cov_tilde, 
-      double threshold = 1e-9
+      double threshold = 1e-6
   );
   void sampleAmplitude(
       uword k, 
@@ -173,7 +173,7 @@ public:
       vec mu_tilde, 
       vec component_data, 
       mat cov_tilde, 
-      double threshold = 1e-9
+      double threshold = 1e-6
   );
   void sampleCovHypers(uword k, uword n_k, vec mu_tilde, vec component_data, mat cov_tilde);
   void sampleHyperParametersKthComponent(
@@ -189,7 +189,7 @@ public:
       uword k, 
       uword n_k, 
       mat component_data, 
-      double threshold = 1e-9
+      double threshold = 1e-6
   );
   
   // The log likelihood of a item belonging to each cluster
