@@ -127,7 +127,7 @@ callMDI <- function(X,
     fixed,
     proposal_windows
   )
-
+  
   t_1 <- Sys.time()
   time_taken <- t_1 - t_0
   
@@ -173,7 +173,7 @@ callMDI <- function(X,
       hypers$noise <- mcmc_output$hypers[[v]][ , seq(2 * K[v] + 1, 3 * K[v]), drop = FALSE]
       mcmc_output$hypers[[v]] <- hypers
     } else {
-      mcmc_output$hypers[[v]] <- NULL
+      mcmc_output$hypers[[v]] <- NA
     }
   }
 
