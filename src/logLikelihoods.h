@@ -108,7 +108,6 @@ double pNorm(double x, double mu, double sigma_2);
 //' @param sigma_2 - vec; the standard deviation of the Gaussian distribution.
 //' @return the normalised log-likelihood of x in a Gaussian distribution with 
 //' parameters mu, sigma_2.
-// [[Rcpp::export]]
 double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec std_dev);
 
 
@@ -118,7 +117,7 @@ double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec std_dev);
 //' @param x Value to calculate the probability density of.
 //' @param mu Location parameter.
 //' @param scale Scale parameter.
-//' @return Sample from HalfCauchy(mu, scale).
+//' @return Density of x in HalfCauchy(mu, scale).
 double pHalfCauchy(double x, double mu, double scale, bool logValue = true);
 
 #endif /* LOGLIKELIHOOD_H */

@@ -103,7 +103,6 @@ bool metropolisAcceptanceStep(double acceptance_prob);
 //' @param i Time point (unsigned integer)
 //' @param j Time point (unsigned integer)
 //' @return Boolean indicating acceptance.
-// [[Rcpp::export]]
 double squaredExponentialFunction(double amplitude, double length, int i, int j);
 
 //' @title Double approximately equal
@@ -119,7 +118,6 @@ bool doubleApproxEqual(double x, double y, double precision = 0.000002);
 //' @description calculate the sample mean of a matrix X.
 //' @param X Matrix
 //' @return Vector of the column means of X.
-// [[Rcpp::export]]
 arma::vec sampleMean(arma::mat X);
 
 //' @title Calculate sample covariance
@@ -132,7 +130,6 @@ arma::vec sampleMean(arma::mat X);
 //' @return One of the parameters required to calculate the posterior of the
 //'  Multivariate normal with unknown mean and covariance (the unnormalised
 //'  sample covariance).
-// [[Rcpp::export]]
 arma::mat calcSampleCov(
     arma::mat data,
     arma::vec sample_mean,

@@ -1,7 +1,7 @@
 #' @title Compare Posterior Similarity Matrices Across Chains
 #' @description Takes the PSMs from the output of ``processMCMCChains`` and
 #' converts them to a data.frame prepared for ``ggplot2``.
-#' @param mccm Output of ``processMCMCChains`` with the argument
+#' @param mcmc Output of ``processMCMCChains`` with the argument
 #' ``construct_psm = TRUE``.
 #' @param matrix_setting_order The matrix that defines the ordering of all
 #' others, if a common ordering is used. Defaults to `1`.
@@ -24,10 +24,6 @@
 #' Y <- generateSimulationDataset(K, N, P)
 #' Z <- generateSimulationDataset(K, N, P)
 #'
-#' annotatedHeatmap(X$data, X$cluster_IDs, cluster_rows = FALSE)
-#' annotatedHeatmap(Y$data, Y$cluster_IDs, cluster_rows = FALSE)
-#' annotatedHeatmap(Z$data, Z$cluster_IDs, cluster_rows = FALSE)
-#'
 #' row.names(Z$data) <- row.names(Y$data) <- row.names(X$data)
 #'
 #' data_modelled <- list(X$data, Y$data, Z$data)
@@ -44,21 +40,21 @@
 #' psm_df <- comparePSMsAcrossChains(mcmc)
 #'
 #' psm_df |>
-#'   ggplot(aes(x = x, y = y, fill = Entry)) +
-#'   geom_tile() +
-#'   facet_grid(View ~ Chain, labeller = label_both) +
-#'   scale_fill_gradient(low = "#FFFFFF", high = "#146EB4") +
-#'   labs(x = "Item", y = "Item", fill = "Coclustering\nproportion") +
-#'   theme(
-#'     axis.text = element_blank(),
-#'     axis.ticks = element_blank(),
-#'     panel.grid = element_blank(),
-#'     axis.title.y = element_text(size = 10.5),
-#'     axis.title.x = element_text(size = 10.5),
-#'     plot.title = element_text(size = 18, face = "bold"),
-#'     plot.subtitle = element_text(size = 14),
-#'     strip.text.x = element_text(size = 10.5),
-#'     legend.text = element_text(size = 10.5)
+#'   ggplot2::ggplot(ggplot2::aes(x = x, y = y, fill = Entry)) +
+#'   ggplot2::geom_tile() +
+#'   ggplot2::facet_grid(View ~ Chain, labeller = ggplot2::label_both) +
+#'   ggplot2::scale_fill_gradient(low = "#FFFFFF", high = "#146EB4") +
+#'   ggplot2::labs(x = "Item", y = "Item", fill = "Coclustering\nproportion") +
+#'   ggplot2::theme(
+#'     axis.text = ggplot2::element_blank(),
+#'     axis.ticks = ggplot2::element_blank(),
+#'     panel.grid = ggplot2::element_blank(),
+#'     axis.title.y = ggplot2::element_text(size = 10.5),
+#'     axis.title.x = ggplot2::element_text(size = 10.5),
+#'     plot.title = ggplot2::element_text(size = 18, face = "bold"),
+#'     plot.subtitle = ggplot2::element_text(size = 14),
+#'     strip.text.x = ggplot2::element_text(size = 10.5),
+#'     legend.text = ggplot2::element_text(size = 10.5)
 #'   )
 #'
 #' @export
