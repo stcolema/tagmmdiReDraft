@@ -27,7 +27,7 @@ mcmc <- runMCMCChains(X, n_chains, R, thin,
   K = K,
   initial_labels = initial_labels,
   fixed = fixed,
-  proposal_windows = list(c(0.7, 0.5, 0.15))
+  proposal_windows = list(c(0.9, 0.65, 0.20))
 )
 
 
@@ -44,7 +44,6 @@ ensemble_mcmc2 <- predictFromMultipleChains(mcmc2, burn)
 which(colMeans(ensemble_mcmc$outliers[[1]]) > 0.5) |>
   length()
 
-
 which(colMeans(ensemble_mcmc2$outliers[[1]]) > 0.5) |>
   length()
 
@@ -58,18 +57,11 @@ ensemble_mcmc$hypers[[1]]$noise |>
   log() |>
   boxplot(main = "E14TG2aR: Sampled log noise")
 
-mcmc[[1]]$acceptance_count[[1]]
-mcmc[[1]]$hyper_record[[1]] |> boxplot()
-par(mfrow = c(2, 2))
-mcmc[[1]]$hyper_record[[1]][201:301, seq(1, K)] |>
-  log() |>
-  boxplot(main = "E14TG2aR: Sampled log amplitude")
-mcmc[[1]]$hyper_record[[1]][201:301, seq(K + 1, 2 * K)] |>
-  log() |>
-  boxplot(main = "E14TG2aR: Sampled log length")
-mcmc[[1]]$hyper_record[[1]][201:301, seq(2 * K + 1, 3 * K)] |>
-  log() |>
-  boxplot(main = "E14TG2aR: Sampled log noise")
+cbind(mcmc[[1]]$acceptance_count[[1]],
+  mcmc[[2]]$acceptance_count[[1]],
+  mcmc[[3]]$acceptance_count[[1]],
+  mcmc[[4]]$acceptance_count[[1]]
+) |> t() |> boxplot()
 
 # Create the annotation data.frame for the rows
 anno_row <- data.frame(
