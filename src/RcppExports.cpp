@@ -22,45 +22,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// squaredExponentialFunction
-double squaredExponentialFunction(double amplitude, double length, int i, int j);
-RcppExport SEXP _tagmReDraft_squaredExponentialFunction(SEXP amplitudeSEXP, SEXP lengthSEXP, SEXP iSEXP, SEXP jSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type amplitude(amplitudeSEXP);
-    Rcpp::traits::input_parameter< double >::type length(lengthSEXP);
-    Rcpp::traits::input_parameter< int >::type i(iSEXP);
-    Rcpp::traits::input_parameter< int >::type j(jSEXP);
-    rcpp_result_gen = Rcpp::wrap(squaredExponentialFunction(amplitude, length, i, j));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sampleMean
-arma::vec sampleMean(arma::mat X);
-RcppExport SEXP _tagmReDraft_sampleMean(SEXP XSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampleMean(X));
-    return rcpp_result_gen;
-END_RCPP
-}
-// calcSampleCov
-arma::mat calcSampleCov(arma::mat data, arma::vec sample_mean, arma::uword N, arma::uword P);
-RcppExport SEXP _tagmReDraft_calcSampleCov(SEXP dataSEXP, SEXP sample_meanSEXP, SEXP NSEXP, SEXP PSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type sample_mean(sample_meanSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type N(NSEXP);
-    Rcpp::traits::input_parameter< arma::uword >::type P(PSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcSampleCov(data, sample_mean, N, P));
-    return rcpp_result_gen;
-END_RCPP
-}
 // gammaLogLikelihood
 double gammaLogLikelihood(double x, double shape, double rate);
 RcppExport SEXP _tagmReDraft_gammaLogLikelihood(SEXP xSEXP, SEXP shapeSEXP, SEXP rateSEXP) {
@@ -143,19 +104,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// gaussianLogLikelihood
-double gaussianLogLikelihood(arma::vec x, arma::vec mu, arma::vec std_dev);
-RcppExport SEXP _tagmReDraft_gaussianLogLikelihood(SEXP xSEXP, SEXP muSEXP, SEXP std_devSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type std_dev(std_devSEXP);
-    rcpp_result_gen = Rcpp::wrap(gaussianLogLikelihood(x, mu, std_dev));
-    return rcpp_result_gen;
-END_RCPP
-}
 // runMDI
 Rcpp::List runMDI(arma::uword R, arma::uword thin, arma::field<arma::mat> Y, arma::uvec K, arma::uvec mixture_types, arma::uvec outlier_types, arma::umat labels, arma::umat fixed, arma::field< arma::vec > proposal_windows);
 RcppExport SEXP _tagmReDraft_runMDI(SEXP RSEXP, SEXP thinSEXP, SEXP YSEXP, SEXP KSEXP, SEXP mixture_typesSEXP, SEXP outlier_typesSEXP, SEXP labelsSEXP, SEXP fixedSEXP, SEXP proposal_windowsSEXP) {
@@ -178,16 +126,12 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_tagmReDraft_createSimilarityMat", (DL_FUNC) &_tagmReDraft_createSimilarityMat, 1},
-    {"_tagmReDraft_squaredExponentialFunction", (DL_FUNC) &_tagmReDraft_squaredExponentialFunction, 4},
-    {"_tagmReDraft_sampleMean", (DL_FUNC) &_tagmReDraft_sampleMean, 1},
-    {"_tagmReDraft_calcSampleCov", (DL_FUNC) &_tagmReDraft_calcSampleCov, 4},
     {"_tagmReDraft_gammaLogLikelihood", (DL_FUNC) &_tagmReDraft_gammaLogLikelihood, 3},
     {"_tagmReDraft_invGammaLogLikelihood", (DL_FUNC) &_tagmReDraft_invGammaLogLikelihood, 3},
     {"_tagmReDraft_wishartLogLikelihood", (DL_FUNC) &_tagmReDraft_wishartLogLikelihood, 4},
     {"_tagmReDraft_invWishartLogLikelihood", (DL_FUNC) &_tagmReDraft_invWishartLogLikelihood, 4},
     {"_tagmReDraft_mvtLogLikelihood", (DL_FUNC) &_tagmReDraft_mvtLogLikelihood, 4},
     {"_tagmReDraft_pNorm", (DL_FUNC) &_tagmReDraft_pNorm, 4},
-    {"_tagmReDraft_gaussianLogLikelihood", (DL_FUNC) &_tagmReDraft_gaussianLogLikelihood, 3},
     {"_tagmReDraft_runMDI", (DL_FUNC) &_tagmReDraft_runMDI, 9},
     {NULL, NULL, 0}
 };

@@ -13,7 +13,8 @@ callMixtureModel(
   initial_labels = NULL,
   fixed = NULL,
   alpha = NULL,
-  initial_labels_as_intended = FALSE
+  initial_labels_as_intended = FALSE,
+  proposal_windows = NULL
 )
 }
 \arguments{
@@ -25,9 +26,9 @@ in rows.}
 \item{thin}{The factor by which the samples generated are thinned, e.g. if
 ``thin=50`` only every 50th sample is kept.}
 
-\item{type}{Character vector indicating density type to use. 'G' (Gaussian 
+\item{type}{Character vector indicating density type to use. 'G' (Gaussian
 with diagonal covariance matrix) 'MVN' (multivariate normal), 'TAGM'
-(t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the 
+(t-adjust Gaussian mixture), 'GP' (MVN with Gaussian process prior on the
 mean), 'TAGPM' (TAGM with GP prior on the mean), 'C' (categorical).}
 
 \item{K}{Integer indicating the number of components to include (the upper
@@ -42,6 +43,12 @@ weights in the model.}
 
 \item{initial_labels_as_intended}{Logical indicating if the passed initial
 labels are as intended or should ``generateInitialLabels`` be called.}
+
+\item{proposal_windows}{List of the proposal windows for the Metropolis-Hastings
+sampling of Gaussian process hyperparameters. Each entry corresponds to a
+view. For views modelled using a Gaussian process, the first entry is the
+proposal window for the ampltiude, the second is for the length-scale and the
+third is for the noise. These are not used in other mixture types.}
 }
 \value{
 A named list containing the sampled partitions, component weights,

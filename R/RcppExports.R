@@ -105,142 +105,6 @@ NULL
 #' return Squared exponential metric of (i, j)
 NULL
 
-#' @title Propose new non-negative value
-#' @description Propose new non-negative for sampling.
-#' @param x Current value to be proposed
-#' @param window The proposal window
-#' @return new double
-NULL
-
-#' @title The Inverse Gamma Distribution
-#' @description Random generation from the inverse Gamma distribution.
-#' @param shape Shape parameter.
-#' @param rate Rate parameter.
-#' @return Sample from invGamma(shape, rate).
-NULL
-
-#' @title The Inverse Gamma Distribution
-#' @description Random generation from the inverse Gamma distribution.
-#' @param N Number of samples to draw.
-#' @param shape Shape parameter.
-#' @param rate Rate parameter.
-#' @return Sample from invGamma(shape, rate).
-NULL
-
-#' @title The Gamma Distribution
-#' @description Random generation from the Gamma distribution.
-#' @param shape Shape parameter.
-#' @param rate Rate parameter.
-#' @return Sample from Gamma(shape, rate).
-NULL
-
-#' @title The Gamma Distribution
-#' @description Random generation from the Gamma distribution.
-#' @param N Number of samples to draw.
-#' @param shape Shape parameter.
-#' @param rate Rate parameter.
-#' @return N samples from Gamma(shape, rate).
-NULL
-
-#' @title The Half-Cauchy Distribution
-#' @description Random generation from the Half-Cauchy distribution.
-#' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
-#' @param mu Location parameter.
-#' @param scale Scale parameter.
-#' @return Sample from HalfCauchy(mu, scale).
-NULL
-
-#' @title The Beta Distribution
-#' @description Random generation from the Beta distribution.
-#' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.
-#' Samples from a Beta distribution based using two independent gamma
-#' distributions.
-#' @param a Shape parameter.
-#' @param b Shape parameter.
-#' @return Sample from Beta(a, b).
-NULL
-
-#' @title The Beta Distribution
-#' @description Random generation from the Beta distribution.
-#' See https://en.wikipedia.org/wiki/Beta_distribution#Related_distributions.
-#' Samples from a Beta distribution based using two independent gamma
-#' distributions.
-#' @param n The number of samples to draw.
-#' @param a Shape parameter.
-#' @param b Shape parameter.
-#' @return Sample from Beta(a, b).
-NULL
-
-#' @title Metropolis acceptance step
-#' @description Given a probaility, randomly accepts by sampling from a uniform 
-#' distribution.
-#' @param acceptance_prob Double between 0 and 1.
-#' @return Boolean indicating acceptance.
-NULL
-
-#' @title Double approximately equal
-#' @description Compare two doubles in a way that makes sense.
-#' @param x first double considered
-#' @param y double compared to x
-#' @param precision double of the tolerance of disagreement between x and y.
-#' @return bool indicating if the absolute difference between x and y is less 
-#' than precision.
-NULL
-
-#' @title Round matrix
-#' @description Round a matrix to n_places decimal places.
-#' @param X Matrix
-#' @param n_places Integer - number of decimal places to round to
-#' @return Matrix X round to n_places decimal places.
-NULL
-
-#' @title Choose
-#' @description N choose K for binomial coefficient
-#' @param n unsigned int (greater than k)
-#' @param k unsigned int 
-#' @return n choose k
-NULL
-
-#' @title Log Choose
-#' @description Log transform of N choose K for binomial coefficient
-#' @param n unsigned int (greater than k)
-#' @param k unsigned int 
-#' @return n choose k
-NULL
-
-#' @title Squared exponential function
-#' @description The squared exponential function as used in a covariance kernel.
-#' @param amplitude The amplitude parameter (double)
-#' @param length The length parameter (double)
-#' @param i Time point (unsigned integer)
-#' @param j Time point (unsigned integer)
-#' @return Boolean indicating acceptance.
-squaredExponentialFunction <- function(amplitude, length, i, j) {
-    .Call(`_tagmReDraft_squaredExponentialFunction`, amplitude, length, i, j)
-}
-
-#' @title Sample mean
-#' @description calculate the sample mean of a matrix X.
-#' @param X Matrix
-#' @return Vector of the column means of X.
-sampleMean <- function(X) {
-    .Call(`_tagmReDraft_sampleMean`, X)
-}
-
-#' @title Calculate sample covariance
-#' @description Returns the unnormalised sample covariance. Required as
-#' arma::cov() does not work for singletons.
-#' @param data Data in matrix format
-#' @param sample_mean Sample mean for data
-#' @param n The number of samples in data
-#' @param n_col The number of columns in data
-#' @return One of the parameters required to calculate the posterior of the
-#'  Multivariate normal with unknown mean and covariance (the unnormalised
-#'  sample covariance).
-calcSampleCov <- function(data, sample_mean, N, P) {
-    .Call(`_tagmReDraft_calcSampleCov`, data, sample_mean, N, P)
-}
-
 #' title The Half-Cauchy Distribution
 #' description Calculates the pdf of the Half-Cauchy distribution for value x.
 #' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
@@ -269,13 +133,23 @@ NULL
 #' parameters mu, sigma_2.
 NULL
 
+#' @title Multivariate normal log-likelihood for diagonal covariance matrix
+#' @description The log-likelihood function for a vector in a Gaussian density 
+#' with a diagonal covariance matrix
+#' @param x - vec; the sample to calculate the log likelihood of.
+#' @param mu - vec; the mean parameter of the Gaussian distribution.
+#' @param sigma_2 - vec; the standard deviation of the Gaussian distribution.
+#' @return the normalised log-likelihood of x in a Gaussian distribution with 
+#' parameters mu, sigma_2.
+NULL
+
 #' @title The Half-Cauchy Distribution
 #' @description Calculates the pdf of the Half-Cauchy distribution for value x.
 #' See https://en.wikipedia.org/wiki/Cauchy_distribution#Related_distributions
 #' @param x Value to calculate the probability density of.
 #' @param mu Location parameter.
 #' @param scale Scale parameter.
-#' @return Sample from HalfCauchy(mu, scale).
+#' @return Density of x in HalfCauchy(mu, scale).
 NULL
 
 #' @title Gamma log-likelihood
@@ -353,18 +227,6 @@ mvtLogLikelihood <- function(x, mu, Sigma, nu) {
 #' parameters mu, Sigma.
 pNorm <- function(x, mu, Sigma, is_sympd = TRUE) {
     .Call(`_tagmReDraft_pNorm`, x, mu, Sigma, is_sympd)
-}
-
-#' @title Multivariate normal log-likelihood for diagonal covariance matrix
-#' @description The log-likelihood function for a vector in a Gaussian density 
-#' with a diagonal covariance matrix
-#' @param x - vec; the sample to calculate the log likelihood of.
-#' @param mu - vec; the mean parameter of the Gaussian distribution.
-#' @param sigma_2 - vec; the standard deviation of the Gaussian distribution.
-#' @return the normalised log-likelihood of x in a Gaussian distribution with 
-#' parameters mu, sigma_2.
-gaussianLogLikelihood <- function(x, mu, std_dev) {
-    .Call(`_tagmReDraft_gaussianLogLikelihood`, x, mu, std_dev)
 }
 
 #' @title Call Multiple Dataset Integration

@@ -12,18 +12,18 @@ comparePSMsAcrossChains(
 )
 }
 \arguments{
+\item{mcmc}{Output of ``processMCMCChains`` with the argument
+``construct_psm = TRUE``.}
+
 \item{matrix_setting_order}{The matrix that defines the ordering of all
 others, if a common ordering is used. Defaults to `1`.}
 
 \item{use_common_ordering}{Logical indicating if a common ordering should be
 used. If false all matrices are ordered individually, defaults to `TRUE`.}
 
-\item{ignore_checks}{Logical indicating if checks for matrix symmetry and 
+\item{ignore_checks}{Logical indicating if checks for matrix symmetry and
 a commmon size should be ignored. Defaults to TRUE as these checks seem
 to break when they should not.}
-
-\item{mccm}{Output of ``processMCMCChains`` with the argument 
-``construct_psm = TRUE``.}
 }
 \value{
 A long data.frame containing columns `x` (the x-axis position of the
@@ -45,10 +45,6 @@ X <- generateSimulationDataset(K, N, P)
 Y <- generateSimulationDataset(K, N, P)
 Z <- generateSimulationDataset(K, N, P)
 
-annotatedHeatmap(X$data, X$cluster_IDs, cluster_rows = FALSE)
-annotatedHeatmap(Y$data, Y$cluster_IDs, cluster_rows = FALSE)
-annotatedHeatmap(Z$data, Z$cluster_IDs, cluster_rows = FALSE)
-
 row.names(Z$data) <- row.names(Y$data) <- row.names(X$data)
 
 data_modelled <- list(X$data, Y$data, Z$data)
@@ -64,22 +60,22 @@ burn <- 250
 mcmc <- processMCMCChains(mcmc, burn, construct_psm = TRUE)
 psm_df <- comparePSMsAcrossChains(mcmc)
 
-psm_df |> 
-  ggplot(aes(x = x, y = y, fill = Entry)) +
-  geom_tile() +
-  facet_grid(View ~ Chain, labeller = label_both) +
-  scale_fill_gradient(low = "#FFFFFF", high = "#146EB4") +
-  labs(x = "Item", y = "Item", fill = "Coclustering\nproportion") +
-  theme(
-    axis.text = element_blank(),
-    axis.ticks = element_blank(),
-    panel.grid = element_blank(),
-    axis.title.y = element_text(size = 10.5),
-    axis.title.x = element_text(size = 10.5),
-    plot.title = element_text(size = 18, face = "bold"),
-    plot.subtitle = element_text(size = 14),
-    strip.text.x = element_text(size = 10.5),
-    legend.text = element_text(size = 10.5)
+psm_df |>
+  ggplot2::ggplot(ggplot2::aes(x = x, y = y, fill = Entry)) +
+  ggplot2::geom_tile() +
+  ggplot2::facet_grid(View ~ Chain, labeller = ggplot2::label_both) +
+  ggplot2::scale_fill_gradient(low = "#FFFFFF", high = "#146EB4") +
+  ggplot2::labs(x = "Item", y = "Item", fill = "Coclustering\nproportion") +
+  ggplot2::theme(
+    axis.text = ggplot2::element_blank(),
+    axis.ticks = ggplot2::element_blank(),
+    panel.grid = ggplot2::element_blank(),
+    axis.title.y = ggplot2::element_text(size = 10.5),
+    axis.title.x = ggplot2::element_text(size = 10.5),
+    plot.title = ggplot2::element_text(size = 18, face = "bold"),
+    plot.subtitle = ggplot2::element_text(size = 14),
+    strip.text.x = ggplot2::element_text(size = 10.5),
+    legend.text = ggplot2::element_text(size = 10.5)
   )
 
 }
