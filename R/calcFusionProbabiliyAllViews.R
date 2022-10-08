@@ -2,6 +2,7 @@
 #' @description The mean of the number of MCMC samples for which each item has 
 #' the same label in each pair of views.
 #' @param mcmc Output from ``runMCMCChain``
+#' @param processed Has the chain been processed already (defaults to FALSE).
 #' @returns A list of vector of probabilities for each item fusing across each 
 #' pair of views.
 #' @examples 
@@ -28,7 +29,7 @@
 #' calcFusionProbabiliyAllViews(mcmc_out)
 #' 
 #' @export
-calcFusionProbabiliyAllViews <- function(mcmc) {
+calcFusionProbabiliyAllViews <- function(mcmc, processed = FALSE) {
   V <- mcmc$V
   views <- seq(1, V)
   VC2 <- choose(V, 2)
@@ -41,7 +42,7 @@ calcFusionProbabiliyAllViews <- function(mcmc) {
       name <- paste0("fused_probs_", v, w)
       names <- c(names, name)
       entry <- entry + 1
-      fusion_probabilities[[entry]] <- calcFusionProbabiliy(mcmc, v, w)
+      fusion_probabilities[[entry]] <- calcFusionProbabiliy(mcmc, v, w, processed)
     }
   }
   names(fusion_probabilities) <- names

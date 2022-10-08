@@ -4,6 +4,7 @@
 #' @param mcmc Output from ``runMCMCChain``
 #' @param v First view considered.
 #' @param w Second view considered.
+#' @param processed Has the chain been processed already (defaults to FALSE).
 #' @returns A vector of probabilities
 #' @examples 
 #' 
@@ -29,7 +30,7 @@
 #' calcFusionProbabiliy(mcmc_out, 1, 2)
 #' 
 #' @export
-calcFusionProbabiliy <- function(mcmc, v, w) {
+calcFusionProbabiliy <- function(mcmc, v, w, processed = FALSE) {
   V <- mcmc$V
   views <- seq(1, V)
   v_not_in_views <- ! (v %in% views)
@@ -47,5 +48,10 @@ calcFusionProbabiliy <- function(mcmc, v, w) {
   if(bad_input) {
     stop("`v` and `w` must be different natual numbers in the range [1, V].")
   }
-  colMeans(mcmc$allocations[ , , v] == mcmc$allocations[ , , w])
+  if(processed) {
+    out <- colMeans(mcmc$allocations[[v]] == mcmc$allocations[[w]])
+  } else {
+    out <- colMeans(mcmc$allocations[ , , v] == mcmc$allocations[ , , w])
+  }
+  out
 }
