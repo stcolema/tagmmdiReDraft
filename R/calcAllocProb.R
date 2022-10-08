@@ -39,7 +39,7 @@
 #' calcAllocProb(mcmc_out, 1)
 #'
 #' @export
-calcAllocProb <- function(mcmc_samples, view, burn = 0, method = "median") {
+calcAllocProb <- function(mcmc_samples, view, burn = 0, method = "mean") {
   R <- mcmc_samples$R
   thin <- mcmc_samples$thin
   V <- mcmc_samples$V
