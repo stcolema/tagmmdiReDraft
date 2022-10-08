@@ -4,7 +4,14 @@
 \alias{compileConsensusClustering}
 \title{Compile Consensus Clustering}
 \usage{
-compileConsensusClustering(mcmc_lst, D = NULL, W = NULL, construct_cm = TRUE)
+compileConsensusClustering(
+  mcmc_lst,
+  D = NULL,
+  W = NULL,
+  point_estimate_method = "mean",
+  construct_cm = TRUE,
+  ...
+)
 }
 \arguments{
 \item{mcmc_lst}{Output of ``runMCMCChains``.}
@@ -12,11 +19,17 @@ compileConsensusClustering(mcmc_lst, D = NULL, W = NULL, construct_cm = TRUE)
 \item{D}{The iteration to use from within the chains. Defaults to the largest
 possible value, i.e., the length of the chains.}
 
-\item{W}{The number of chains to use in compiling the consensus clustring. 
+\item{W}{The number of chains to use in compiling the consensus clustring.
 Defaults to the length of ``mcmc_lst`` but can be smaller.}
 
-\item{construct_cm}{Logical indicating if the consensus matrix should be 
+\item{point_estimate_method}{Point estimate method for allocation
+probabilities in semi-supervised views. One of "median" or "mean".}
+
+\item{construct_cm}{Logical indicating if the consensus matrix should be
 constructed.}
+
+\item{...}{Arguments passed to ``salso::salso`` for inferring a point
+estimate in unsupervised views.}
 }
 \value{
 A named list similar to the output of ``runMCMCChains``.
